@@ -1,9 +1,20 @@
 import { mapMediaVariant } from '../mappers/media.mapper.js';
 import { validateId, validateVariant, validateVariantIdentity } from '../validators/media.validator.js';
 import { MediaDomainError, notFound } from './media.errors.js';
+import { createMediaService } from './media.service.js';
 
 export function createMediaVariantService({ repository, mediaService }) {
     return Object.freeze({
+        withMediaLock(id, run) {
+            return repository.withMediaLock(validateId(id), (scoped, scopedMedia) =>
+                run(
+                    createMediaVariantService({
+                        repository: scoped,
+                        mediaService: createMediaService({ repository: scopedMedia }),
+                    }),
+                ),
+            );
+        },
         async create(input) {
             const data = validateVariant(input, { create: true });
             await mediaService.load(data.mediaId);

@@ -1,4 +1,5 @@
 import { MediaDomainError, notFound } from '../services/media.errors.js';
+import { createMediaRepository } from './media.repository.js';
 import { mediaWrite } from './mediaWrite.js';
 
 async function write(client, operation) {
@@ -34,6 +35,17 @@ export function createMediaVariantRepository(client) {
         );
     }
     return Object.freeze({
+        withMediaLock(mediaId, run) {
+            const persist = async (transaction) => {
+                const rows =
+                    await transaction.$queryRaw`SELECT id FROM media WHERE id = ${mediaId}::uuid AND deleted_at IS NULL FOR UPDATE`;
+                if (!rows.length) throw notFound();
+                return run(createMediaVariantRepository(transaction), createMediaRepository(transaction));
+            };
+            return typeof client.$connect === 'function'
+                ? client.$transaction(persist, { isolationLevel: 'ReadCommitted', timeout: 30000 })
+                : persist(client);
+        },
         create: register,
         createOriginal: register,
         update(id, data) {

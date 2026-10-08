@@ -5,7 +5,12 @@ import { validateMediaDetailEnvironment } from '#config/mediaDetail.js';
 import { validateMediaListEnvironment } from '#config/mediaList.js';
 import { validateUploadEnvironment } from '#config/uploads.js';
 import { createAlbumModule } from '#modules/albums/index.js';
-import { createMediaDetailModule, createMediaFavoriteModule, createMediaListModule } from '#modules/media/index.js';
+import {
+    createMediaDetailModule,
+    createMediaFavoriteModule,
+    createMediaListModule,
+    createMediaTrashModule,
+} from '#modules/media/index.js';
 import { createTaxonomyModule } from '#modules/taxonomy/index.js';
 import { createUploadModule } from '#modules/uploads/index.js';
 
@@ -25,6 +30,7 @@ export function buildApp({
     mediaListConfig = validateMediaListEnvironment({}),
     mediaDetailService,
     mediaFavoriteService,
+    mediaTrashService,
     mediaDetailConfig = validateMediaDetailEnvironment({}),
 } = {}) {
     const app = Fastify({
@@ -68,6 +74,11 @@ export function buildApp({
     const mediaFavorite =
         mediaFavoriteService ??
         (database?.client ? createMediaFavoriteModule({ client: database.client }).service : undefined);
+    const mediaTrash =
+        mediaTrashService ??
+        (database?.client
+            ? createMediaTrashModule({ client: database.client, storage, config: mediaListConfig }).service
+            : undefined);
     registerPlugins(app, config, {
         taxonomyService: taxonomy,
         albumService: albums,
@@ -75,6 +86,7 @@ export function buildApp({
         mediaListService: mediaList,
         mediaDetailService: mediaDetail,
         mediaFavoriteService: mediaFavorite,
+        mediaTrashService: mediaTrash,
     });
     return app;
 }

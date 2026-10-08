@@ -12,6 +12,13 @@ in SQL because Prisma schema index syntax cannot express this ordering and predi
 The existing ascending taken-date index serves oldest-first queries with nulls last.
 See [Media list API](../api/MEDIA.md) for query and cursor semantics.
 
+The `20261008180000_media_trash` migration adds `Media.purgeStartedAt` and a
+`(deletedAt, id)` index for trash pagination and retention candidate selection.
+The SQL check requires `deletedAt` whenever a purge timestamp is present.
+Permanent deletion commits this marker before object removal and keeps variant
+rows until all recorded objects have been removed; restore is prohibited once
+purging starts. See [Media trash](../api/TRASH.md) for retry and cleanup contracts.
+
 ## Identity and ownership
 
 This is a single-user application. There is no User model, user ID, implicit

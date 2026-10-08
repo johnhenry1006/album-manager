@@ -21,15 +21,11 @@ export function createIsolatedTestDatabase() {
             await admin.connect();
             await admin.query(`CREATE SCHEMA "${schema}"`);
             schemaCreated = true;
-            const migrations = new URL('../../../prisma/migrations/', import.meta.url);
-            for (const directory of (await readdir(migrations, { withFileTypes: true }))
-                .filter((entry) => entry.isDirectory())
-                .sort((a, b) => a.name.localeCompare(b.name))) {
-                if (!(await readdir(new URL(`${directory.name}/`, migrations))).includes('migration.sql')) continue;
+            for (const migration of await readTestMigrations()) {
                 await admin.query('BEGIN');
                 try {
                     await admin.query(`SET LOCAL search_path TO "${schema}"`);
-                    await admin.query(await readFile(new URL(`${directory.name}/migration.sql`, migrations), 'utf8'));
+                    await admin.query(migration);
                     await admin.query('COMMIT');
                 } catch (error) {
                     await admin.query('ROLLBACK');
@@ -66,4 +62,18 @@ export function createIsolatedTestDatabase() {
             }
         },
     });
+}
+
+// Keep all PostgreSQL test harnesses aligned with the generated Prisma client.
+export async function readTestMigrations() {
+    const root = new URL('../../../prisma/migrations/', import.meta.url);
+    const statements = [];
+    const directories = (await readdir(root, { withFileTypes: true }))
+        .filter((entry) => entry.isDirectory())
+        .sort((a, b) => a.name.localeCompare(b.name));
+    for (const directory of directories) {
+        if ((await readdir(new URL(`${directory.name}/`, root))).includes('migration.sql'))
+            statements.push(await readFile(new URL(`${directory.name}/migration.sql`, root), 'utf8'));
+    }
+    return statements;
 }

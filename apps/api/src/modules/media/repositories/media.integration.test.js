@@ -1,5 +1,4 @@
 import { randomUUID } from 'node:crypto';
-import { readFile } from 'node:fs/promises';
 
 import pg from 'pg';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
@@ -8,6 +7,7 @@ import { validateDatabaseEnvironment } from '#config/database.js';
 import { loadEnvironment } from '#config/loadConfig.js';
 import { createPrismaClient } from '#infrastructure/database/client.js';
 import { createDatabase } from '#infrastructure/database/index.js';
+import { readTestMigrations } from '#infrastructure/database/isolatedDatabase.testUtils.js';
 
 import { createMediaProcessingJob } from '../../../jobs/mediaProcessing.job.js';
 import { createMediaModule, createMediaVariantRepository, createMediaVariantService } from '../index.js';
@@ -21,27 +21,12 @@ describe.skipIf(process.env.DATABASE_TESTS !== '1')('media repositories with Pos
         const config = validateDatabaseEnvironment(loadEnvironment());
         admin = new pg.Client({ connectionString: config.databaseUrl, connectionTimeoutMillis: 5000 });
         await admin.connect();
-        const migration = await readFile(
-            new URL(
-                '../../../../prisma/migrations/20261008040000_initial_album_manager/migration.sql',
-                import.meta.url,
-            ),
-            'utf8',
-        );
+        const migrations = await readTestMigrations();
         await admin.query('BEGIN');
         try {
             await admin.query(`CREATE SCHEMA "${schema}"`);
             await admin.query(`SET LOCAL search_path TO "${schema}"`);
-            await admin.query(migration);
-            await admin.query(
-                await readFile(
-                    new URL(
-                        '../../../../prisma/migrations/20261008120000_media_processing/migration.sql',
-                        import.meta.url,
-                    ),
-                    'utf8',
-                ),
-            );
+            for (const migration of migrations) await admin.query(migration);
             await admin.query('COMMIT');
         } catch (error) {
             await admin.query('ROLLBACK');

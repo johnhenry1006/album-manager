@@ -2,12 +2,15 @@ import { createMediaRepository } from './repositories/media.repository.js';
 import { createMediaDetailRepository } from './repositories/mediaDetail.repository.js';
 import { createMediaFavoriteRepository } from './repositories/mediaFavorite.repository.js';
 import { createMediaListRepository } from './repositories/mediaList.repository.js';
+import { createMediaTrashRepository } from './repositories/mediaTrash.repository.js';
 import { createMediaUploadCleanupRepository } from './repositories/mediaUploadCleanup.repository.js';
 import { createMediaVariantRepository } from './repositories/mediaVariant.repository.js';
 import { createMediaService } from './services/media.service.js';
 import { createMediaDetailService } from './services/mediaDetail.service.js';
 import { createMediaFavoriteService } from './services/mediaFavorite.service.js';
 import { createMediaListService } from './services/mediaList.service.js';
+import { createMediaStorageDeletionService } from './services/mediaStorageDeletion.service.js';
+import { createMediaTrashService } from './services/mediaTrash.service.js';
 import { createMediaUploadCleanupService } from './services/mediaUploadCleanup.service.js';
 import { createMediaVariantService } from './services/mediaVariant.service.js';
 
@@ -53,3 +56,15 @@ export function createMediaFavoriteModule({ client }) {
     });
 }
 export { default as mediaFavoriteRoutes } from './routes/mediaFavorite.routes.js';
+
+export function createMediaTrashModule({ client, storage, config }) {
+    return Object.freeze({
+        service: createMediaTrashService({
+            repository: createMediaTrashRepository(client),
+            storageDeletion: createMediaStorageDeletionService({ storage }),
+            storage,
+            config,
+        }),
+    });
+}
+export { default as mediaTrashRoutes } from './routes/mediaTrash.routes.js';

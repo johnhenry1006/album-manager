@@ -35,6 +35,9 @@ database and storage dependencies are supplied. See [Media list](../api/MEDIA.md
 and [Media detail](../api/MEDIA_DETAIL.md) for contracts and expiry policies.
 The media module also registers favorite mutations when a database is supplied;
 see [Favorite mutations](../api/MEDIA_FAVORITES.md) for idempotent behavior.
+The same module owns trash routes and a reusable retention cleanup service.
+Storage removal has a dedicated service and permanent deletion uses a durable
+purge marker; see [Media trash](../api/TRASH.md).
 The albums module registers CRUD and ordered membership routes when a database is supplied;
 its service can also be injected in tests. It reuses the media public gallery service
 and storage provider for thumbnails. See [Albums](../api/ALBUMS.md) for soft deletion,

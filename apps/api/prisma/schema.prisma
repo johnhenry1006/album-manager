@@ -98,6 +98,7 @@ model Media {
   createdAt        DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt        DateTime        @updatedAt @map("updated_at") @db.Timestamptz(3)
   deletedAt        DateTime?       @map("deleted_at") @db.Timestamptz(3)
+  purgeStartedAt   DateTime?       @map("purge_started_at") @db.Timestamptz(3)
   albums           AlbumMedia[]
   coverForAlbums   Album[]         @relation("AlbumCover")
   variants         MediaVariant[]
@@ -110,6 +111,7 @@ model Media {
 
   @@index([checksum, createdAt, id])
   @@index([deletedAt, createdAt, id])
+  @@index([deletedAt, id])
   @@index([deletedAt, takenAt, id])
   @@index([deletedAt, originalFilename, id])
   @@index([deletedAt, status, createdAt, id])

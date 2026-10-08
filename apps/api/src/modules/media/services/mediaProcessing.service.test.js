@@ -46,6 +46,7 @@ function setup() {
         updateMetadata: vi.fn(async (_id, patch) => Object.assign(media, patch)),
     };
     const mediaVariantService = {
+        withMediaLock: async (_id, run) => run(mediaVariantService),
         findByIdentity: vi.fn(async ({ name }) => rows.get(name) ?? null),
         create: vi.fn(async (input) => {
             if (rows.has(input.name)) throw Object.assign(new Error('Conflict'), { code: 'VARIANT_CONFLICT' });
