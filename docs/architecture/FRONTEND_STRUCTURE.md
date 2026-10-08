@@ -60,6 +60,12 @@ lists of 50 tags. Both pages retain drafts and deletion confirmations after fail
 mutations, disable conflicting actions during writes, and provide loading, empty,
 error, and retry states. Domain-independent editor lifecycle and form composition
 are shared; page hooks supply the feature mutations and payloads.
+`/favorites` composes a thin `FavoritesPage` with `useFavoritesPage`, consuming
+the public media hooks and `useInfiniteMedia({ favorite: true })`. It reuses the
+virtual grid, thumbnail cards, and ID selection. Its toolbar removes selected
+favorites through media mutations, retaining failed IDs for retry and disabling
+selection during writes. Loading, empty, error, and cursor retry states use the
+existing media query and shared presentation components.
 Other pages remain minimal placeholders. The library page composes a
 page hook consuming public media/category/tag hooks, with cursor pagination and
 TanStack Virtual rendering thumbnail cards. Its URL filters are `q`, `type`,
