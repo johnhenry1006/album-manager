@@ -69,10 +69,18 @@ truly global client state is needed; server state belongs in TanStack Query.
 public hooks. The feature owns session metadata, direct presigned storage PUTs,
 byte progress, processing polling across session pages, retry checkpoints,
 cancellation, duplicate decisions, and the final media ID. Processing is displayed
-separately from transfer progress. The page provides single-file upload controls;
-the reusable session/file hooks also support pre-registering batch files.
-Album, Category, and Tag assignment belongs only in page orchestration after a
-final media ID is returned, never inside the upload feature.
+separately from transfer progress. `UploadDropzone` accepts multiple files through
+drag/drop and a file picker. `UploadQueue`/`UploadQueueItem` render progress,
+processing, duplicate decisions, retry/cancel controls, and completed media links.
+`useUploadQueue` schedules three independent lifecycles at a time, each with its
+own session and retry checkpoints. `useUploadOptions` supplies searchable,
+paginated album/category/tag lists and preserves selections across option pages.
+`useUploadPage` composes public upload/album/category/tag hooks and assigns only
+the final media ID. It captures options when files start and records successful
+assignment steps, so retrying a failed assignment preserves its original options
+and neither retransfers the file nor repeats completed steps. The upload feature
+owns no Album, Category, or Tag relations. Cancellation stops local upload work
+and subsequent assignment steps; already accepted server work may continue.
 
 Run `npm run dev --workspace @album-manager/web`,
 `npm run build --workspace @album-manager/web`, or

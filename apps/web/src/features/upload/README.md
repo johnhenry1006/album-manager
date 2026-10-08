@@ -16,7 +16,18 @@ const mediaId = await upload.upload(file);
 
 `upload(file, { sessionId, uploadFileId })` also accepts a previously registered
 file. Its name, MIME type, and size must match the registration. Each hook instance
-owns one file lifecycle; concurrent files use separate hook instances.
+owns one file lifecycle; dynamic queues can use `useFileUploads` instead.
+
+## Multiple independent files
+
+`useFileUploads({ pollInterval, policy })` exposes `upload(id, file, options)`,
+`retry(id)`, `cancel(id)`, `resolveDuplicate(id, action)`, `cancelAll()`, and
+`remove(id)`. Consumer IDs identify independent lifecycle controllers and their
+retry checkpoints. `files[id]` holds the reusable lifecycle state, progress, and
+duplicate actions. Removing an entry or unmounting aborts its browser work.
+Consumers own queue scheduling and any post-upload assignment. Without explicit
+session/file options, each entry creates its own session; this avoids registering
+new files into a session that has already entered processing.
 
 The upload promise remains pending during `DUPLICATE_PENDING`. Render the
 `duplicateActions` when `needsDuplicateResolution` is true and call
