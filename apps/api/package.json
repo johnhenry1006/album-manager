@@ -2,5 +2,11 @@
   "name": "@album-manager/api",
   "version": "0.0.0",
   "private": true,
-  "type": "module"
+  "type": "module",
+  "imports": {
+    "#modules/*": "./src/modules/*",
+    "#infrastructure/*": "./src/infrastructure/*",
+    "#shared/*": "./src/shared/*",
+    "#config/*": "./src/config/*"
+  }
 }

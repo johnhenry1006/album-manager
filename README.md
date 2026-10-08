@@ -12,6 +12,8 @@ album-manager/
 ├── apps/
 │   ├── web/
 │   │   ├── package.json
+│   │   ├── jsconfig.json
+│   │   ├── vite.config.js
 │   │   └── src/
 │   │       ├── app/
 │   │       │   ├── router/
@@ -58,12 +60,14 @@ album-manager/
 ├── infrastructure/
 │   ├── docker/
 │   └── scripts/
-│       └── check-foundation.js
+│       ├── check-foundation.js
+│       └── code-quality.test.js
 ├── docs/
 │   ├── architecture/
 │   │   ├── ARCHITECTURE_RULES.md
 │   │   ├── FRONTEND_STRUCTURE.md
-│   │   └── BACKEND_STRUCTURE.md
+│   │   ├── BACKEND_STRUCTURE.md
+│   │   └── CODE_QUALITY.md
 │   ├── database/
 │   └── api/
 ├── docker-compose.yml
@@ -71,6 +75,9 @@ album-manager/
 ├── package-lock.json
 ├── .editorconfig
 ├── .gitignore
+├── eslint.config.js
+├── .prettierrc.json
+├── .prettierignore
 ├── .env.example
 └── README.md
 ```
@@ -80,7 +87,7 @@ Business modules are intentionally absent; their future layout is documented.
 
 ## Workspace setup
 
-Use Node.js 22 or later and npm 10 or later. All workspaces are private and use
+Use Node.js 22.14 or later and npm 10 or later. All workspaces are private and use
 JavaScript ES modules. Install from the repository root:
 
 ```sh
@@ -88,8 +95,10 @@ npm ci
 npm run check
 ```
 
-The initial workspaces have no third-party dependencies. `package-lock.json`
-records the workspace links. Add future dependencies to their owning workspace
+The initial workspaces have no application dependencies. Root development
+dependencies provide ESLint, Prettier, Vite alias resolution, and tooling tests.
+`package-lock.json` records workspace links and tooling versions.
+Add future application dependencies to their owning workspace
 with `npm install <package> --workspace @album-manager/web` (or `/api` or `/shared`
 in place of `/web`), and commit the updated root lockfile.
 
@@ -100,7 +109,8 @@ tool metadata. It does not enforce import boundaries or test application behavio
 add appropriate linting and tests when application code is introduced.
 
 No `dev`, `start`, or `build` commands exist yet because there is no runtime
-application or chosen build toolchain. Docker Compose contains an empty services
+application entry point. Vite currently supplies only frontend alias configuration.
+Docker Compose contains an empty services
 map and starts no containers. Use `infrastructure/docker` for future container
 definitions and `infrastructure/scripts` for repository tooling.
 
@@ -128,6 +138,21 @@ Read these documents before adding code:
 1. [Mandatory architecture rules](docs/architecture/ARCHITECTURE_RULES.md)
 2. [Frontend structure and import boundaries](docs/architecture/FRONTEND_STRUCTURE.md)
 3. [Backend structure and dependency direction](docs/architecture/BACKEND_STRUCTURE.md)
+4. [Code quality, commands, and aliases](docs/architecture/CODE_QUALITY.md)
+
+Quality commands from the repository root:
+
+```sh
+npm run lint
+npm run lint:fix
+npm run format
+npm run format:check
+npm test
+```
+
+Frontend aliases use `@/` through JavaScript editor configuration and Vite.
+Backend aliases use native Node `#` package imports without a custom loader.
+Tests currently verify repository/tooling foundations, not application behavior.
 
 Future database decisions belong in `docs/database`; API contracts belong in
 `docs/api`. JavaScript only: do not introduce TypeScript or speculative features.

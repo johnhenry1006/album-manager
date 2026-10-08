@@ -25,24 +25,28 @@ apps/api/src/
 Directories are scaffolded without runtime implementations. No HTTP framework,
 database, storage provider, queue, cache, or image processor is selected yet.
 
+Native Node aliases are configured in the workspace manifest: `#modules/*`,
+`#infrastructure/*`, `#shared/*`, and `#config/*`. Include explicit `.js` filenames.
+See [Code quality foundations](CODE_QUALITY.md) for alias and lint configuration.
+
 ## Responsibilities
 
-| Location | Responsibility |
-| --- | --- |
-| `app` | Application composition, route registration, and startup/lifecycle wiring |
-| `config` | Validated backend environment configuration and server-only settings |
-| `modules` | Business modules with explicit public interfaces |
-| `infrastructure/database` | Database connection and persistence infrastructure |
-| `infrastructure/storage` | Storage provider abstraction and concrete adapters |
-| `infrastructure/queue` | Queue adapters and job dispatch infrastructure |
-| `infrastructure/cache` | Cache adapters |
-| `infrastructure/image-processing` | Image processing integrations used by dedicated services/jobs |
-| `shared/errors` | Central error classes, mapping, and response conventions |
-| `shared/middleware` | Generic request middleware, including centralized error handling |
-| `shared/validation` | Domain-independent validation support |
-| `shared/utils` | Generic pure helpers |
-| `shared/constants` | Backend-wide constants without business module dependencies |
-| `jobs` | Background job entry points and orchestration |
+| Location                          | Responsibility                                                            |
+| --------------------------------- | ------------------------------------------------------------------------- |
+| `app`                             | Application composition, route registration, and startup/lifecycle wiring |
+| `config`                          | Validated backend environment configuration and server-only settings      |
+| `modules`                         | Business modules with explicit public interfaces                          |
+| `infrastructure/database`         | Database connection and persistence infrastructure                        |
+| `infrastructure/storage`          | Storage provider abstraction and concrete adapters                        |
+| `infrastructure/queue`            | Queue adapters and job dispatch infrastructure                            |
+| `infrastructure/cache`            | Cache adapters                                                            |
+| `infrastructure/image-processing` | Image processing integrations used by dedicated services/jobs             |
+| `shared/errors`                   | Central error classes, mapping, and response conventions                  |
+| `shared/middleware`               | Generic request middleware, including centralized error handling          |
+| `shared/validation`               | Domain-independent validation support                                     |
+| `shared/utils`                    | Generic pure helpers                                                      |
+| `shared/constants`                | Backend-wide constants without business module dependencies               |
+| `jobs`                            | Background job entry points and orchestration                             |
 
 Root `infrastructure/` contains repository tooling; this application's
 `src/infrastructure/` contains runtime adapters. Keep those responsibilities separate.

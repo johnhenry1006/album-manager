@@ -26,30 +26,32 @@ src/
 ```
 
 These directories are scaffolded without application implementations. React,
-TanStack Query, routing, and build tooling can be installed when application work
-begins; the boundaries below apply when those tools are introduced.
+TanStack Query, and routing can be installed when application work begins.
+Vite is configured only for source alias resolution; there is no application
+entry point yet. See [Code quality foundations](CODE_QUALITY.md) for `@/` aliases
+and quality commands. The boundaries below apply to all future application code.
 
 ## Responsibilities
 
-| Location | Responsibility |
-| --- | --- |
-| `app/router` | Route registration and route composition |
-| `app/providers` | Application-wide provider composition |
-| `app/layouts` | Route shells and layout composition |
-| `pages` | Thin route-facing React components and page-specific orchestration |
-| `features` | Business-domain UI, services/domain logic, hooks, actions, and API modules |
-| `components/ui` | Domain-independent visual primitives |
-| `components/common` | Reusable components with no feature or page dependencies |
-| `components/media` | Reusable media presentation primitives, independent of feature data access |
-| `components/layout` | Reusable layout primitives used by application shells |
-| `hooks` | Completely domain-independent reusable hooks |
-| `services` | Generic infrastructure clients, including the future HTTP client |
-| `store` | Generic client state infrastructure; domain state belongs to its feature |
-| `utils` | Domain-independent pure helpers |
-| `constants` | Shared frontend constants without feature dependencies |
-| `config` | Validated public frontend configuration |
-| `styles` | Global styling foundations |
-| `test` | Shared test setup, fixtures, and helpers |
+| Location            | Responsibility                                                             |
+| ------------------- | -------------------------------------------------------------------------- |
+| `app/router`        | Route registration and route composition                                   |
+| `app/providers`     | Application-wide provider composition                                      |
+| `app/layouts`       | Route shells and layout composition                                        |
+| `pages`             | Thin route-facing React components and page-specific orchestration         |
+| `features`          | Business-domain UI, services/domain logic, hooks, actions, and API modules |
+| `components/ui`     | Domain-independent visual primitives                                       |
+| `components/common` | Reusable components with no feature or page dependencies                   |
+| `components/media`  | Reusable media presentation primitives, independent of feature data access |
+| `components/layout` | Reusable layout primitives used by application shells                      |
+| `hooks`             | Completely domain-independent reusable hooks                               |
+| `services`          | Generic infrastructure clients, including the future HTTP client           |
+| `store`             | Generic client state infrastructure; domain state belongs to its feature   |
+| `utils`             | Domain-independent pure helpers                                            |
+| `constants`         | Shared frontend constants without feature dependencies                     |
+| `config`            | Validated public frontend configuration                                    |
+| `styles`            | Global styling foundations                                                 |
+| `test`              | Shared test setup, fixtures, and helpers                                   |
 
 Feature-specific components and helpers stay inside their feature. Promote them
 to shared layers only when their responsibility is genuinely shared and they
@@ -58,11 +60,11 @@ contracts and pure helpers, not a replacement for frontend shared folders.
 
 ## Hook placement
 
-| Usage | Required location |
-| --- | --- |
-| Used by one page only | `pages/<domain>/hooks/` |
+| Usage                             | Required location           |
+| --------------------------------- | --------------------------- |
+| Used by one page only             | `pages/<domain>/hooks/`     |
 | Reusable within a business domain | `features/<feature>/hooks/` |
-| Completely domain-independent | `src/hooks/` |
+| Completely domain-independent     | `src/hooks/`                |
 
 Page hooks compose feature hooks/actions and coordinate page state, filters,
 selection, and navigation. They consume the feature public `index.js` and must

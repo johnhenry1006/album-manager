@@ -1,0 +1,15 @@
+node_modules/
+dist/
+build/
+coverage/
+.cache/
+.git/
+.agents/
+.codex/
+.aws/
+.env
+.env.*
+package-lock.json
+uploads/
+storage-data/
+**/.gitkeep

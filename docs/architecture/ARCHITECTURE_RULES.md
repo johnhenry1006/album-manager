@@ -50,16 +50,16 @@ only; these documents define how future application code must be organized.
 
 ## Recommended file size guidance
 
-| Responsibility | Preferred size |
-| --- | --- |
-| React page | <= 150 lines |
-| React reusable component | <= 200 lines |
-| Page hook | <= 200–250 lines |
-| Feature hook | <= 150–200 lines |
-| Backend controller | <= 150 lines |
-| Backend service | <= 250–300 lines |
-| Repository | <= 200 lines |
-| Utility | <= 150 lines |
+| Responsibility           | Preferred size   |
+| ------------------------ | ---------------- |
+| React page               | <= 150 lines     |
+| React reusable component | <= 200 lines     |
+| Page hook                | <= 200–250 lines |
+| Feature hook             | <= 150–200 lines |
+| Backend controller       | <= 150 lines     |
+| Backend service          | <= 250–300 lines |
+| Repository               | <= 200 lines     |
+| Utility                  | <= 150 lines     |
 
 These are guidance, not blind hard limits. Review responsibilities, cohesion,
 and testability before splitting a file. A small file can still mix responsibilities;
@@ -90,6 +90,22 @@ a longer file can remain cohesive. Refactor by responsibility.
 - Add tests for the behavior and boundaries of each future feature. The scaffold
   check is not a substitute for application tests, import-boundary linting, or
   security validation once application code exists.
+
+## Naming conventions
+
+- React component names and files: PascalCase, such as `MediaCard.jsx`.
+- Hook names and files: `useXxx`, such as `useSelection.js`.
+- Utility functions and files: camelCase, such as `formatDate.js`.
+- Feature API modules: `xxxApi.js`, such as `mediaApi.js`.
+- Query key modules: `xxxQueryKeys.js`, such as `mediaQueryKeys.js`.
+- Backend services: `xxx.service.js`, such as `media.service.js`. Use the same
+  suffix convention for controllers, repositories, validators, and mappers
+  (`xxx.controller.js`, `xxx.repository.js`, `xxx.validator.js`, `xxx.mapper.js`).
+- Constants: `UPPER_SNAKE_CASE` for fixed values, such as `DEFAULT_PAGE_SIZE`;
+  structured query-key factories and ordinary objects use descriptive camelCase.
+
+These names are illustrative conventions only; no example features are implemented.
+See [Code quality foundations](CODE_QUALITY.md) for commands, aliases, and tooling.
 
 ## Repository boundaries
 
