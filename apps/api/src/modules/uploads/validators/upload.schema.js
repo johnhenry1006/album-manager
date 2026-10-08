@@ -38,3 +38,21 @@ export const completionResponse = {
     required: ['uploadFileId', 'status', 'mediaId'],
     properties: { uploadFileId: id, mediaId: id, status: { type: 'string' } },
 };
+
+export const duplicateResolutionBody = {
+    type: 'object',
+    additionalProperties: false,
+    required: ['action'],
+    properties: { action: { type: 'string', enum: ['SKIP', 'USE_EXISTING', 'KEEP_BOTH'] } },
+};
+export const duplicateResolutionResponse = {
+    type: 'object',
+    additionalProperties: false,
+    required: ['uploadFileId', 'status', 'finalMediaId', 'duplicateOfMediaId'],
+    properties: {
+        uploadFileId: id,
+        status: { type: 'string' },
+        finalMediaId: { anyOf: [id, { type: 'null' }] },
+        duplicateOfMediaId: { anyOf: [id, { type: 'null' }] },
+    },
+};

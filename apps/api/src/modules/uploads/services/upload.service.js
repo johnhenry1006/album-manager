@@ -2,6 +2,7 @@ import { generateStorageKey } from '#infrastructure/storage/index.js';
 
 import { validateUploadFile, validateUploadId, validateUploadPage } from '../validators/upload.validator.js';
 import { invalidUpload, uploadConflict, UploadError, uploadNotFound } from './upload.errors.js';
+import { createUploadDuplicateService } from './uploadDuplicate.service.js';
 
 function completion(file) {
     return { uploadFileId: file.id, status: file.status, mediaId: file.mediaId };
@@ -22,7 +23,9 @@ async function refreshSession(repository, id) {
     await repository.updateSession(id, { status, ...(status === 'COMPLETED' ? { completedAt: new Date() } : {}) });
 }
 export function createUploadService({ repository, storage, queue, config, withSessionLock, withFileLock }) {
+    const duplicates = createUploadDuplicateService({ storage, queue, withFileLock, refreshSession });
     return Object.freeze({
+        resolveDuplicate: duplicates.resolve,
         async createSession(input = {}) {
             if (!input || typeof input !== 'object' || Array.isArray(input) || Object.keys(input).length)
                 throw invalidUpload();

@@ -26,7 +26,7 @@ Fastify is the HTTP framework. `app/app.js` composes a testable instance;
 `app/server.js` loads validated dotenv configuration and listens. Plugin registration
 and graceful shutdown are separate focused modules in `app/`. A shared Fastify
 plugin installs centralized errors at the root so child route scopes inherit it.
-Health is registered under `/api`. The uploads module registers five metadata-only routes
+Health is registered under `/api`. The uploads module registers six metadata-only routes
 when database, storage, and queue dependencies are supplied; tests can inject its service.
 See [Direct uploads](../api/UPLOADS.md) for the request and response contracts.
 Database infrastructure owns a reusable Prisma client and PostgreSQL connection lifecycle.

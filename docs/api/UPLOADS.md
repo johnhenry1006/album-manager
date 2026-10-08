@@ -8,13 +8,14 @@ jobs enter the `media-processing` queue; this implementation does not start work
 
 ## Routes and contracts
 
-| Route                                            | Input                                          | Successful result                                                               |
-| ------------------------------------------------ | ---------------------------------------------- | ------------------------------------------------------------------------------- |
-| `POST /api/uploads/sessions`                     | Empty body or `{}`                             | 201: `{ sessionId, status, createdAt, completedAt }`                            |
-| `POST /api/uploads/sessions/:sessionId/files`    | `{ filename, mimeType, fileSize }`             | 201: file metadata including `uploadFileId`                                     |
-| `POST /api/uploads/files/:uploadFileId/presign`  | Empty body or `{}`                             | 200: `{ uploadFileId, status, url, method, headers, expiresIn }`                |
-| `POST /api/uploads/files/:uploadFileId/complete` | Empty body or `{}`                             | 202 while processing; 200 if already READY: `{ uploadFileId, status, mediaId }` |
-| `GET /api/uploads/sessions/:sessionId`           | Optional `limit` (1–100, default 25), `cursor` | Session metadata plus `files` and `nextCursor`                                  |
+| Route                                                     | Input                                          | Successful result                                                               |
+| --------------------------------------------------------- | ---------------------------------------------- | ------------------------------------------------------------------------------- |
+| `POST /api/uploads/sessions`                              | Empty body or `{}`                             | 201: `{ sessionId, status, createdAt, completedAt }`                            |
+| `POST /api/uploads/sessions/:sessionId/files`             | `{ filename, mimeType, fileSize }`             | 201: file metadata including `uploadFileId`                                     |
+| `POST /api/uploads/files/:uploadFileId/presign`           | Empty body or `{}`                             | 200: `{ uploadFileId, status, url, method, headers, expiresIn }`                |
+| `POST /api/uploads/files/:uploadFileId/complete`          | Empty body or `{}`                             | 202 while processing; 200 if already READY: `{ uploadFileId, status, mediaId }` |
+| `POST /api/uploads/files/:uploadFileId/duplicate/resolve` | `{ action }`                                   | 200 for SKIP/USE_EXISTING; 202 for KEEP_BOTH                                    |
+| `GET /api/uploads/sessions/:sessionId`                    | Optional `limit` (1–100, default 25), `cursor` | Session metadata plus `files` and `nextCursor`                                  |
 
 File metadata is `{ uploadFileId, sessionId, status, filename, mimeType, fileSize,
 mediaId, createdAt, updatedAt }`. Output byte sizes are decimal strings; timestamps
@@ -39,7 +40,7 @@ persisting final session completion timestamps.
 Registered files become UPLOADING when presigned and PROCESSING only after the
 processing queue accepts the job. A session becomes PROCESSING once every file has
 left registration/uploading. Further file registration is rejected for a session
-that has already entered processing. READY is reserved for workers after processing.
+that has already entered processing. READY is assigned after processing or explicit resolution to existing READY media.
 
 ## Verification, persistence, and retries
 
@@ -87,6 +88,35 @@ No existing bucket lifecycle policy is changed by this API.
   content types are rejected rather than proxied through Fastify.
 - Validation failures use 400, missing records 404, absent objects/invalid lifecycle
   operations 409, and processing queue unavailability 503 through centralized errors.
+
+## Explicit duplicate resolution
+
+Resolve only files in `DUPLICATE_PENDING` with a distinct `mediaId` and
+`duplicateOfMediaId`. The response contains `{ uploadFileId, status, finalMediaId,
+duplicateOfMediaId }`; `finalMediaId` is null until a final result is known.
+
+- `SKIP`: delete the upload-owned staging object, safely clean and retire temporary
+  Media, detach its media ID, and mark the file `CANCELLED`.
+- `USE_EXISTING`: require an active READY duplicate candidate, perform the same
+  cleanup, and mark the file `READY` with the candidate as `finalMediaId`.
+- `KEEP_BOTH`: preserve storage, require an available original, and accept a job with
+  `{ mediaId, uploadFileId, allowDuplicate: true }`. Return `PROCESSING` and HTTP 202.
+  Its separate job ID is `<mediaId>-allow-duplicate`. Processing admission is recorded
+  under the file lock to protect the choice from older job retries.
+
+Resolution holds session/file locks; temporary cleanup also locks Media. Only
+unaccepted PENDING Media with no other upload, duplicate, album, cover, category,
+tag, favorite, or metadata references can be retired. Cleanup deletes only the
+original key created for this upload and soft-deletes the Media, preserving its
+variant records for audit. Referenced Media and its objects remain intact. Staging
+cleanup requires the exact upload-owned key with no other storage references.
+
+Cleanup and queue failures return 503 and leave the file pending for retry. Storage
+deletions are idempotent, so repeat the cleanup action after a partial deletion.
+KEEP_BOTH is rejected with 409 if partial cleanup already removed the original.
+Successful resolution refreshes the session status; further resolution requests
+receive 409. Database/storage/queue operations have no distributed transaction or
+outbox; a crash after job acceptance still requires retry/reconciliation.
 
 ## Configuration
 

@@ -43,3 +43,15 @@ export function validateUploadPage({ limit = 25, cursor } = {}) {
     if (cursor !== undefined) validateUploadId(cursor);
     return { limit, cursor };
 }
+
+export function validateDuplicateResolution(input) {
+    if (
+        !input ||
+        typeof input !== 'object' ||
+        Array.isArray(input) ||
+        Object.keys(input).some((key) => key !== 'action') ||
+        !['SKIP', 'USE_EXISTING', 'KEEP_BOTH'].includes(input.action)
+    )
+        throw invalidUpload('Invalid duplicate resolution action');
+    return input.action;
+}

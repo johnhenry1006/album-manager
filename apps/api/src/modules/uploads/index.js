@@ -7,7 +7,7 @@ export function createUploadModule({ client, storage, queue, config }) {
     const repository = createUploadRepository(client);
     const context = (transaction) => ({
         repository: createUploadRepository(transaction),
-        ...createMediaModule(transaction),
+        ...createMediaModule(transaction, { storage }),
     });
     const service = createUploadService({
         repository,

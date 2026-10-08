@@ -1,12 +1,15 @@
 import { createUploadController } from '../controllers/upload.controller.js';
 import {
     completionResponse,
+    duplicateResolutionBody,
+    duplicateResolutionResponse,
     emptyBody,
     fileBody,
     fileParams,
     sessionParams,
     sessionQuery,
 } from '../validators/upload.schema.js';
+import { validateDuplicateResolution } from '../validators/upload.validator.js';
 
 export default async function uploadRoutes(app, { service }) {
     const controller = createUploadController(service);
@@ -41,6 +44,21 @@ export default async function uploadRoutes(app, { service }) {
             },
         },
         controller.complete,
+    );
+    app.post(
+        '/uploads/files/:uploadFileId/duplicate/resolve',
+        {
+            bodyLimit,
+            preValidation: async (request) => {
+                validateDuplicateResolution(request.body);
+            },
+            schema: {
+                params: fileParams,
+                body: duplicateResolutionBody,
+                response: { 200: duplicateResolutionResponse, 202: duplicateResolutionResponse },
+            },
+        },
+        controller.resolveDuplicate,
     );
     app.get(
         '/uploads/sessions/:sessionId',

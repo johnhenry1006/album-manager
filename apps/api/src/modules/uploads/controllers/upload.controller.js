@@ -17,6 +17,10 @@ export function createUploadController(service) {
             const result = await service.complete(request.params.uploadFileId);
             return reply.code(result.status === 'READY' ? 200 : 202).send(result);
         },
+        async resolveDuplicate(request, reply) {
+            const result = await service.resolveDuplicate(request.params.uploadFileId, request.body);
+            return reply.code(result.status === 'PROCESSING' ? 202 : 200).send(result);
+        },
         async loadSession(request) {
             return mapUploadSession(await service.loadSession(request.params.sessionId, request.query));
         },

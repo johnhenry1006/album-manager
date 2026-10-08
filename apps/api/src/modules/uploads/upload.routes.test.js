@@ -116,3 +116,40 @@ it('accepts empty POST requests for session, presign and completion', async () =
         202,
     );
 });
+
+it.each([
+    ['SKIP', 'CANCELLED', null, 200],
+    ['USE_EXISTING', 'READY', mediaId, 200],
+    ['KEEP_BOTH', 'PROCESSING', null, 202],
+])('exposes the duplicate resolution contract for %s', async (action, status, finalMediaId, code) => {
+    const { app, service } = setup();
+    service.resolveDuplicate = vi.fn(async () => ({
+        uploadFileId,
+        status,
+        finalMediaId,
+        duplicateOfMediaId: mediaId,
+        storageKey: 'private',
+    }));
+    const response = await app.inject({
+        method: 'POST',
+        url: `/api/uploads/files/${uploadFileId}/duplicate/resolve`,
+        payload: { action },
+    });
+    expect(response.statusCode).toBe(code);
+    expect(response.json()).toEqual({ uploadFileId, status, finalMediaId, duplicateOfMediaId: mediaId });
+    expect(service.resolveDuplicate).toHaveBeenCalledWith(uploadFileId, { action });
+});
+it.each([{}, { action: 'DELETE' }, { action: 'SKIP', extra: true }])(
+    'rejects invalid duplicate actions over HTTP %j',
+    async (payload) => {
+        const { app, service } = setup();
+        service.resolveDuplicate = vi.fn();
+        const response = await app.inject({
+            method: 'POST',
+            url: `/api/uploads/files/${uploadFileId}/duplicate/resolve`,
+            payload,
+        });
+        expect(response.statusCode).toBe(400);
+        expect(service.resolveDuplicate).not.toHaveBeenCalled();
+    },
+);
