@@ -1,0 +1,34 @@
+.frame {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  background: var(--color-border);
+}
+
+.image,
+.placeholder,
+.fallback {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.image {
+  display: block;
+}
+
+.placeholder .skeleton {
+  height: 100%;
+  border-radius: inherit;
+}
+
+.fallback {
+  display: grid;
+  place-items: center;
+  padding: 0.5rem;
+  color: var(--color-muted);
+  background: var(--color-border);
+  font-size: 0.875rem;
+  text-align: center;
+}
