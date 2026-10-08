@@ -1,0 +1,1 @@
+export const DEFAULT_CATEGORY_PAGE_SIZE = 50;

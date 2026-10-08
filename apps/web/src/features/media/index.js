@@ -1,3 +1,4 @@
+export { mediaQueryKeys } from './api/mediaQueryKeys.js';
 export { MediaCard } from './components/MediaCard.jsx';
 export { MediaEmptyState } from './components/MediaEmptyState.jsx';
 export { MediaGridRow } from './components/MediaGridRow.jsx';
