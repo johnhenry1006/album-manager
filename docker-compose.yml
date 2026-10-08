@@ -1,3 +1,100 @@
-# Foundation only. Add services when runtime adapters are deliberately chosen.
-# This file currently starts no containers.
-services: {}
+name: ${COMPOSE_PROJECT_NAME:-album-manager}
+
+services:
+    postgres:
+        image: postgres:17-alpine
+        container_name: ${COMPOSE_PROJECT_NAME:-album-manager}-postgres
+        restart: unless-stopped
+        environment:
+            POSTGRES_DB: ${POSTGRES_DB:-album_manager}
+            POSTGRES_USER: ${POSTGRES_USER:-album_manager}
+            POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Generate .env before starting Compose}
+        ports:
+            - '127.0.0.1:${POSTGRES_PORT:-5434}:5432'
+        volumes:
+            - postgres-data:/var/lib/postgresql/data
+        networks:
+            - local
+        healthcheck:
+            test: ['CMD-SHELL', 'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"']
+            interval: 10s
+            timeout: 5s
+            retries: 5
+            start_period: 20s
+
+    redis:
+        image: redis:7-alpine
+        container_name: ${COMPOSE_PROJECT_NAME:-album-manager}-redis
+        restart: unless-stopped
+        environment:
+            REDIS_PASSWORD: ${REDIS_PASSWORD:?Generate .env before starting Compose}
+            REDISCLI_AUTH: ${REDIS_PASSWORD:?Generate .env before starting Compose}
+        command: ['sh', '-c', 'exec redis-server --appendonly yes --requirepass "$$REDIS_PASSWORD"']
+        ports:
+            - '127.0.0.1:${REDIS_PORT:-6380}:6379'
+        volumes:
+            - redis-data:/data
+        networks:
+            - local
+        healthcheck:
+            test: ['CMD-SHELL', 'redis-cli ping | grep -qx PONG']
+            interval: 10s
+            timeout: 5s
+            retries: 5
+            start_period: 10s
+
+    s3ninja:
+        image: scireum/s3-ninja:8.7.3
+        container_name: ${COMPOSE_PROJECT_NAME:-album-manager}-s3ninja
+        restart: unless-stopped
+        environment:
+            S3_ACCESS_KEY: ${S3_ACCESS_KEY:?Generate .env before starting Compose}
+            S3_SECRET_KEY: ${S3_SECRET_KEY:?Generate .env before starting Compose}
+            S3_CORS_ALLOW_ALL: 'false'
+            JAVA_XMX: ${S3_JAVA_XMX:-512m}
+        volumes:
+            - ./infrastructure/docker/s3ninja/instance.conf:/home/sirius/instance.conf:ro
+            - s3-data:/home/sirius/data
+            - s3-multipart:/home/sirius/multipart
+            - s3-logs:/home/sirius/logs
+        networks:
+            - local
+        healthcheck:
+            test: ['CMD', 'curl', '--fail', '--silent', '--output', '/dev/null', 'http://localhost:9000/ui']
+            interval: 10s
+            timeout: 5s
+            retries: 12
+            start_period: 30s
+
+    s3-public:
+        image: nginx:1.28-alpine
+        container_name: ${COMPOSE_PROJECT_NAME:-album-manager}-s3-public
+        restart: unless-stopped
+        environment:
+            FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-http://localhost:5173}
+        ports:
+            - '127.0.0.1:${S3_PORT:-9445}:9000'
+        volumes:
+            - ./infrastructure/docker/s3ninja/public-endpoint.conf.template:/etc/nginx/templates/default.conf.template:ro
+        networks:
+            - local
+        depends_on:
+            s3ninja:
+                condition: service_healthy
+        healthcheck:
+            test: ['CMD', 'wget', '-q', '-O', '/dev/null', 'http://127.0.0.1:9000/ui']
+            interval: 10s
+            timeout: 5s
+            retries: 5
+            start_period: 10s
+
+networks:
+    local:
+        driver: bridge
+
+volumes:
+    postgres-data:
+    redis-data:
+    s3-data:
+    s3-multipart:
+    s3-logs:

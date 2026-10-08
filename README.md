@@ -59,9 +59,14 @@ album-manager/
 │       └── src/
 ├── infrastructure/
 │   ├── docker/
+│   │   └── s3ninja/
+│   │       ├── instance.conf
+│   │       └── public-endpoint.conf.template
 │   └── scripts/
 │       ├── check-foundation.js
-│       └── code-quality.test.js
+│       ├── code-quality.test.js
+│       ├── setup-local-env.js
+│       └── setup-local-env.test.js
 ├── docs/
 │   ├── architecture/
 │   │   ├── ARCHITECTURE_RULES.md
@@ -110,13 +115,133 @@ add appropriate linting and tests when application code is introduced.
 
 No `dev`, `start`, or `build` commands exist yet because there is no runtime
 application entry point. Vite currently supplies only frontend alias configuration.
-Docker Compose contains an empty services
-map and starts no containers. Use `infrastructure/docker` for future container
-definitions and `infrastructure/scripts` for repository tooling.
+Docker Compose provides the local PostgreSQL, Redis, and S3 Ninja services described
+below. `infrastructure/docker` holds emulator/container configuration and
+`infrastructure/scripts` holds repository tooling.
 
-`.env.example` documents configuration intent only. Future runtime composition
-must load and validate configuration; neither npm nor application code currently
-loads `.env`. Browser-visible values are public, and credentials stay backend-only.
+Docker Compose loads the root `.env`. Future application composition must separately
+load and validate configuration; there is no application configuration loader yet.
+Browser-visible values are public, and credentials stay backend-only.
+
+## Local development infrastructure
+
+Install Docker Engine/Desktop with Docker Compose v2. From the repository root,
+generate your ignored local environment file and start the services:
+
+```sh
+node infrastructure/scripts/setup-local-env.js
+docker compose config --quiet
+docker compose up -d --wait --wait-timeout 180
+docker compose ps
+```
+
+The setup script generates random PostgreSQL/Redis passwords and S3 credentials,
+creates `.env` with owner-only permissions, and refuses to overwrite an existing
+file. Alternatively, copy `.env.example` to `.env` and fill all four blank
+credential values yourself. Compose refuses to start with missing credentials.
+No secrets are committed; `.env` is ignored. Do not publish expanded Compose
+configuration or the emulator UI, which can reveal local credentials.
+
+Default service addresses:
+
+| Service                  | Host address               | Address within the Compose network |
+| ------------------------ | -------------------------- | ---------------------------------- |
+| PostgreSQL               | `localhost:5434`           | `postgres:5432`                    |
+| Redis                    | `localhost:6380`           | `redis:6379`                       |
+| S3-compatible endpoint   | `http://localhost:9445`    | `http://s3ninja:9000`              |
+| S3 Ninja bucket/admin UI | `http://localhost:9445/ui` | `http://s3ninja:9000/ui`           |
+
+Ports are bound exclusively to `127.0.0.1` and can be changed with `POSTGRES_PORT`,
+`REDIS_PORT`, and `S3_PORT`. If you change a port, update the corresponding host-run
+backend endpoint values in `.env`, including `S3_PUBLIC_ENDPOINT`.
+
+Containers use predictable names: `album-manager-postgres`, `album-manager-redis`,
+`album-manager-s3ninja`, and `album-manager-s3-public`. The last container is an
+Nginx sidecar providing complete browser CORS; it is the only published S3 port.
+All containers use the dedicated `album-manager_local` bridge network and are
+separate from other projects' networks. This is not a Docker `internal` network:
+host port publishing must work for the host-run backend and browser. The stack
+does not join external/shared networks. `COMPOSE_PROJECT_NAME` changes the container,
+network, and named-volume prefixes if another instance is needed.
+
+Each container has a health check. PostgreSQL stores data in `postgres-data`, Redis
+uses AOF persistence in `redis-data`, and S3 Ninja uses named data, multipart, and
+log volumes. Names receive the project prefix. Stop and remove containers/network
+while preserving all data with:
+
+```sh
+docker compose down
+```
+
+To stop containers without removing them, use `docker compose stop`; restart with
+`docker compose up -d --wait`. Inspect logs with `docker compose logs -f`.
+`docker compose down --volumes` deletes local data and is only for an intentional reset.
+PostgreSQL initialization credentials apply when its volume is first created;
+changing `.env` does not change an existing database password. Rotate that password
+through PostgreSQL before changing the corresponding environment value.
+
+## Local S3 bucket and browser requests
+
+After startup, open `http://localhost:9445/ui`, enter `album-manager` in **New Bucket**,
+and create it. Leave the bucket private; do not enable public access. Bucket creation
+is a one-time step because the named volume preserves it. Automatic bucket creation
+is disabled. If `S3_BUCKET` is changed, create that bucket explicitly instead.
+
+The future backend storage provider can use these generic configuration values:
+
+- `S3_ENDPOINT`: backend operations endpoint; default `http://localhost:9445` when
+  the API runs on the host. A future API container on this network uses
+  `http://s3ninja:9000` instead.
+- `S3_PUBLIC_ENDPOINT`: endpoint used when signing URLs returned to the browser;
+  default `http://localhost:9445`. The browser cannot resolve Compose service names.
+- `S3_ACCESS_KEY`, `S3_SECRET_KEY`: generated server-only credentials, shared with
+  the local emulator. They must never be sent to frontend code.
+- `S3_REGION=us-east-1`, `S3_BUCKET=album-manager`, and `S3_FORCE_PATH_STYLE=true`.
+  Object paths use `/album-manager/<object-key>`.
+
+Use separate endpoint configuration for backend operations and browser URL signing
+when their hostnames differ. Sign browser URLs using `S3_PUBLIC_ENDPOINT` from the
+start; never replace the hostname, port, or path after signing. Those fields affect
+the signature. The sidecar forwards the original host/path without rewriting them.
+For remote development, use a browser-reachable public endpoint and matching local
+port forwarding; `localhost` always means the browser's own machine.
+
+`FRONTEND_ORIGIN=http://localhost:5173` configures the exact allowed browser origin
+(scheme, hostname, and port). Set it to the actual frontend origin and recreate
+the sidecar after changes:
+
+```sh
+docker compose up -d --force-recreate s3-public
+```
+
+The sidecar handles OPTIONS preflights, permits `PUT`, `GET`, and `HEAD`, echoes
+requested headers, exposes `ETag`, `Content-Length`, `Content-Range`,
+`x-amz-request-id`, and `x-amz-version-id`, and supplies CORS headers on error
+responses. Other origins receive no allowed-origin header. Browser requests use
+the presigned URL with cookies omitted, the signed HTTP method, and any signed
+headers exactly as agreed with the backend. CORS does not bypass S3 authentication.
+
+S3 Ninja 8.7.3's native permissive preflight omits HEAD and does not provide the
+required origin-specific policy. Its native CORS is therefore disabled; the
+infrastructure proxy owns CORS. Do not rely on `aws s3api put-bucket-cors` for this
+emulator. Production storage must configure its own equivalent bucket/provider
+CORS policy. All emulator-specific configuration stays under `infrastructure/docker`;
+future application code must use the generic storage provider abstraction and
+standard S3 operations, never the emulator's UI routes.
+
+To check the configured browser preflight (replace the default origin/port if changed):
+
+```sh
+curl -i -X OPTIONS http://localhost:9445/album-manager/check.txt \
+  -H 'Origin: http://localhost:5173' \
+  -H 'Access-Control-Request-Method: PUT' \
+  -H 'Access-Control-Request-Headers: content-type,x-amz-meta-purpose'
+```
+
+Expect `204`, the exact allowed origin, and `PUT, GET, HEAD, OPTIONS`. Repeat with
+`GET` and `HEAD`. A valid presigned PUT/GET/HEAD smoke test is still required when
+the backend signing implementation is added. The [S3 Ninja documentation](https://s3ninja.net/)
+describes its local endpoint, path-style addressing, and persistent data directory.
 
 ## Architecture decisions
 
