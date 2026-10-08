@@ -9,6 +9,9 @@ See [Media trash](TRASH.md) for soft deletion, restore and permanent deletion.
 single-user. Soft-deleted media is always excluded. No EXIF, original object
 URLs, storage keys, or preview URLs are returned.
 
+This is the canonical searchable media collection. Search is expressed through
+its query parameters; there is no separate `/api/search/media` endpoint.
+
 ```json
 {
     "items": [
@@ -47,6 +50,10 @@ variants are never selected or signed by this endpoint.
 All parameters are optional, scalar, and validated. Repeated parameters,
 unknown parameters, malformed values, and reversed date ranges return HTTP 400
 through centralized error handling. Enum values are case-sensitive.
+Filters combine with AND, including on subsequent cursor pages. Text search
+alternatives (filename and related text) remain grouped separately from cursor
+alternatives, so neither can bypass another filter. Continue with the same
+filters, sort and order when following a cursor.
 
 | Parameter                      | Meaning                                                                                                                                                              |
 | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -97,11 +104,18 @@ the cursor appear after refreshing from the first page.
 `MEDIA_LIST_URL_EXPIRY_SECONDS` defaults to 900 and accepts integers 1–3600.
 Both are validated at startup. See `.env.example`.
 
+`repositories/mediaList.query.js` owns the reusable `buildMediaListQuery`
+specification: filters, cursor comparisons, ordering, lookahead limit and gallery
+projection. The list repository executes this specification without implementing
+any filters itself. Validation stays at the service boundary.
+
 The list repository selects only gallery fields, the selected ordering value,
 favorite presence, and compact thumbnail descriptors. It does not count the
 collection, fetch EXIF, fetch all variants, or make per-item media queries.
 Existing relation indexes support membership filters. The media-list migration
 adds filename ordering and an explicit descending/null-last taken-date index.
+See [Schema index strategy](../database/SCHEMA.md#index-strategy) for the index
+coverage and the rationale for retaining the current indexes.
 Substring search may scan matching text; it uses Prisma filters rather than
 unsafe SQL. At larger search workloads, review query plans before adding a
 dedicated text-search index or changing the documented search semantics.
@@ -110,8 +124,11 @@ Tests:
 
 ```sh
 npm test --workspace @album-manager/api -- src/modules/media/routes/media.routes.test.js src/config/mediaList.test.js
-DATABASE_TESTS=1 npm test --workspace @album-manager/api -- src/modules/media/repositories/mediaList.integration.test.js
+DATABASE_TESTS=1 npm test --workspace @album-manager/api -- src/modules/media/repositories/mediaList.integration.test.js src/modules/media/repositories/mediaListFilters.integration.test.js
 ```
 
 The integration suite creates an isolated schema, applies migrations there,
 rolls back fixtures, and drops its schema. It never modifies application media.
+The combined-filter HTTP suite walks all three sort fields in both directions,
+checks tied values and null taken-date tails, and follows cursors after deleting
+their anchor. Its fixtures include rows that fail each individual filter.

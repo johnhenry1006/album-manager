@@ -156,6 +156,30 @@ stable tie-breaker. `takenAt` is nullable, so future repositories/cursors must c
 and preserve explicit null ordering. These indexes target active lists; unrestricted
 administrative history queries may need different indexes when introduced.
 
+### Searchable media collection
+
+`GET /api/media` combines validated filters and keyset pagination through one
+repository query specification. Existing indexes cover its access paths:
+
+| Query                                       | Existing index coverage                                                                                                                          |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Creation ordering and range                 | Media `(deletedAt, createdAt, id)`; reverse scans support descending order.                                                                      |
+| Taken ordering and range                    | Media `(deletedAt, takenAt, id)` for ascending/null-last; partial `(taken_at DESC NULLS LAST, id DESC)` for active descending/null-last queries. |
+| Filename ordering                           | Media `(deletedAt, originalFilename, id)` in either direction.                                                                                   |
+| Status or media type with creation ordering | Media `(deletedAt, status, createdAt, id)` and `(deletedAt, type, createdAt, id)`.                                                               |
+| Album, category and tag membership          | AlbumMedia unique `(albumId, mediaId)`; MediaCategory `(categoryId, mediaId)`; MediaTag `(tagId, mediaId)`.                                      |
+| Favorite presence or absence                | Favorite unique `mediaId` supports the relation existence check.                                                                                 |
+
+No additional indexes are introduced for combining these filters. A composite
+index for every combination would add write/storage costs without workload
+evidence. Exact MIME filtering currently uses the available active-media access
+path and applies MIME as a residual predicate; consider `(deletedAt, mimeType,
+createdAt, id)` only if query plans show selective MIME queries need it. Literal
+case-insensitive substring search across filenames and related text is not served
+by these B-tree indexes. Evaluate PostgreSQL trigram indexes on the searched text
+columns against representative `EXPLAIN (ANALYZE, BUFFERS)` results before adding
+them, preserving the API's substring semantics.
+
 ## Deletion and integrity
 
 Soft deletion applies to Album and Media only. It does not fire foreign-key actions:
