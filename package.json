@@ -1,0 +1,14 @@
+{
+  "name": "album-manager",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "workspaces": ["apps/web", "apps/api", "packages/shared"],
+  "engines": {
+    "node": ">=22",
+    "npm": ">=10"
+  },
+  "scripts": {
+    "check": "node infrastructure/scripts/check-foundation.js"
+  }
+}

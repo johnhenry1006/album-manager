@@ -1,0 +1,3 @@
+# Foundation only. Add services when runtime adapters are deliberately chosen.
+# This file currently starts no containers.
+services: {}
