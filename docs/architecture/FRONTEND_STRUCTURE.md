@@ -50,8 +50,17 @@ mutations. The shared virtual grid supports controlled checkboxes without owning
 selection state. Removal, favorites, and cover actions run through feature hooks;
 partial operations retain failed IDs for retry. A second instance of the same
 grid provides an on-demand library picker for adding existing media. Uploads
-remain a placeholder on album details; that page does not implement file uploads. Other pages remain minimal
-placeholders. The library page composes a
+remain a placeholder on album details; that page does not implement file uploads.
+`/categories` composes `CategoryListPage` and `useCategoryListPage` with the category
+feature's public tree and mutation hooks. Nested lists display the complete hierarchy;
+creation and editing support name, slug, and parent selection, excluding the edited
+category and its descendants from parent choices. Only leaf categories can be deleted.
+`/tags` composes `TagListPage` and `useTagListPage` with public tag hooks and paginated
+lists of 50 tags. Both pages retain drafts and deletion confirmations after failed
+mutations, disable conflicting actions during writes, and provide loading, empty,
+error, and retry states. Domain-independent editor lifecycle and form composition
+are shared; page hooks supply the feature mutations and payloads.
+Other pages remain minimal placeholders. The library page composes a
 page hook consuming public media/category/tag hooks, with cursor pagination and
 TanStack Virtual rendering thumbnail cards. Its URL filters are `q`, `type`,
 `category`, `tag`, `favorite`, `takenAtFrom`, and `takenAtTo`. Search requests are

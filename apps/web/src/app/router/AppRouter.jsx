@@ -2,7 +2,7 @@ import { Navigate, Route, Routes } from 'react-router';
 
 import { AlbumDetailPage } from '@/pages/albums/AlbumDetailPage.jsx';
 import { AlbumListPage } from '@/pages/albums/AlbumListPage.jsx';
-import { CategoriesPage } from '@/pages/categories/CategoriesPage.jsx';
+import { CategoryListPage } from '@/pages/categories/CategoryListPage.jsx';
 import { DashboardPage } from '@/pages/dashboard/DashboardPage.jsx';
 import { FavoritesPage } from '@/pages/favorites/FavoritesPage.jsx';
 import { MediaDetailPage } from '@/pages/media/MediaDetailPage.jsx';
@@ -12,7 +12,7 @@ import { SearchPage } from '@/pages/search/SearchPage.jsx';
 import { ImageOptimizationPage } from '@/pages/settings/ImageOptimizationPage.jsx';
 import { SettingsPage } from '@/pages/settings/SettingsPage.jsx';
 import { StoragePage } from '@/pages/settings/StoragePage.jsx';
-import { TagsPage } from '@/pages/tags/TagsPage.jsx';
+import { TagListPage } from '@/pages/tags/TagListPage.jsx';
 import { TrashPage } from '@/pages/trash/TrashPage.jsx';
 import { UploadPage } from '@/pages/upload/UploadPage.jsx';
 
@@ -29,8 +29,8 @@ export function AppRouter() {
         <Route path="media" element={<MediaLibraryPage />} />
         <Route path="media/:mediaId" element={<MediaDetailPage />} />
         <Route path="upload" element={<UploadPage />} />
-        <Route path="categories" element={<CategoriesPage />} />
-        <Route path="tags" element={<TagsPage />} />
+        <Route path="categories" element={<CategoryListPage />} />
+        <Route path="tags" element={<TagListPage />} />
         <Route path="favorites" element={<FavoritesPage />} />
         <Route path="search" element={<SearchPage />} />
         <Route path="trash" element={<TrashPage />} />
