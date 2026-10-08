@@ -1,6 +1,6 @@
-import { mapMediaListItem } from '../mappers/mediaList.mapper.js';
 import { validateMediaListQuery } from '../validators/mediaList.validator.js';
 import { encodeMediaListCursor } from '../validators/mediaListCursor.js';
+import { createMediaGalleryItem } from './mediaGallery.service.js';
 
 export function createMediaListService({ repository, storage, config }) {
     return Object.freeze({
@@ -10,24 +10,9 @@ export function createMediaListService({ repository, storage, config }) {
             const hasMore = rows.length > query.limit;
             const records = rows.slice(0, query.limit);
             const items = await Promise.all(
-                records.map(async (record) => {
-                    const thumbnails = await Promise.all(
-                        record.variants.map(async (variant) => {
-                            const { url } = await storage.createPresignedDownloadUrl({
-                                key: variant.storageKey,
-                                expiresIn: config.urlExpirySeconds,
-                            });
-                            return {
-                                name: variant.name,
-                                format: variant.format,
-                                width: variant.width,
-                                height: variant.height,
-                                url,
-                            };
-                        }),
-                    );
-                    return mapMediaListItem(record, thumbnails);
-                }),
+                records.map((record) =>
+                    createMediaGalleryItem(record, { storage, urlExpirySeconds: config.urlExpirySeconds }),
+                ),
             );
             return { items, nextCursor: hasMore ? encodeMediaListCursor(records.at(-1), query) : null, hasMore };
         },

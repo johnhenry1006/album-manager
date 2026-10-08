@@ -33,6 +33,10 @@ The media HTTP module adds a lightweight gallery list, individual detail with
 EXIF and signed display variants, and a dedicated original-URL endpoint when
 database and storage dependencies are supplied. See [Media list](../api/MEDIA.md)
 and [Media detail](../api/MEDIA_DETAIL.md) for contracts and expiry policies.
+The albums module registers CRUD and ordered membership routes when a database is supplied;
+its service can also be injected in tests. It reuses the media public gallery service
+and storage provider for thumbnails. See [Albums](../api/ALBUMS.md) for soft deletion,
+counts, cover membership and pagination contracts.
 Database infrastructure owns a reusable Prisma client and PostgreSQL connection lifecycle.
 The server verifies database connectivity before listening and disconnects on close.
 Tests can inject a database owner or build a database-free application. Storage uses

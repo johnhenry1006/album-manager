@@ -4,6 +4,7 @@ import { validateEnvironment } from '#config/environment.js';
 import { validateMediaDetailEnvironment } from '#config/mediaDetail.js';
 import { validateMediaListEnvironment } from '#config/mediaList.js';
 import { validateUploadEnvironment } from '#config/uploads.js';
+import { createAlbumModule } from '#modules/albums/index.js';
 import { createMediaDetailModule, createMediaListModule } from '#modules/media/index.js';
 import { createUploadModule } from '#modules/uploads/index.js';
 
@@ -17,6 +18,7 @@ export function buildApp({
     queue,
     uploadService,
     uploadConfig = validateUploadEnvironment({}),
+    albumService,
     mediaListService,
     mediaListConfig = validateMediaListEnvironment({}),
     mediaDetailService,
@@ -53,7 +55,13 @@ export function buildApp({
         (database?.client && storage
             ? createMediaDetailModule({ client: database.client, storage, config: mediaDetailConfig }).service
             : undefined);
+    const albums =
+        albumService ??
+        (database?.client
+            ? createAlbumModule({ client: database.client, storage, config: mediaListConfig }).service
+            : undefined);
     registerPlugins(app, config, {
+        albumService: albums,
         uploadService: uploads,
         mediaListService: mediaList,
         mediaDetailService: mediaDetail,

@@ -47,6 +47,9 @@ export function createIsolatedTestDatabase() {
                 await admin?.end();
             }
         },
+        async withClient(run) {
+            return run(client, schema);
+        },
         async rollback(run) {
             const marker = new Error('Rollback test fixture');
             try {

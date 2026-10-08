@@ -43,3 +43,4 @@ export function createMediaDetailModule({ client, storage, config }) {
     });
 }
 export { default as mediaDetailRoutes } from './routes/mediaDetail.routes.js';
+export { createMediaGalleryItem } from './services/mediaGallery.service.js';
