@@ -34,7 +34,10 @@ The server verifies database connectivity before listening and disconnects on cl
 Tests can inject a database owner or build a database-free application. Storage uses
 an injected provider backed by an S3-compatible adapter; application shutdown releases
 its clients. A Redis/BullMQ producer accepts media-processing jobs and follows application readiness
-and shutdown. Cache adapters, worker handlers, and image processing remain unimplemented.
+and shutdown. Cache adapters and worker handlers remain unimplemented. Image processing
+uses an injected Sharp adapter and validated settings from the focused settings domain.
+See [Image processing](IMAGE_PROCESSING.md) for contracts, defaults, and the future
+thumbnail persistence prerequisite.
 The shared media domain and upload module own their documented business responsibilities.
 See [Database conventions](../database/DATABASE_RULES.md) for client injection and migrations.
 See [Storage abstraction](STORAGE.md) for the provider contract, keys, and endpoint signing.
