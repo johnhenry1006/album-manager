@@ -36,9 +36,14 @@ modules with global foundations in `styles/global.css`.
 
 Routes cover dashboard, albums/details, media/details, upload, categories, tags,
 favorites, search, trash, settings, storage, and image optimization. `/` redirects
-to `/dashboard`; unmatched URLs show a not-found page. All pages remain minimal
-placeholders without API calls or business functionality. TanStack Virtual is
-installed for future galleries. Zustand is installed but no store exists until
+to `/dashboard`; unmatched URLs show a not-found page. `/media` renders the media
+library; other pages remain minimal placeholders. The library page composes a
+page hook consuming public media/category/tag hooks, with cursor pagination and
+TanStack Virtual rendering thumbnail cards. Its URL filters are `q`, `type`,
+`category`, `tag`, `favorite`, `takenAtFrom`, and `takenAtTo`. Search requests are
+debounced by 300 ms; capture date bounds use inclusive UTC days. Category and tag
+option lists have their own pagination. Card activation navigates to media details;
+no selection state is introduced. Zustand is installed but no store exists until
 truly global client state is needed; server state belongs in TanStack Query.
 
 Run `npm run dev --workspace @album-manager/web`,

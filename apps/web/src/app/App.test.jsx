@@ -4,12 +4,15 @@ import { MemoryRouter } from 'react-router';
 import { describe, expect, it } from 'vitest';
 
 import { App } from './App.jsx';
+import { AppProviders } from './providers/AppProviders.jsx';
 
 function renderRoute(path) {
   return render(
-    <MemoryRouter initialEntries={[path]}>
-      <App />
-    </MemoryRouter>,
+    <AppProviders>
+      <MemoryRouter initialEntries={[path]}>
+        <App />
+      </MemoryRouter>
+    </AppProviders>,
   );
 }
 

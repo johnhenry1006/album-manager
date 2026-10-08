@@ -6,7 +6,7 @@ import { CategoriesPage } from '@/pages/categories/CategoriesPage.jsx';
 import { DashboardPage } from '@/pages/dashboard/DashboardPage.jsx';
 import { FavoritesPage } from '@/pages/favorites/FavoritesPage.jsx';
 import { MediaDetailsPage } from '@/pages/media/MediaDetailsPage.jsx';
-import { MediaPage } from '@/pages/media/MediaPage.jsx';
+import { MediaLibraryPage } from '@/pages/media/MediaLibraryPage.jsx';
 import { NotFoundPage } from '@/pages/NotFoundPage.jsx';
 import { SearchPage } from '@/pages/search/SearchPage.jsx';
 import { ImageOptimizationPage } from '@/pages/settings/ImageOptimizationPage.jsx';
@@ -26,7 +26,7 @@ export function AppRouter() {
         <Route path="dashboard" element={<DashboardPage />} />
         <Route path="albums" element={<AlbumsPage />} />
         <Route path="albums/:albumId" element={<AlbumDetailsPage />} />
-        <Route path="media" element={<MediaPage />} />
+        <Route path="media" element={<MediaLibraryPage />} />
         <Route path="media/:mediaId" element={<MediaDetailsPage />} />
         <Route path="upload" element={<UploadPage />} />
         <Route path="categories" element={<CategoriesPage />} />
