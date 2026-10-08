@@ -145,3 +145,21 @@ it('conditionally copies the verified source version into an original key', asyn
     });
     expect(client.send.mock.calls[0][0].input).toMatchObject({ CopySourceIfMatch: '"verified"' });
 });
+
+it('reads source bytes through the provider and sanitizes read failures', async () => {
+    const { provider, client } = setup();
+    client.send.mockResolvedValue({ Body: { transformToByteArray: async () => new Uint8Array([1, 2, 3]) } });
+    expect(await provider.read({ key: 'source.jpg' })).toEqual(Buffer.from([1, 2, 3]));
+    expect(client.send.mock.calls[0][0].input).toEqual({ Bucket: 'album-manager', Key: 'source.jpg' });
+    client.send.mockResolvedValue({
+        Body: {
+            transformToByteArray: async () => {
+                throw new Error('secret');
+            },
+        },
+    });
+    await expect(provider.read({ key: 'source.jpg' })).rejects.toMatchObject({
+        code: 'STORAGE_ERROR',
+        operation: 'read',
+    });
+});

@@ -7,7 +7,7 @@ const MEDIA_STATUSES = ['PENDING', 'PROCESSING', 'READY', 'FAILED'];
 const VARIANT_TYPES = ['ORIGINAL', 'OPTIMIZED', 'PREVIEW', 'THUMBNAIL', 'BLUR_PLACEHOLDER'];
 const METADATA_FIELDS = ['width', 'height', 'aspectRatio', 'checksum', 'takenAt'];
 const MEDIA_FIELDS = ['type', 'originalFilename', 'mimeType', 'extension', 'fileSize', 'status', ...METADATA_FIELDS];
-const VARIANT_FIELDS = ['mediaId', 'type', 'format', 'fileSize', 'storageKey', 'width', 'height', 'quality'];
+const VARIANT_FIELDS = ['mediaId', 'type', 'format', 'name', 'fileSize', 'storageKey', 'width', 'height', 'quality'];
 
 export function validateId(id) {
     if (typeof id !== 'string' || !/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(id)) {
@@ -105,18 +105,24 @@ export function validateMedia(input, { create = false, metadataOnly = false } = 
 }
 
 export function validateVariantIdentity(input) {
-    const data = object(input, ['mediaId', 'type', 'format']);
+    const data = object(input, ['mediaId', 'type', 'format', 'name']);
     validateId(data.mediaId);
     member(data.type, VARIANT_TYPES, 'variant type');
     data.format = text(data.format, 'format').toLowerCase();
     if (!/^[a-z0-9]+$/.test(data.format)) throw invalid('Invalid format');
+    data.name ??= 'default';
+    if (typeof data.name !== 'string' || !/^[a-z0-9][a-z0-9-]{0,63}$/.test(data.name))
+        throw invalid('Invalid rendition name');
     return data;
 }
 
 export function validateVariant(input, { create = false } = {}) {
     const data = object(input, create ? VARIANT_FIELDS : ['fileSize', 'storageKey', 'width', 'height', 'quality']);
     if (create) {
-        Object.assign(data, validateVariantIdentity({ mediaId: data.mediaId, type: data.type, format: data.format }));
+        Object.assign(
+            data,
+            validateVariantIdentity({ mediaId: data.mediaId, type: data.type, format: data.format, name: data.name }),
+        );
         if (!Object.hasOwn(data, 'fileSize') || !Object.hasOwn(data, 'storageKey'))
             throw invalid('Missing variant asset metadata');
     } else if (!Object.keys(data).length) throw invalid('Empty update');

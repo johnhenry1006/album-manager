@@ -136,3 +136,10 @@ The test creates a temporary bucket and removes its objects/bucket afterward.
 It requires local bucket-management permissions and is excluded from default tests.
 Browser CORS is configured by the local Nginx sidecar; fetch smoke tests verify the
 signed HTTP operations but do not emulate a browser's CORS enforcement.
+
+## Worker reads
+
+`StorageProvider.read({ key })` returns encoded object bytes as a Buffer. The S3
+adapter reads through its internal client and maps request/body failures to a
+sanitized StorageError. The worker never uses vendor SDK calls or signed URLs.
+Original keys are read only; all generated assets have separate derivative keys.

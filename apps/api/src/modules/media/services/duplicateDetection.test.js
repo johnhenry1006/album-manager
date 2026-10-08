@@ -106,9 +106,12 @@ describe('media duplicate detection', () => {
         await expect(service.detectDuplicateByChecksum(checksum)).rejects.toThrow('Database unavailable');
     });
     it('exposes detection through the public media module with an active-only repository query', async () => {
-        const client = { media: { findUnique: vi.fn(async () => null) } };
+        const client = { media: { findFirst: vi.fn(async () => null) } };
         const { mediaService } = createMediaModule(client);
         expect(await mediaService.detectDuplicateByChecksum(checksum)).toEqual({ type: 'NEW_MEDIA', checksum });
-        expect(client.media.findUnique).toHaveBeenCalledWith({ where: { checksum, deletedAt: null } });
+        expect(client.media.findFirst).toHaveBeenCalledWith({
+            where: { checksum, deletedAt: null },
+            orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+        });
     });
 });

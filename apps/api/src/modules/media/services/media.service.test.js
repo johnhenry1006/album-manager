@@ -116,7 +116,12 @@ describe('media variants', () => {
     it('loads variants by their normalized rendition identity', async () => {
         const { service, repository } = setup();
         await service.findByIdentity({ mediaId: id, type: 'THUMBNAIL', format: 'WEBP' });
-        expect(repository.findByIdentity).toHaveBeenCalledWith({ mediaId: id, type: 'THUMBNAIL', format: 'webp' });
+        expect(repository.findByIdentity).toHaveBeenCalledWith({
+            mediaId: id,
+            type: 'THUMBNAIL',
+            format: 'webp',
+            name: 'default',
+        });
     });
 });
 
@@ -152,4 +157,19 @@ describe('domain output and partial update boundaries', () => {
     it('returns null when a checksum has no duplicate', async () => {
         expect(await mediaService().service.findDuplicateByChecksum(checksum)).toBeNull();
     });
+});
+
+it('distinguishes thumbnail renditions by name and rejects unsafe rendition names', async () => {
+    const repository = { findByIdentity: vi.fn(async () => null) };
+    const service = createMediaVariantService({ repository, mediaService: {} });
+    await service.findByIdentity({ mediaId: id, type: 'THUMBNAIL', format: 'WEBP', name: 'thumbnail-800' });
+    expect(repository.findByIdentity).toHaveBeenCalledWith({
+        mediaId: id,
+        type: 'THUMBNAIL',
+        format: 'webp',
+        name: 'thumbnail-800',
+    });
+    await expect(
+        service.findByIdentity({ mediaId: id, type: 'THUMBNAIL', format: 'webp', name: '../original' }),
+    ).rejects.toMatchObject({ code: 'INVALID_MEDIA_INPUT' });
 });

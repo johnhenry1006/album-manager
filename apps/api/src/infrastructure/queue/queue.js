@@ -74,19 +74,23 @@ export function createQueueInfrastructure(
     return Object.freeze({
         ready,
         close,
-        async enqueueMediaProcessing({ mediaId, uploadFileId }) {
+        async enqueueMediaProcessing({ mediaId, uploadFileId, allowDuplicate = false }) {
             const uuid = /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i;
             if (
                 typeof mediaId !== 'string' ||
                 typeof uploadFileId !== 'string' ||
                 !uuid.test(mediaId) ||
-                !uuid.test(uploadFileId)
+                !uuid.test(uploadFileId) ||
+                typeof allowDuplicate !== 'boolean'
             )
                 throw new TypeError('Invalid media-processing job');
             try {
                 await ready();
                 if (closed) throw new Error('Queue closed');
-                const job = await queue.add('process-media', { mediaId, uploadFileId }, { jobId: mediaId });
+                const data = { mediaId, uploadFileId, ...(allowDuplicate ? { allowDuplicate } : {}) };
+                const job = await queue.add('process-media', data, {
+                    jobId: allowDuplicate ? `${mediaId}-allow-duplicate` : mediaId,
+                });
                 return { jobId: job.id };
             } catch {
                 throw new Error('Queue dispatch failed');

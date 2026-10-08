@@ -19,14 +19,14 @@ existing favorites to an owner. Core functionality must not assume that phase ex
 | Album / `albums`                            | Named collection with unique slug, optional description, PRIVATE/PUBLIC visibility, optional cover, and soft deletion.                                                                               |
 | AlbumMedia / `album_media`                  | Many-to-many album membership. Unique `(albumId, mediaId)`; nonnegative position and creation time. Removing membership never deletes media.                                                         |
 | Media / `media`                             | Shared IMAGE/VIDEO identity, original filename, MIME type, extension, byte size, processing status, optional dimensions/checksum/capture time, timestamps, and soft deletion. Contains no `albumId`. |
-| MediaVariant / `media_variants`             | Stored ORIGINAL, OPTIMIZED, PREVIEW, THUMBNAIL, or BLUR_PLACEHOLDER asset belonging to one media item. Unique `(mediaId, type, format)` and globally unique storage key.                             |
+| MediaVariant / `media_variants`             | Stored ORIGINAL, OPTIMIZED, PREVIEW, THUMBNAIL, or BLUR_PLACEHOLDER asset belonging to one media item. Unique `(mediaId, type, format, name)` and globally unique storage key.                       |
 | Category / `categories`                     | Hierarchical taxonomy using nullable `parentId`, a self-reference, globally unique slug, and creation/update times. Root categories have no parent.                                                  |
 | MediaCategory / `media_categories`          | Many-to-many media/category assignment; unique `(mediaId, categoryId)`.                                                                                                                              |
 | Tag / `tags`                                | Flat taxonomy with globally unique slug and creation/update times.                                                                                                                                   |
 | MediaTag / `media_tags`                     | Many-to-many media/tag assignment; unique `(mediaId, tagId)`.                                                                                                                                        |
 | Favorite / `favorites`                      | Global single-user favorite with unique `mediaId` and creation time.                                                                                                                                 |
 | UploadSession / `upload_sessions`           | Batch lifecycle, creation time, optional completion time, and many upload files.                                                                                                                     |
-| UploadFile / `upload_files`                 | Per-file lifecycle and source metadata, optional staging storage key, resulting media, duplicate candidate, safe failure message, and creation/update times.                                         |
+| UploadFile / `upload_files`                 | Per-file lifecycle and source metadata, optional staging storage key, resulting media, duplicate candidate, processing admission checkpoint, safe failure message, and creation/update times.        |
 | MediaMetadata / `media_metadata`            | Optional one-to-one extracted metadata; unique `mediaId`. All camera/EXIF fields are nullable because extraction is incomplete or absent for many files.                                             |
 | ApplicationSetting / `application_settings` | Global unique key and required JSONB value, with update time. Stable persistence target for a future settings repository/service used by workers and services.                                       |
 
@@ -77,7 +77,7 @@ Variant format is a normalized lowercase format name, for example `jpeg`, `webp`
 or `mp4`. Its MIME type is derived by the storage/media service, not stored here.
 Quality is optional and, when supplied, between 1 and 100. Multiple formats of the
 same variant type are supported. Services must keep ORIGINAL immutable and create
-only the intended original asset; the unique variant triple prevents duplicate
+only the intended original asset; the unique named variant identity prevents duplicate
 renditions but does not enforce one ORIGINAL across different formats.
 
 ## Lifecycle values
@@ -100,15 +100,17 @@ validate transitions. Persist safe upload errors, never raw credentials or stack
 
 ## Checksum and uniqueness
 
-Checksum is nullable while processing. Once available it is a lowercase, 64-character
-SHA-256 digest of original bytes. A PostgreSQL unique index allows many NULL values
-and exactly one row per non-null digest; concurrent duplicate inserts/updates cannot
-race past this constraint. A repository must handle unique-constraint failures and
-resolve the existing media instead of relying only on a prior lookup.
+Checksum is nullable while processing. Once available it is a lowercase,
+64-character SHA-256 digest of original bytes. Migration
+`20261008120000_media_processing` replaces the unique checksum index with
+`(checksum, createdAt, id)`, allowing explicitly accepted duplicates to retain
+separate Media identities and originals. Duplicate detection chooses the oldest
+active match deterministically and excludes the current Media. The worker holds a
+transaction advisory lock across detection and checksum reservation to serialize
+competing uploads; the checksum index alone does not enforce duplicate policy.
+Soft-deleted records are excluded from active detection. The legacy lookup can
+include them deliberately; no worker silently restores or purges them.
 
-The checksum remains reserved when media is soft-deleted. Duplicate resolution must
-explicitly restore/reuse that item or follow a deliberate permanent-purge policy;
-it must not silently ignore deleted records and attempt a conflicting insertion.
 Album, category, and tag slugs are globally unique within their own tables. Album
 slugs stay reserved during soft deletion. Services normalize slugs and use unique
 constraints to resolve races; display names are not unique.
@@ -121,7 +123,7 @@ single-row lookup and leading foreign keys, so redundant indexes are omitted.
 - Album: cover foreign key, `(deletedAt, createdAt, id)`, and
   `(deletedAt, visibility, createdAt, id)` for active collection lists.
 - Media: active lists ordered by creation or capture time, and active status/type
-  filters ordered by `(createdAt, id)`. The unique checksum index is the dedup lookup.
+  filters ordered by `(createdAt, id)`. The `(checksum, createdAt, id)` index supports deterministic duplicate lookup.
 - AlbumMedia: unique album/media pair; album/position/ID and album/creation/ID ordering;
   reverse `(mediaId, albumId)` lookup for a media item's albums.
 - MediaVariant: unique media/type/format supports media's variants; storage-key uniqueness.

@@ -2,13 +2,14 @@ import { randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 
 import pg from 'pg';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import { validateDatabaseEnvironment } from '#config/database.js';
 import { loadEnvironment } from '#config/loadConfig.js';
 import { createPrismaClient } from '#infrastructure/database/client.js';
 import { createDatabase } from '#infrastructure/database/index.js';
 
+import { createMediaProcessingJob } from '../../../jobs/mediaProcessing.job.js';
 import { createMediaModule, createMediaVariantRepository, createMediaVariantService } from '../index.js';
 
 // Opt-in: isolated test schema; never reads or writes application tables.
@@ -32,6 +33,15 @@ describe.skipIf(process.env.DATABASE_TESTS !== '1')('media repositories with Pos
             await admin.query(`CREATE SCHEMA "${schema}"`);
             await admin.query(`SET LOCAL search_path TO "${schema}"`);
             await admin.query(migration);
+            await admin.query(
+                await readFile(
+                    new URL(
+                        '../../../../prisma/migrations/20261008120000_media_processing/migration.sql',
+                        import.meta.url,
+                    ),
+                    'utf8',
+                ),
+            );
             await admin.query('COMMIT');
         } catch (error) {
             await admin.query('ROLLBACK');
@@ -118,39 +128,58 @@ describe.skipIf(process.env.DATABASE_TESTS !== '1')('media repositories with Pos
         });
     });
 
-    it('resolves reserved checksums after a constraint error without aborting the caller transaction', async () => {
+    it('persists accepted duplicates while excluding deleted records from active detection', async () => {
         await rollback(async (transaction, { mediaService }) => {
             const checksum = randomUUID().replaceAll('-', '').repeat(2);
-            const winner = await mediaService.create({ ...source, checksum });
-            await transaction.media.update({ where: { id: winner.id }, data: { deletedAt: new Date() } });
-            await expect(mediaService.create({ ...source, checksum })).rejects.toMatchObject({
-                code: 'DUPLICATE_MEDIA',
-                existingMedia: { id: winner.id },
+            const first = await mediaService.create({ ...source, checksum });
+            await transaction.media.update({
+                where: { id: first.id },
+                data: { deletedAt: new Date(), createdAt: new Date('2020-01-01') },
             });
-            const pending = await mediaService.create(source);
-            await expect(mediaService.updateMetadata(pending.id, { checksum })).rejects.toMatchObject({
-                code: 'DUPLICATE_MEDIA',
-                existingMedia: { id: winner.id },
-            });
-            expect(await mediaService.findDuplicateByChecksum(checksum)).toMatchObject({ id: winner.id });
-            await expect(mediaService.load(winner.id)).rejects.toMatchObject({ statusCode: 404 });
-            expect(await mediaService.load(pending.id)).toMatchObject({ id: pending.id, checksum: null });
+            const second = await mediaService.create({ ...source, checksum });
+            expect(await mediaService.findDuplicateByChecksum(checksum)).toMatchObject({ id: first.id });
+            expect(await mediaService.detectDuplicateByChecksum(checksum, { excludeMediaId: second.id })).toMatchObject(
+                { type: 'NEW_MEDIA' },
+            );
+            await expect(mediaService.load(first.id)).rejects.toMatchObject({ statusCode: 404 });
         });
     });
-    it('resolves concurrent checksum inserts to one identity', async () => {
+    it('stores independent concurrent identities with the same checksum', async () => {
         const { mediaService } = createMediaModule(database.client);
         const checksum = randomUUID().replaceAll('-', '').repeat(2);
-        const results = await Promise.allSettled([
+        const [first, second] = await Promise.all([
             mediaService.create({ ...source, checksum }),
             mediaService.create({ ...source, checksum }),
         ]);
-        const successes = results.filter((result) => result.status === 'fulfilled');
-        const conflicts = results.filter((result) => result.status === 'rejected');
-        expect(successes).toHaveLength(1);
-        expect(conflicts).toHaveLength(1);
-        expect(conflicts[0].reason).toMatchObject({
-            code: 'DUPLICATE_MEDIA',
-            existingMedia: { id: successes[0].value.id },
+        expect(first.id).not.toBe(second.id);
+        expect(await mediaService.detectDuplicateByChecksum(checksum, { excludeMediaId: first.id })).toMatchObject({
+            type: 'DUPLICATE_FOUND',
+            existingMediaId: second.id,
+        });
+    });
+    it('persists three WebP thumbnail identities and rejects duplicate rendition registration', async () => {
+        await rollback(async (_transaction, { mediaService, mediaVariantService }) => {
+            const media = await mediaService.create(source);
+            for (const size of [800, 400, 200]) {
+                await mediaVariantService.create({
+                    mediaId: media.id,
+                    type: 'THUMBNAIL',
+                    name: `thumbnail-${size}`,
+                    format: 'webp',
+                    fileSize: 10,
+                    storageKey: `tests/${media.id}/thumbnail-${size}.webp`,
+                });
+            }
+            await expect(
+                mediaVariantService.create({
+                    mediaId: media.id,
+                    type: 'THUMBNAIL',
+                    name: 'thumbnail-800',
+                    format: 'webp',
+                    fileSize: 10,
+                    storageKey: `tests/${media.id}/other.webp`,
+                }),
+            ).rejects.toMatchObject({ code: 'VARIANT_CONFLICT' });
         });
     });
 
@@ -231,5 +260,100 @@ describe.skipIf(process.env.DATABASE_TESTS !== '1')('media repositories with Pos
             }),
         ).rejects.toMatchObject({ statusCode: 404 });
         expect(await database.client.mediaVariant.count({ where: { mediaId: media.id } })).toBe(0);
+    });
+    async function uploaded() {
+        const { mediaService, mediaVariantService } = createMediaModule(database.client);
+        const media = await mediaService.create(source);
+        await mediaVariantService.create({
+            mediaId: media.id,
+            type: 'ORIGINAL',
+            format: 'jpeg',
+            storageKey: `tests/${media.id}/source.jpg`,
+            fileSize: 10,
+        });
+        const session = await database.client.uploadSession.create({ data: {} });
+        const file = await database.client.uploadFile.create({
+            data: {
+                mediaId: media.id,
+                uploadSessionId: session.id,
+                status: 'PROCESSING',
+                clientFilename: 'source.jpg',
+                mimeType: 'image/jpeg',
+                fileSize: 10,
+            },
+        });
+        return { mediaId: media.id, uploadFileId: file.id };
+    }
+    function processing(bytes) {
+        const objects = new Map();
+        const storage = {
+            read: async () => bytes,
+            exists: async ({ key }) => objects.has(key),
+            upload: async ({ key, body }) => {
+                objects.set(key, body);
+            },
+        };
+        const imageProcessor = {
+            inspect: async () => ({ width: 10, height: 5, aspectRatio: 2, mimeType: 'image/jpeg' }),
+            extractMetadata: async () => ({ cameraMake: 'Test camera' }),
+            process: vi.fn(async () => ({
+                variants: [
+                    ['OPTIMIZED', 'optimized'],
+                    ['PREVIEW', 'preview'],
+                    ['THUMBNAIL', 'thumbnail-800'],
+                    ['THUMBNAIL', 'thumbnail-400'],
+                    ['THUMBNAIL', 'thumbnail-200'],
+                ].map(([type, name]) => ({
+                    type,
+                    name,
+                    format: 'webp',
+                    data: Buffer.from(name),
+                    width: 10,
+                    height: 5,
+                    fileSize: name.length,
+                    contentType: 'image/webp',
+                    quality: 80,
+                })),
+            })),
+        };
+        return {
+            service: createMediaProcessingJob({ client: database.client, storage, imageProcessor }),
+            imageProcessor,
+        };
+    }
+    it('serializes competing checksums so only one upload is admitted by default', async () => {
+        const first = await uploaded();
+        const second = await uploaded();
+        const { service } = processing(Buffer.from(randomUUID()));
+        const results = await Promise.all([service.process(first), service.process(second)]);
+        expect(results.map(({ status }) => status).sort()).toEqual(['DUPLICATE_PENDING', 'READY']);
+        const ready = results.find(({ status }) => status === 'READY');
+        const pending = results.find(({ status }) => status === 'DUPLICATE_PENDING');
+        expect(pending.duplicateOfMediaId).toBe(ready.mediaId);
+        expect(
+            await database.client.mediaVariant.count({
+                where: { mediaId: pending.mediaId, type: { not: 'ORIGINAL' } },
+            }),
+        ).toBe(0);
+        expect(await database.client.mediaVariant.count({ where: { mediaId: ready.mediaId, type: 'THUMBNAIL' } })).toBe(
+            3,
+        );
+    });
+    it('retains admission across a failed attempt and subsequent explicit duplicate acceptance', async () => {
+        const first = await uploaded();
+        const second = await uploaded();
+        const { service, imageProcessor } = processing(Buffer.from(randomUUID()));
+        imageProcessor.process.mockRejectedValueOnce(new Error('Transient failure'));
+        await expect(service.process(first)).rejects.toThrow('Transient failure');
+        expect(
+            (await database.client.uploadFile.findUnique({ where: { id: first.uploadFileId } })).processingAcceptedAt,
+        ).toBeInstanceOf(Date);
+        await service.process({ ...second, allowDuplicate: true });
+        await service.process(first);
+        const file = await database.client.uploadFile.findUnique({ where: { id: first.uploadFileId } });
+        expect(file.status).toBe('READY');
+        expect(await database.client.mediaMetadata.findUnique({ where: { mediaId: first.mediaId } })).toMatchObject({
+            cameraMake: 'Test camera',
+        });
     });
 });

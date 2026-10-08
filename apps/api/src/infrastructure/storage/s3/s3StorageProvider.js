@@ -84,6 +84,15 @@ export class S3StorageProvider extends StorageProvider {
         );
         return { key, etag: result.ETag ?? null };
     }
+    async read({ key }) {
+        validateKey(key);
+        const result = await this.#send('read', new GetObjectCommand({ Bucket: this.#bucket, Key: key }));
+        try {
+            return Buffer.from(await result.Body.transformToByteArray());
+        } catch {
+            throw new StorageError('read');
+        }
+    }
     async delete({ key }) {
         await this.#send('delete', new DeleteObjectCommand({ Bucket: this.#bucket, Key: validateKey(key) }));
     }

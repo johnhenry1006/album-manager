@@ -51,6 +51,15 @@ describe.skipIf(process.env.DATABASE_TESTS !== '1')('upload persistence and HTTP
             await admin.query(`CREATE SCHEMA "${schema}"`);
             await admin.query(`SET LOCAL search_path TO "${schema}"`);
             await admin.query(migration);
+            await admin.query(
+                await readFile(
+                    new URL(
+                        '../../../../prisma/migrations/20261008120000_media_processing/migration.sql',
+                        import.meta.url,
+                    ),
+                    'utf8',
+                ),
+            );
             await admin.query('COMMIT');
         } catch (error) {
             await admin.query('ROLLBACK');

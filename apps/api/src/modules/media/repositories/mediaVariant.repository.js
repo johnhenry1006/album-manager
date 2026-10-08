@@ -47,9 +47,9 @@ export function createMediaVariantRepository(client) {
         findById(id) {
             return client.mediaVariant.findUnique({ where: { id, media: { deletedAt: null } } });
         },
-        findByIdentity({ mediaId, type, format }) {
+        findByIdentity({ mediaId, type, format, name }) {
             return client.mediaVariant.findUnique({
-                where: { mediaId_type_format: { mediaId, type, format }, media: { deletedAt: null } },
+                where: { mediaId_type_format_name: { mediaId, type, format, name }, media: { deletedAt: null } },
             });
         },
     });

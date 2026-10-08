@@ -2,7 +2,7 @@
 
 `apps/api/src/modules/media/index.js` is the public backend boundary for upload,
 workers, and future Media API controllers. No HTTP routes are registered by this
-module. It uses the existing Media and MediaVariant schema without a migration.
+module. It uses the existing Media and MediaVariant schema with the named-rendition migration required by the media worker.
 
 ## Composition and dependencies
 
@@ -20,9 +20,7 @@ Upload and workers must consume this boundary instead of implementing media pers
 
 For atomic orchestration, compose the same module with an interactive transaction client
 inside the caller's infrastructure/repository transaction boundary. All operations then
-use that client. Await operations sequentially within a transaction. Media and variant writes use a
-savepoint to recover from constraint violations before resolving checksum conflicts, so
-caught duplicate errors do not leave the transaction aborted. Original registration uses
+use that client. Await operations sequentially within a transaction. Media and variant writes use a savepoint to recover from identity/storage-key constraint violations without leaving the caller transaction aborted. Original registration uses
 that same transaction, or starts one when given the application client.
 
 ## Service contracts
@@ -39,7 +37,7 @@ that same transaction, or starts one when given the application client.
 | Variant | `create(input)`                                            | Register an asset for live Media; serialize ORIGINAL registration.       |
 | Variant | `update(id, patch)`                                        | Update derivative size, storage key, dimensions, or quality.             |
 | Variant | `load(id)`                                                 | Load a variant with a live parent or throw a not-found error.            |
-| Variant | `findByIdentity({ mediaId, type, format })`                | Load a rendition by its unique triple, or return null.                   |
+| Variant | `findByIdentity({ mediaId, type, format, name })`          | Load a rendition by its unique rendition identity, or return null.       |
 
 Methods are asynchronous. Backend mappers return explicit scalar fields, keeping byte
 sizes as BigInt and timestamps as Date. Relations are excluded. Future HTTP mappers
@@ -97,20 +95,18 @@ deletes objects, nor resolves reuse/keep/restore choices. Upload services and fu
 workers can consume this contract without controller dependencies. A repository
 failure propagates instead of reporting NEW_MEDIA.
 
-NEW_MEDIA means no other active match was found at lookup time; it is not a checksum
-reservation or permission to bypass uniqueness. A concurrent write, or a soft-deleted
-identity that reserves this checksum, can still cause `DUPLICATE_MEDIA` during a
-later create/update. Those write conflicts retain the existing reserved-identity
-contract, including deleted records, for deliberate resolution by future orchestration.
+NEW_MEDIA means no other active match was found at lookup time. Checksum is
+indexed rather than unique, so explicitly accepted duplicates can retain independent
+identities. Lookups choose the oldest `(createdAt, id)` match deterministically.
+The worker serializes detection and checksum reservation using a short transaction
+advisory lock. Callers that need the same race protection must use that gate.
 
 ## Integrity and errors
 
 Normal reads and Media updates filter `deletedAt: null`. Variant reads and updates
-filter through a live parent. The legacy `findDuplicateByChecksum` lookup explicitly includes deleted Media
-because its checksum remains reserved. Media checksum constraint failures resolve the
-existing identity, including deleted records, and throw `DUPLICATE_MEDIA` with
-`existingMedia`. Callers must deliberately decide reuse/restore policy; this module
-does not silently revive deleted media or link an upload.
+filter through a live parent. The legacy `findDuplicateByChecksum` lookup includes
+deleted Media explicitly; active detection excludes them. Duplicate policy belongs
+to orchestration, not to a checksum uniqueness constraint.
 
 A parent-row lock checks that the parent remains live during every variant registration
 and serializes ORIGINAL registration across formats. Only one ORIGINAL
@@ -118,7 +114,7 @@ is accepted per Media, and ORIGINAL variants cannot be updated. No method rewrit
 stored bytes; storage and image processing remain separate responsibilities.
 
 `MediaDomainError` is exported with a stable code and statusCode compatible with
-centralized errors. Invalid input uses 400, missing rows use 404, and duplicate,
+centralized errors. Invalid input uses 400, missing rows use 404, and media-identity,
 variant-identity/storage-key, or immutable-original conflicts use 409. Unexpected
 adapter errors propagate to the existing centralized handler or worker boundary.
 
@@ -135,3 +131,12 @@ These tests apply the migration in an isolated temporary schema, roll back trans
 test rows, and remove that schema afterward, including committed concurrency-test rows.
 Application tables are never changed. Run root `npm test` and `npm run lint` for
 repository-wide verification.
+
+## Processing persistence boundary
+
+The media processing repository is a documented cross-domain persistence boundary:
+it atomically updates Media, MediaMetadata and the linked UploadFile for a job.
+It checks the association and cancellation/deletion again under locks ordered as
+session, upload file, media, matching upload completion. It contains no storage
+calls or image transformations. The job composition uses public module exports;
+no cross-module internal imports are needed. See [worker](MEDIA_PROCESSING.md).

@@ -1,5 +1,8 @@
 // Vendor-neutral contract. Operations accept objects; see STORAGE.md for shapes.
 export class StorageProvider {
+    async read(_options) {
+        throw new Error('Storage reading is not implemented');
+    }
     async upload(_options) {
         throw new Error('Storage upload is not implemented');
     }

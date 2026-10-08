@@ -3,6 +3,9 @@ export class ImageProcessor {
     async inspect(_input) {
         throw new Error('Image inspection is not implemented');
     }
+    async extractMetadata(_input) {
+        throw new Error('Image metadata extraction is not implemented');
+    }
     async process(_input, _options) {
         throw new Error('Image processing is not implemented');
     }

@@ -18,7 +18,8 @@
         "db:seed": "prisma db seed --config prisma.config.js",
         "db:studio": "prisma studio --config prisma.config.js",
         "test:database": "DATABASE_TESTS=1 vitest run src/infrastructure/database/schema.test.js",
-        "test:storage": "STORAGE_TESTS=1 vitest run src/infrastructure/storage/s3/s3Storage.integration.test.js"
+        "test:storage": "STORAGE_TESTS=1 vitest run src/infrastructure/storage/s3/s3Storage.integration.test.js",
+        "worker:media": "node src/jobs/mediaProcessing.server.js"
     },
     "imports": {
         "#modules/*": "./src/modules/*",

@@ -116,3 +116,13 @@ integration checks that cannot run against an available Redis service.
 - [BullMQ connections](https://docs.bullmq.io/guide/connections)
 - [BullMQ retries](https://docs.bullmq.io/guide/retrying-failing-jobs)
 - [BullMQ graceful shutdown](https://docs.bullmq.io/guide/workers/graceful-shutdown)
+
+## Implemented media worker
+
+The dedicated process and transport helper live in `src/jobs/mediaProcessing.*`.
+Run `npm run worker:media --workspace @album-manager/api`; concurrency is validated
+from QUEUE_WORKER_CONCURRENCY (default 1, maximum 32). Worker-owned connections have
+maxRetriesPerRequest null; listeners are registered before run(), readiness has a
+deadline, and fatal loop errors trigger runtime cleanup and unsuccessful exit.
+The producer supports explicit duplicate acceptance with a separate stable job ID.
+See [Media-processing worker](MEDIA_PROCESSING.md) for domain flow and persistence.

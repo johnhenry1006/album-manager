@@ -37,6 +37,7 @@ export function validateQueueEnvironment(environment) {
         prefix,
         port: integer('REDIS_PORT', 6380, 1, 65535),
         db: integer('REDIS_DB', 0, 0, 15),
+        concurrency: integer('QUEUE_WORKER_CONCURRENCY', 1, 1, 32),
         connectTimeoutMs: integer('REDIS_CONNECT_TIMEOUT_MS', 10000, 1, 120000),
     });
 }

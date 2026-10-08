@@ -7,9 +7,10 @@ const checksum = 'a'.repeat(64);
 
 describe('media repository query contracts', () => {
     it('excludes the current media identity and soft-deleted rows from duplicate detection', async () => {
-        const client = { media: { findUnique: vi.fn() } };
+        const client = { media: { findFirst: vi.fn() } };
         await createMediaRepository(client).findByChecksum(checksum, { excludeMediaId: id });
-        expect(client.media.findUnique).toHaveBeenCalledWith({
+        expect(client.media.findFirst).toHaveBeenCalledWith({
+            orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
             where: { checksum, deletedAt: null, id: { not: id } },
         });
     });
@@ -25,21 +26,17 @@ describe('media repository query contracts', () => {
         });
     });
     it('looks up reserved checksums explicitly including deleted records', async () => {
-        const client = { media: { findUnique: vi.fn() } };
+        const client = { media: { findFirst: vi.fn() } };
         await createMediaRepository(client).findByChecksum(checksum, { includeDeleted: true });
-        expect(client.media.findUnique).toHaveBeenCalledWith({ where: { checksum } });
+        expect(client.media.findFirst).toHaveBeenCalledWith({
+            where: { checksum },
+            orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+        });
     });
-    it.each(['create', 'update'])('resolves concurrent checksum conflicts on %s', async (operation) => {
-        const existingMedia = { id, checksum, deletedAt: new Date() };
-        const client = {
-            media: {
-                [operation]: vi.fn().mockRejectedValue({ code: 'P2002', meta: { target: ['checksum'] } }),
-                findUnique: vi.fn().mockResolvedValue(existingMedia),
-            },
-        };
+    it('permits explicitly accepted duplicate checksums without a uniqueness lookup', async () => {
+        const client = { media: { create: vi.fn(async ({ data }) => ({ id, ...data })) } };
         const repository = createMediaRepository(client);
-        const promise = operation === 'create' ? repository.create({ checksum }) : repository.update(id, { checksum });
-        await expect(promise).rejects.toMatchObject({ statusCode: 409, code: 'DUPLICATE_MEDIA', existingMedia });
+        expect(await repository.create({ checksum })).toMatchObject({ checksum });
     });
     it('maps missing writes and unrelated uniqueness without misidentifying duplicates', async () => {
         const client = {
@@ -92,8 +89,8 @@ describe('variant repository', () => {
     });
 });
 
-describe('transaction checksum conflict recovery', () => {
-    it('recovers an aborted write before resolving the conflicting identity', async () => {
+describe('transaction write conflict recovery', () => {
+    it('recovers an aborted write before continuing the caller transaction', async () => {
         let aborted = false;
         const client = {
             // Prisma 7 transaction clients can expose nested $transaction too.
@@ -113,9 +110,9 @@ describe('transaction checksum conflict recovery', () => {
             },
         };
         await expect(createMediaRepository(client).create({ checksum })).rejects.toMatchObject({
-            code: 'DUPLICATE_MEDIA',
-            existingMedia: { id, checksum },
+            code: 'MEDIA_CONFLICT',
         });
+        expect(await createMediaRepository(client).findById(id)).toMatchObject({ id, checksum });
     });
 });
 

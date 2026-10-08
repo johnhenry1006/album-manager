@@ -3,8 +3,7 @@
 `apps/api/src/infrastructure/image-processing/index.js` exports the `ImageProcessor`
 contract, `SharpImageProcessor`, and sanitized `ImageProcessingError`. The adapter
 accepts encoded `Buffer`/`Uint8Array` bytes and returns derivative buffers. It does
-not read settings, environment variables, storage, or persistence. Workers and
-HTTP settings routes are not wired yet.
+not read settings, environment variables, storage, or persistence. The dedicated media worker consumes this adapter; HTTP settings routes are not wired yet.
 
 Composition uses the settings module's public interface:
 
@@ -19,7 +18,7 @@ const result = await processor.process(originalBytes, options);
 ```
 
 `inspect(bytes)` reports orientation-normalized width, height, aspect ratio,
-source format, original EXIF orientation, and alpha presence. `process(bytes,
+source format, original EXIF orientation, and alpha presence. `extractMetadata(bytes)` extracts supported EXIF camera, lens, exposure and GPS fields, with a JSON-safe rawMetadata projection; absent or malformed optional EXIF returns an empty object. `inspect` also reports decoded MIME type. `process(bytes,
 options)` returns `{ source, variants }`. Each variant has `type`, a distinct
 `name`, `maxSize`, encoded `data`, actual dimensions/aspect ratio, byte `fileSize`,
 `format`, `contentType`, `quality`, and `losslessEncoding`.
@@ -80,10 +79,13 @@ changing processing behavior. Invalid replacement input fails with
 The settings domain and adapter share a pure options contract in `shared`.
 The adapter requires every normalized field and supplies no runtime defaults.
 
-## Persistence prerequisite for a future worker
+## Persistence and worker
 
-The existing `MediaVariant` uniqueness constraint is `(mediaId, type, format)`.
-It cannot represent all three WebP THUMBNAIL rows for one media record. Buffer
-generation uses distinct names (`thumbnail-800`, `thumbnail-400`, `thumbnail-200`),
-but a reviewed schema change to include rendition identity is needed before a
-worker persists all sizes. This adapter makes no schema or persistence changes.
+Migration `20261008120000_media_processing` adds rendition `name` to the variant
+identity `(mediaId, type, format, name)`. Three WebP thumbnails now have separate
+identities. Existing non-thumbnail renditions are backfilled with canonical names;
+legacy thumbnails with an exact 800/400/200 long edge receive the matching name.
+Other legacy thumbnails retain `default`, since their requested size cannot be
+inferred after downscaling. ORIGINAL rows retain `default` and remain immutable.
+
+See [Media-processing worker](MEDIA_PROCESSING.md) for orchestration and retries.

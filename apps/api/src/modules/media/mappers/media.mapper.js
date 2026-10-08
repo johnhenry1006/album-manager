@@ -20,6 +20,7 @@ const VARIANT_FIELDS = [
     'mediaId',
     'type',
     'format',
+    'name',
     'width',
     'height',
     'fileSize',

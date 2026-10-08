@@ -92,7 +92,7 @@ model Media {
   width            Int?
   height           Int?
   aspectRatio      Float?          @map("aspect_ratio")
-  checksum         String?         @unique @db.VarChar(64)
+  checksum         String?         @db.VarChar(64)
   status           MediaStatus     @default(PENDING)
   takenAt          DateTime?       @map("taken_at") @db.Timestamptz(3)
   createdAt        DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
@@ -108,6 +108,7 @@ model Media {
   uploadFiles      UploadFile[]    @relation("UploadFileMedia")
   duplicateFiles   UploadFile[]    @relation("UploadFileDuplicate")
 
+  @@index([checksum, createdAt, id])
   @@index([deletedAt, createdAt, id])
   @@index([deletedAt, takenAt, id])
   @@index([deletedAt, status, createdAt, id])
@@ -120,6 +121,7 @@ model MediaVariant {
   mediaId    String           @map("media_id") @db.Uuid
   type       MediaVariantType
   format     String
+  name       String           @default("default")
   width      Int?
   height     Int?
   fileSize   BigInt           @map("file_size")
@@ -128,7 +130,7 @@ model MediaVariant {
   createdAt  DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
   media      Media            @relation(fields: [mediaId], references: [id], onDelete: Restrict, onUpdate: Cascade)
 
-  @@unique([mediaId, type, format])
+  @@unique([mediaId, type, format, name])
   @@map("media_variants")
 }
 
@@ -233,6 +235,7 @@ model UploadFile {
   status             UploadFileStatus @default(REGISTERED)
   storageKey         String?          @map("storage_key")
   mediaId            String?          @map("media_id") @db.Uuid
+  processingAcceptedAt DateTime?       @map("processing_accepted_at") @db.Timestamptz(3)
   duplicateOfMediaId String?          @map("duplicate_of_media_id") @db.Uuid
   error              String?
   createdAt          DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)

@@ -363,3 +363,18 @@ Tests verify repository/tooling foundations and the API health/configuration/lif
 
 Future database decisions belong in `docs/database`; API contracts belong in
 `docs/api`. JavaScript only: do not introduce TypeScript or speculative features.
+
+### Media-processing worker
+
+After deploying migrations and generating Prisma Client, run the dedicated worker:
+
+```sh
+npm run db:deploy
+npm run db:generate
+npm run worker:media --workspace @album-manager/api
+```
+
+It uses the same database, storage and Redis configuration as the API.
+`QUEUE_WORKER_CONCURRENCY` defaults to 1 (range 1–32). See
+[Media-processing worker](docs/architecture/MEDIA_PROCESSING.md) for duplicate
+acceptance, immutable originals, retry behavior and isolated integration checks.

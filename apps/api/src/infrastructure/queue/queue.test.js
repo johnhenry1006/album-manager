@@ -41,3 +41,23 @@ it('sanitizes Redis failures and releases resources on failed initialization', a
     await expect(owner.ready()).rejects.toThrow('Queue readiness failed');
     expect(connection.disconnect).toHaveBeenCalledTimes(1);
 });
+it('can enqueue duplicate acceptance after the initial job has completed', async () => {
+    const connection = Object.assign(new EventEmitter(), { connect: vi.fn(), disconnect: vi.fn() });
+    const queue = Object.assign(new EventEmitter(), {
+        waitUntilReady: vi.fn(),
+        close: vi.fn(),
+        add: vi.fn(async () => ({ id: 'job' })),
+    });
+    const owner = createQueueInfrastructure({}, { createConnection: () => connection, createQueue: () => queue });
+    const data = {
+        mediaId: 'a0000000-0000-4000-8000-000000000001',
+        uploadFileId: 'a0000000-0000-4000-8000-000000000002',
+        allowDuplicate: true,
+    };
+    await owner.enqueueMediaProcessing(data);
+    expect(queue.add).toHaveBeenCalledWith('process-media', data, { jobId: `${data.mediaId}-allow-duplicate` });
+    await expect(owner.enqueueMediaProcessing({ ...data, allowDuplicate: 'true' })).rejects.toThrow(
+        'Invalid media-processing job',
+    );
+    await owner.close();
+});

@@ -24,3 +24,9 @@ it.each([
 ])('rejects malformed queue configuration %j safely', (environment) => {
     expect(() => validateQueueEnvironment(environment)).toThrow(/^Invalid queue configuration: [A-Z_]+$/);
 });
+it('defaults to one worker and bounds configured concurrency', () => {
+    expect(validateQueueEnvironment({}).concurrency).toBe(1);
+    expect(validateQueueEnvironment({ QUEUE_WORKER_CONCURRENCY: '4' }).concurrency).toBe(4);
+    for (const value of ['0', '33', '1.5'])
+        expect(() => validateQueueEnvironment({ QUEUE_WORKER_CONCURRENCY: value })).toThrow('QUEUE_WORKER_CONCURRENCY');
+});

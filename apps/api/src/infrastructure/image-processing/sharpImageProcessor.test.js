@@ -76,3 +76,27 @@ it('enforces the configured decoded-pixel limit before processing', async () => 
         code: 'IMAGE_PROCESSING_FAILED',
     });
 });
+
+it('extracts supported EXIF camera data and reports inspected MIME', async () => {
+    const input = await sharp({ create: { width: 20, height: 10, channels: 3, background: 'red' } })
+        .jpeg()
+        .withExif({
+            IFD0: { Make: 'Example camera', Model: 'Model 1' },
+            IFD2: { ISOSpeedRatings: '200', FNumber: '28/10', FocalLength: '50/1', ExposureTime: '1/125' },
+        })
+        .toBuffer();
+    const processor = new SharpImageProcessor();
+    expect(await processor.inspect(input)).toMatchObject({ mimeType: 'image/jpeg' });
+    expect(await processor.extractMetadata(input)).toMatchObject({
+        cameraMake: 'Example camera',
+        cameraModel: 'Model 1',
+        iso: 200,
+        aperture: 2.8,
+        focalLength: 50,
+        shutterSpeed: '1/125',
+    });
+    const png = await sharp({ create: { width: 2, height: 2, channels: 3, background: 'red' } })
+        .png()
+        .toBuffer();
+    expect(await processor.extractMetadata(png)).toEqual({});
+});

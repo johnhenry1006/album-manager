@@ -2,6 +2,7 @@ import sharp from 'sharp';
 
 import { validateImageOptimizationOptions } from '#shared/validation/imageOptimizationOptions.js';
 
+import { extractExifMetadata } from './exifMetadata.js';
 import { buildVariantSpecifications, calculateDimensions, selectWebpConfig } from './imageProcessing.utils.js';
 import { ImageProcessingError, ImageProcessor } from './imageProcessor.js';
 
@@ -30,6 +31,16 @@ export class SharpImageProcessor extends ImageProcessor {
             ...dimensions,
             aspectRatio: dimensions.width / dimensions.height,
             format: metadata.format,
+            mimeType:
+                {
+                    jpeg: 'image/jpeg',
+                    png: 'image/png',
+                    webp: 'image/webp',
+                    gif: 'image/gif',
+                    heif: 'image/avif',
+                    tiff: 'image/tiff',
+                    svg: 'image/svg+xml',
+                }[metadata.format] ?? 'application/octet-stream',
             orientation: metadata.orientation ?? 1,
             hasAlpha: metadata.hasAlpha ?? false,
         };
@@ -40,6 +51,15 @@ export class SharpImageProcessor extends ImageProcessor {
             return await this.#inspect(source);
         } catch {
             throw new ImageProcessingError('inspection');
+        }
+    }
+    async extractMetadata(input) {
+        const source = sourceBytes(input);
+        try {
+            const metadata = await this.#pipeline(source).metadata();
+            return extractExifMetadata(metadata.exif);
+        } catch {
+            throw new ImageProcessingError('metadata extraction');
         }
     }
     async process(input, inputOptions) {
