@@ -11,3 +11,4 @@ export { useMediaOriginalUrl } from './hooks/useMediaOriginalUrl.js';
 export { useMediaSelection } from './hooks/useMediaSelection.js';
 export { useMediaVariants } from './hooks/useMediaVariants.js';
 export { useVirtualMediaGrid } from './hooks/useVirtualMediaGrid.js';
+export { flattenMediaPages } from './utils/flattenMediaPages.js';

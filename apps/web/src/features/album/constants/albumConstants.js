@@ -1,0 +1,2 @@
+export const DEFAULT_ALBUM_PAGE_SIZE = 50;
+export const DEFAULT_ALBUM_MEDIA_PAGE_SIZE = 50;
