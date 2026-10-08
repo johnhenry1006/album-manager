@@ -3,7 +3,7 @@ import { useMemo } from 'react';
 import { DISPLAY_VARIANT_TYPES } from '../constants/mediaConstants.js';
 
 /** Derive display sources from list/detail data without requesting originals. */
-export function useMediaVariants(media) {
+export function useMediaVariants(media, { allowThumbnailFallback = true } = {}) {
   return useMemo(() => {
     const variants = (media?.variants ?? []).filter((variant) =>
       DISPLAY_VARIANT_TYPES.includes(variant.type),
@@ -13,8 +13,8 @@ export function useMediaVariants(media) {
     const preview =
       variants.find((variant) => variant.type === 'PREVIEW') ??
       variants.find((variant) => variant.type === 'OPTIMIZED') ??
-      thumbnail;
+      (allowThumbnailFallback ? thumbnail : null);
     const placeholder = variants.find((variant) => variant.type === 'BLUR_PLACEHOLDER') ?? null;
     return { variants, thumbnail, preview, placeholder };
-  }, [media]);
+  }, [media, allowThumbnailFallback]);
 }

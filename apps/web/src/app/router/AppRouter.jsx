@@ -5,7 +5,7 @@ import { AlbumsPage } from '@/pages/albums/AlbumsPage.jsx';
 import { CategoriesPage } from '@/pages/categories/CategoriesPage.jsx';
 import { DashboardPage } from '@/pages/dashboard/DashboardPage.jsx';
 import { FavoritesPage } from '@/pages/favorites/FavoritesPage.jsx';
-import { MediaDetailsPage } from '@/pages/media/MediaDetailsPage.jsx';
+import { MediaDetailPage } from '@/pages/media/MediaDetailPage.jsx';
 import { MediaLibraryPage } from '@/pages/media/MediaLibraryPage.jsx';
 import { NotFoundPage } from '@/pages/NotFoundPage.jsx';
 import { SearchPage } from '@/pages/search/SearchPage.jsx';
@@ -27,7 +27,7 @@ export function AppRouter() {
         <Route path="albums" element={<AlbumsPage />} />
         <Route path="albums/:albumId" element={<AlbumDetailsPage />} />
         <Route path="media" element={<MediaLibraryPage />} />
-        <Route path="media/:mediaId" element={<MediaDetailsPage />} />
+        <Route path="media/:mediaId" element={<MediaDetailPage />} />
         <Route path="upload" element={<UploadPage />} />
         <Route path="categories" element={<CategoriesPage />} />
         <Route path="tags" element={<TagsPage />} />

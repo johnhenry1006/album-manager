@@ -4,6 +4,10 @@ Pages and page hooks import hooks from `@/features/media/index.js`. The HTTP
 adapter and query keys are private; no API client is exported.
 
 - `useMedia(mediaId, { enabled })` returns the detail query. Missing IDs disable it.
+- `useMediaOriginalUrl()` returns an on-demand mutation. Call `mutate(mediaId)`
+  only after an explicit user action to sign an original link. It never runs on
+  mount, refetch, or query invalidation; each invocation signs a fresh URL.
+  Links must be absolute HTTP(S) URLs; malformed links use centralized API errors.
 - `useInfiniteMedia(filters, { collection = 'media', enabled })` returns the
   infinite query plus memoized flattened `items` and the latest `nextCursor`. Filters match `GET /media`, including
   `album`, `favorite`, and `q`. Use `{ collection: 'trash' }` with only `limit`
@@ -20,9 +24,11 @@ adapter and query keys are private; no API client is exported.
 - `useMediaActions()` returns `trash`, `restore`, and `permanentDelete` mutation
   objects. Trash and restore accept IDs. Permanent deletion accepts
   `{ mediaId, confirm: true }` and rejects missing confirmation.
-- `useMediaVariants(media)` derives `variants`, `thumbnail`, `preview`, and
+- `useMediaVariants(media, { allowThumbnailFallback = true })` derives `variants`, `thumbnail`, `preview`, and
   `placeholder` from existing detail or lightweight gallery data. It makes no
-  requests and excludes original variants. Signed URLs remain temporary; consumers
+  requests and excludes original variants. Detail viewers pass
+  `{ allowThumbnailFallback: false }` to require a preview/optimized variant.
+  Signed URLs remain temporary; consumers
   can refetch the owning query when a display URL expires.
 
 Queries forward cancellation signals. Mutations refresh media collections and

@@ -9,6 +9,7 @@ export const mediaApi = {
   list: (params, { signal } = {}) =>
     httpClient.request(`media${mediaQueryString(params)}`, { signal }),
   detail: (mediaId, { signal } = {}) => httpClient.request(mediaPath(mediaId), { signal }),
+  originalUrl: (mediaId) => httpClient.request(`${mediaPath(mediaId)}/original-url`),
   listTrash: (params, { signal } = {}) =>
     httpClient.request(`trash${mediaQueryString(params)}`, { signal }),
   favorite: (mediaId) => httpClient.request(`${mediaPath(mediaId)}/favorite`, { method: 'POST' }),
