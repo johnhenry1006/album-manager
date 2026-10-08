@@ -15,3 +15,4 @@ export function createMediaModule(client) {
 
 export { createMediaRepository, createMediaService, createMediaVariantRepository, createMediaVariantService };
 export { MediaDomainError } from './services/media.errors.js';
+export { calculateMediaChecksum } from './services/mediaChecksum.service.js';

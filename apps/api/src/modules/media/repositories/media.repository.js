@@ -33,8 +33,14 @@ export function createMediaRepository(client) {
         findById(id, { includeDeleted = false } = {}) {
             return client.media.findUnique({ where: { id, ...(includeDeleted ? {} : { deletedAt: null }) } });
         },
-        findByChecksum(checksum, { includeDeleted = false } = {}) {
-            return client.media.findUnique({ where: { checksum, ...(includeDeleted ? {} : { deletedAt: null }) } });
+        findByChecksum(checksum, { includeDeleted = false, excludeMediaId } = {}) {
+            return client.media.findUnique({
+                where: {
+                    checksum,
+                    ...(includeDeleted ? {} : { deletedAt: null }),
+                    ...(excludeMediaId === undefined ? {} : { id: { not: excludeMediaId } }),
+                },
+            });
         },
     });
 }

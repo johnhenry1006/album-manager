@@ -24,5 +24,12 @@ export function createMediaService({ repository }) {
         async findDuplicateByChecksum(checksum) {
             return mapMedia(await repository.findByChecksum(validateChecksum(checksum), { includeDeleted: true }));
         },
+        async detectDuplicateByChecksum(inputChecksum, { excludeMediaId } = {}) {
+            const checksum = validateChecksum(inputChecksum);
+            if (excludeMediaId !== undefined) validateId(excludeMediaId);
+            const existingMedia = mapMedia(await repository.findByChecksum(checksum, { excludeMediaId }));
+            if (!existingMedia) return { type: 'NEW_MEDIA', checksum };
+            return { type: 'DUPLICATE_FOUND', existingMediaId: existingMedia.id, checksum, existingMedia };
+        },
     });
 }

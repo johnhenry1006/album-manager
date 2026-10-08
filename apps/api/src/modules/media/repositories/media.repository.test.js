@@ -6,6 +6,13 @@ const id = 'a0000000-0000-4000-8000-000000000001';
 const checksum = 'a'.repeat(64);
 
 describe('media repository query contracts', () => {
+    it('excludes the current media identity and soft-deleted rows from duplicate detection', async () => {
+        const client = { media: { findUnique: vi.fn() } };
+        await createMediaRepository(client).findByChecksum(checksum, { excludeMediaId: id });
+        expect(client.media.findUnique).toHaveBeenCalledWith({
+            where: { checksum, deletedAt: null, id: { not: id } },
+        });
+    });
     it('filters soft-deleted rows on normal reads and writes', async () => {
         const client = { media: { findUnique: vi.fn(), update: vi.fn() } };
         const repository = createMediaRepository(client);
