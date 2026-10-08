@@ -111,6 +111,7 @@ model Media {
   @@index([checksum, createdAt, id])
   @@index([deletedAt, createdAt, id])
   @@index([deletedAt, takenAt, id])
+  @@index([deletedAt, originalFilename, id])
   @@index([deletedAt, status, createdAt, id])
   @@index([deletedAt, type, createdAt, id])
   @@map("media")

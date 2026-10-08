@@ -4,6 +4,14 @@ The initial MVP schema is defined in `apps/api/prisma/schema.prisma` and created
 `20261008040000_initial_album_manager`. PostgreSQL is the persistence layer;
 handwritten runtime and configuration code remains JavaScript.
 
+The `20261008150000_media_list_indexes` migration adds the composite
+`(deleted_at, original_filename, id)` index for filename keyset pagination and
+a partial `(taken_at DESC NULLS LAST, id DESC) WHERE deleted_at IS NULL` index
+for newest-taken-first gallery queries. The partial/null-ordering index is maintained
+in SQL because Prisma schema index syntax cannot express this ordering and predicate.
+The existing ascending taken-date index serves oldest-first queries with nulls last.
+See [Media list API](../api/MEDIA.md) for query and cursor semantics.
+
 ## Identity and ownership
 
 This is a single-user application. There is no User model, user ID, implicit
