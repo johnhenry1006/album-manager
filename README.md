@@ -1,9 +1,9 @@
 # Album Manager
 
-A foundation for a visual album and media collection manager. This repository
-currently contains only structure, architecture rules, and configuration.
-Application features, runtime servers, database schemas, authentication, media
-processing, and UI screens have not been implemented.
+A foundation for a visual album and media collection manager. The repository includes
+architecture rules, local development infrastructure, and a JavaScript Fastify API
+with a health endpoint. Business features, application database schemas,
+authentication, media processing, and UI screens have not been implemented.
 
 ## Repository structure
 
@@ -36,10 +36,16 @@ album-manager/
 │   │       └── test/
 │   └── api/
 │       ├── package.json
+│       ├── vitest.config.js
 │       └── src/
 │           ├── app/
+│           │   ├── app.js
+│           │   ├── server.js
+│           │   ├── registerPlugins.js
+│           │   └── registerShutdown.js
 │           ├── config/
 │           ├── modules/
+│           │   └── health/
 │           ├── infrastructure/
 │           │   ├── database/
 │           │   ├── storage/
@@ -88,7 +94,8 @@ album-manager/
 ```
 
 Empty directories contain `.gitkeep` files so Git preserves the scaffold.
-Business modules are intentionally absent; their future layout is documented.
+Health is the only API module. Business modules are intentionally absent;
+their future layout is documented. API tests are colocated with their responsibilities.
 
 ## Workspace setup
 
@@ -100,7 +107,7 @@ npm ci
 npm run check
 ```
 
-The initial workspaces have no application dependencies. Root development
+The API workspace owns Fastify, dotenv, fastify-plugin, and Vitest. Root development
 dependencies provide ESLint, Prettier, Vite alias resolution, and tooling tests.
 `package-lock.json` records workspace links and tooling versions.
 Add future application dependencies to their owning workspace
@@ -113,15 +120,60 @@ in repository-owned files. It excludes dependencies, generated output, and local
 tool metadata. It does not enforce import boundaries or test application behavior;
 add appropriate linting and tests when application code is introduced.
 
-No `dev`, `start`, or `build` commands exist yet because there is no runtime
-application entry point. Vite currently supplies only frontend alias configuration.
+The API workspace provides `dev` and `start` commands; the frontend still has no
+application entry point or dev/build command. Vite supplies frontend alias configuration.
 Docker Compose provides the local PostgreSQL, Redis, and S3 Ninja services described
 below. `infrastructure/docker` holds emulator/container configuration and
 `infrastructure/scripts` holds repository tooling.
 
-Docker Compose loads the root `.env`. Future application composition must separately
-load and validate configuration; there is no application configuration loader yet.
-Browser-visible values are public, and credentials stay backend-only.
+Docker Compose and the API load the root `.env`. The API validates its own settings
+and gives existing process variables precedence. Browser-visible values are public,
+and credentials stay backend-only.
+
+## API development
+
+Install dependencies with `npm ci`, then run from the repository root:
+
+```sh
+npm run dev --workspace @album-manager/api
+# Or start without file watching:
+npm start --workspace @album-manager/api
+curl http://127.0.0.1:3000/api/health
+```
+
+The response is JSON with `status: "ok"`, an ISO timestamp, and `version` from the
+API package manifest when available. This is process liveness, not readiness of
+PostgreSQL, Redis, or storage; startup and health tests do not require Docker.
+
+Configuration accepts `NODE_ENV` (`development`, `test`, `production`), `API_HOST`
+(default `127.0.0.1`), `API_PORT` (default `3000`, range `1–65535`), `LOG_LEVEL`
+(`trace`, `debug`, `info`, `warn`, `error`, `fatal`, `silent`; default `info`), and
+`API_SHUTDOWN_TIMEOUT_MS` (default `10000`, range `1–120000`). Invalid settings fail
+before listening. The root `.env` path is resolved from the source file, so the
+workspace command works independently of the shell's current directory. A missing
+`.env` is allowed when configuration is supplied through the process environment
+or local defaults. Existing infrastructure values are not copied into public app config.
+
+`src/app/app.js` builds an instance without loading dotenv, opening sockets, or
+installing process listeners. `registerPlugins.js` registers shared error handling
+and the API route scope. `server.js` loads validated configuration, listens, and
+wires the shutdown helper. SIGINT/SIGTERM stop accepting requests, close Fastify
+and its hooks once, and remove listeners. The shutdown deadline forces a nonzero
+exit if resources fail to close; startup/close failures also exit unsuccessfully.
+Fastify emits structured request/completion logs. Centralized errors return a
+status code, stable error code, safe message, and request ID without stack traces
+or private exception messages.
+
+Run API tests once, watch them, or run the whole repository suite:
+
+```sh
+npm test --workspace @album-manager/api
+npm run test:watch --workspace @album-manager/api
+npm test
+```
+
+Vitest runs API tests in Node with Fastify `inject`, without listening on a port.
+The root command runs scaffold checks, Node tooling tests, then workspace test scripts.
 
 ## Local development infrastructure
 
@@ -277,7 +329,7 @@ npm test
 
 Frontend aliases use `@/` through JavaScript editor configuration and Vite.
 Backend aliases use native Node `#` package imports without a custom loader.
-Tests currently verify repository/tooling foundations, not application behavior.
+Tests verify repository/tooling foundations and the API health/configuration/lifecycle contracts.
 
 Future database decisions belong in `docs/database`; API contracts belong in
 `docs/api`. JavaScript only: do not introduce TypeScript or speculative features.

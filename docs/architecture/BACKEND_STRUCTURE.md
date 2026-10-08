@@ -22,8 +22,13 @@ apps/api/src/
 └── jobs/
 ```
 
-Directories are scaffolded without runtime implementations. No HTTP framework,
-database, storage provider, queue, cache, or image processor is selected yet.
+Fastify is the HTTP framework. `app/app.js` composes a testable instance;
+`app/server.js` loads validated dotenv configuration and listens. Plugin registration
+and graceful shutdown are separate focused modules in `app/`. A shared Fastify
+plugin installs centralized errors at the root so child route scopes inherit it.
+Health is the sole registered module under `/api`, with colocated Vitest inject tests.
+Infrastructure adapters, business modules, and image processing remain unimplemented;
+the local Compose services do not imply database/storage connections during startup.
 
 Native Node aliases are configured in the workspace manifest: `#modules/*`,
 `#infrastructure/*`, `#shared/*`, and `#config/*`. Include explicit `.js` filenames.
@@ -79,7 +84,7 @@ modules/<feature>/
 - `index.js` exports the intended module interface and hides implementation details.
 
 Create concrete modules only when a business feature is requested. The foundation
-keeps `modules/` empty rather than inventing a template feature.
+contains only the operational `health` module, without inventing a business feature.
 
 ## Dependency direction
 

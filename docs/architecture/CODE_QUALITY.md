@@ -8,7 +8,7 @@ Run tooling from the repository root after `npm ci`:
 | `npm run lint:fix`     | Apply safe ESLint fixes, including import sorting and unused import removal |
 | `npm run format`       | Format supported repository files with Prettier                             |
 | `npm run format:check` | Check formatting without writing files                                      |
-| `npm test`             | Run the scaffold check and Node test runner for tooling tests               |
+| `npm test`             | Run scaffold checks, Node tooling tests, and workspace test scripts         |
 
 `eslint.config.js` is the single root ESLint flat configuration. It uses core
 recommended JavaScript rules, unused import/variable detection, and consistent
@@ -17,7 +17,7 @@ import/export ordering. Browser globals and JSX/React hooks rules apply only to
 rules, including built-in import protocol, supported Node APIs, and missing imports.
 Shared package code receives neither browser nor Node globals.
 
-Tooling may import root development dependencies. Backend runtime code must
+Tooling and colocated API tests may import development dependencies. Backend runtime code must
 declare its dependencies in `apps/api/package.json`; unpublished dependency checks
 remain enabled there. Unused parameters/caught errors may be deliberately named
 with a leading underscore; unused imports and ordinary variables remain errors.
@@ -77,7 +77,10 @@ import ordering, hook rules, JSX usage, environment scoping, Node rules, and ali
 configuration/resolution. Inline snippets are tooling fixtures, not application
 features. A temporary backend alias fixture is cleaned up after the import check.
 
-The root test command also discovers future JavaScript `.test.js` files in the
-workspaces with Node's built-in test runner. Browser rendering/hook integration
-tests will require a deliberate browser-capable runner when React is introduced.
-The current checks are not application tests or proof of application behavior.
+The root test command separates `infrastructure/scripts/*.test.js` (Node's built-in
+test runner) from workspace test scripts. The API workspace uses Vitest configured
+in `apps/api/vitest.config.js` to discover `src/**/*.test.js` in a Node environment.
+Health tests exercise real Fastify route registration and serialization through
+`inject`; configuration, logging, centralized errors, and shutdown are tested too.
+No global test API is required; tests explicitly import Vitest helpers. Browser
+rendering/hook integration tests need a browser-capable runner when React is introduced.

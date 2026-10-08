@@ -1,12 +1,30 @@
 {
-  "name": "@album-manager/api",
-  "version": "0.0.0",
-  "private": true,
-  "type": "module",
-  "imports": {
-    "#modules/*": "./src/modules/*",
-    "#infrastructure/*": "./src/infrastructure/*",
-    "#shared/*": "./src/shared/*",
-    "#config/*": "./src/config/*"
-  }
+    "name": "@album-manager/api",
+    "version": "0.0.0",
+    "private": true,
+    "type": "module",
+    "engines": {
+        "node": ">=22.14",
+        "npm": ">=10"
+    },
+    "scripts": {
+        "dev": "node --watch src/app/server.js",
+        "start": "node src/app/server.js",
+        "test": "vitest run",
+        "test:watch": "vitest"
+    },
+    "imports": {
+        "#modules/*": "./src/modules/*",
+        "#infrastructure/*": "./src/infrastructure/*",
+        "#shared/*": "./src/shared/*",
+        "#config/*": "./src/config/*"
+    },
+    "dependencies": {
+        "dotenv": "^18.0.6",
+        "fastify": "^5.12.5",
+        "fastify-plugin": "^6.0.0"
+    },
+    "devDependencies": {
+        "vitest": "^5.0.3"
+    }
 }
