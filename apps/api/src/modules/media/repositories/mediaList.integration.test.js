@@ -1,117 +1,66 @@
-import { randomUUID } from 'node:crypto';
-import { readdir, readFile } from 'node:fs/promises';
-
-import pg from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-import { validateDatabaseEnvironment } from '#config/database.js';
-import { loadEnvironment } from '#config/loadConfig.js';
-import { createPrismaClient } from '#infrastructure/database/client.js';
+import { createIsolatedTestDatabase } from '#infrastructure/database/isolatedDatabase.testUtils.js';
 
 import { createMediaListModule } from '../index.js';
 
 // Isolated schema and rolled-back fixtures; never touches application media.
 describe.skipIf(process.env.DATABASE_TESTS !== '1')('media list with PostgreSQL', () => {
-    const schema = `media_list_test_${randomUUID().replaceAll('-', '')}`;
-    let admin;
-    let client;
-    let schemaCreated = false;
+    const database = createIsolatedTestDatabase();
     const ids = [1, 2, 3, 4, 5].map((n) => `a0000000-0000-4000-8000-${String(n).padStart(12, '0')}`);
     const category = 'b0000000-0000-4000-8000-000000000001';
     const tag = 'b0000000-0000-4000-8000-000000000002';
     const album = 'b0000000-0000-4000-8000-000000000003';
-    beforeAll(async () => {
-        const config = validateDatabaseEnvironment(loadEnvironment());
-        admin = new pg.Client({ connectionString: config.databaseUrl, connectionTimeoutMillis: 5000 });
-        await admin.connect();
-        await admin.query(`CREATE SCHEMA "${schema}"`);
-        schemaCreated = true;
-        const migrations = new URL('../../../../prisma/migrations/', import.meta.url);
-        for (const directory of (await readdir(migrations, { withFileTypes: true }))
-            .filter((entry) => entry.isDirectory())
-            .sort((a, b) => a.name.localeCompare(b.name))) {
-            if (!(await readdir(new URL(`${directory.name}/`, migrations))).includes('migration.sql')) continue;
-            await admin.query('BEGIN');
-            try {
-                await admin.query(`SET LOCAL search_path TO "${schema}"`);
-                await admin.query(await readFile(new URL(`${directory.name}/migration.sql`, migrations), 'utf8'));
-                await admin.query('COMMIT');
-            } catch (error) {
-                await admin.query('ROLLBACK');
-                throw error;
-            }
-        }
-        client = createPrismaClient(config, { schema });
-        await client.$connect();
-    });
-    afterAll(async () => {
-        await client?.$disconnect();
-        try {
-            if (schemaCreated) await admin.query(`DROP SCHEMA IF EXISTS "${schema}" CASCADE`);
-        } finally {
-            await admin?.end();
-        }
-    });
+    beforeAll(() => database.open());
+    afterAll(() => database.close());
 
     async function fixture(run) {
-        const marker = new Error('rollback fixture');
-        try {
-            await client.$transaction(
-                async (tx) => {
-                    await tx.$queryRaw`SELECT set_config('search_path', ${schema}, true)`;
-                    for (const [index, id] of ids.entries()) {
-                        await tx.media.create({
-                            data: {
-                                id,
-                                type: index === 2 ? 'VIDEO' : 'IMAGE',
-                                status: index === 3 ? 'FAILED' : 'READY',
-                                mimeType: index === 2 ? 'video/mp4' : 'image/jpeg',
-                                extension: index === 2 ? 'mp4' : 'jpg',
-                                fileSize: 100n,
-                                originalFilename: ['Beach.jpg', 'Beach.jpg', 'clip.mp4', 'literal_%.jpg', 'z.jpg'][
-                                    index
-                                ],
-                                createdAt: new Date(index < 3 ? '2026-01-01T00:00:00Z' : '2026-02-01T00:00:00Z'),
-                                takenAt:
-                                    index < 2
-                                        ? new Date('2025-01-01T00:00:00Z')
-                                        : index === 2
-                                          ? new Date('2025-02-01T00:00:00Z')
-                                          : null,
-                            },
-                        });
-                    }
-                    await tx.favorite.create({ data: { mediaId: ids[0] } });
-                    await tx.category.create({
-                        data: { id: category, name: 'Travel', slug: 'travel', media: { create: { mediaId: ids[0] } } },
-                    });
-                    await tx.tag.create({
-                        data: { id: tag, name: 'Ocean', slug: 'ocean', media: { create: { mediaId: ids[1] } } },
-                    });
-                    await tx.album.create({
-                        data: {
-                            id: album,
-                            name: 'Holiday',
-                            slug: 'holiday',
-                            description: 'Summer trip',
-                            media: { create: { mediaId: ids[2] } },
-                        },
-                    });
-                    const { service } = createMediaListModule({
-                        client: tx,
-                        storage: {
-                            createPresignedDownloadUrl: async ({ key }) => ({ url: `https://assets.example/${key}` }),
-                        },
-                        config: { maxLimit: 200, urlExpirySeconds: 900 },
-                    });
-                    await run(tx, service);
-                    throw marker;
+        await database.rollback(async (tx) => {
+            for (const [index, id] of ids.entries()) {
+                await tx.media.create({
+                    data: {
+                        id,
+                        type: index === 2 ? 'VIDEO' : 'IMAGE',
+                        status: index === 3 ? 'FAILED' : 'READY',
+                        mimeType: index === 2 ? 'video/mp4' : 'image/jpeg',
+                        extension: index === 2 ? 'mp4' : 'jpg',
+                        fileSize: 100n,
+                        originalFilename: ['Beach.jpg', 'Beach.jpg', 'clip.mp4', 'literal_%.jpg', 'z.jpg'][index],
+                        createdAt: new Date(index < 3 ? '2026-01-01T00:00:00Z' : '2026-02-01T00:00:00Z'),
+                        takenAt:
+                            index < 2
+                                ? new Date('2025-01-01T00:00:00Z')
+                                : index === 2
+                                  ? new Date('2025-02-01T00:00:00Z')
+                                  : null,
+                    },
+                });
+            }
+            await tx.favorite.create({ data: { mediaId: ids[0] } });
+            await tx.category.create({
+                data: { id: category, name: 'Travel', slug: 'travel', media: { create: { mediaId: ids[0] } } },
+            });
+            await tx.tag.create({
+                data: { id: tag, name: 'Ocean', slug: 'ocean', media: { create: { mediaId: ids[1] } } },
+            });
+            await tx.album.create({
+                data: {
+                    id: album,
+                    name: 'Holiday',
+                    slug: 'holiday',
+                    description: 'Summer trip',
+                    media: { create: { mediaId: ids[2] } },
                 },
-                { timeout: 15000 },
-            );
-        } catch (error) {
-            if (error !== marker) throw error;
-        }
+            });
+            const { service } = createMediaListModule({
+                client: tx,
+                storage: {
+                    createPresignedDownloadUrl: async ({ key }) => ({ url: `https://assets.example/${key}` }),
+                },
+                config: { maxLimit: 200, urlExpirySeconds: 900 },
+            });
+            await run(tx, service);
+        });
     }
 
     it.each([

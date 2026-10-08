@@ -2,6 +2,7 @@ import { pathToFileURL } from 'node:url';
 
 import { validateDatabaseEnvironment } from '#config/database.js';
 import { loadConfig, loadEnvironment } from '#config/loadConfig.js';
+import { validateMediaDetailEnvironment } from '#config/mediaDetail.js';
 import { validateMediaListEnvironment } from '#config/mediaList.js';
 import { validateQueueEnvironment } from '#config/queue.js';
 import { validateStorageEnvironment } from '#config/storage.js';
@@ -21,10 +22,11 @@ export async function startServer() {
     const queueConfig = validateQueueEnvironment(environment);
     const uploadConfig = validateUploadEnvironment(environment);
     const mediaListConfig = validateMediaListEnvironment(environment);
+    const mediaDetailConfig = validateMediaDetailEnvironment(environment);
     const database = createDatabase(databaseConfig);
     const storage = createStorageProvider(storageConfig);
     const queue = createQueueInfrastructure(queueConfig);
-    const app = buildApp({ config, database, storage, queue, uploadConfig, mediaListConfig });
+    const app = buildApp({ config, database, storage, queue, uploadConfig, mediaListConfig, mediaDetailConfig });
     const cleanup = registerShutdown(app, { timeoutMs: config.shutdownTimeoutMs });
     try {
         await app.listen({ host: config.host, port: config.port });

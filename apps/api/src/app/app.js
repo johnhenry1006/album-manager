@@ -1,9 +1,10 @@
 import Fastify from 'fastify';
 
 import { validateEnvironment } from '#config/environment.js';
+import { validateMediaDetailEnvironment } from '#config/mediaDetail.js';
 import { validateMediaListEnvironment } from '#config/mediaList.js';
 import { validateUploadEnvironment } from '#config/uploads.js';
-import { createMediaListModule } from '#modules/media/index.js';
+import { createMediaDetailModule, createMediaListModule } from '#modules/media/index.js';
 import { createUploadModule } from '#modules/uploads/index.js';
 
 import { registerPlugins } from './registerPlugins.js';
@@ -18,6 +19,8 @@ export function buildApp({
     uploadConfig = validateUploadEnvironment({}),
     mediaListService,
     mediaListConfig = validateMediaListEnvironment({}),
+    mediaDetailService,
+    mediaDetailConfig = validateMediaDetailEnvironment({}),
 } = {}) {
     const app = Fastify({
         logger: logger ?? {
@@ -45,6 +48,15 @@ export function buildApp({
         (database?.client && storage
             ? createMediaListModule({ client: database.client, storage, config: mediaListConfig }).service
             : undefined);
-    registerPlugins(app, config, { uploadService: uploads, mediaListService: mediaList });
+    const mediaDetail =
+        mediaDetailService ??
+        (database?.client && storage
+            ? createMediaDetailModule({ client: database.client, storage, config: mediaDetailConfig }).service
+            : undefined);
+    registerPlugins(app, config, {
+        uploadService: uploads,
+        mediaListService: mediaList,
+        mediaDetailService: mediaDetail,
+    });
     return app;
 }

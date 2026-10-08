@@ -1,5 +1,8 @@
 # Media list
 
+See [Media detail and original URLs](MEDIA_DETAIL.md) for individual media,
+EXIF, display renditions, and explicitly requested original access.
+
 `GET /api/media` returns a compact, cursor-paginated gallery list. The MVP is
 single-user. Soft-deleted media is always excluded. No EXIF, original object
 URLs, storage keys, or preview URLs are returned.

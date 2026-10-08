@@ -29,6 +29,10 @@ plugin installs centralized errors at the root so child route scopes inherit it.
 Health is registered under `/api`. The uploads module registers six metadata-only routes
 when database, storage, and queue dependencies are supplied; tests can inject its service.
 See [Direct uploads](../api/UPLOADS.md) for the request and response contracts.
+The media HTTP module adds a lightweight gallery list, individual detail with
+EXIF and signed display variants, and a dedicated original-URL endpoint when
+database and storage dependencies are supplied. See [Media list](../api/MEDIA.md)
+and [Media detail](../api/MEDIA_DETAIL.md) for contracts and expiry policies.
 Database infrastructure owns a reusable Prisma client and PostgreSQL connection lifecycle.
 The server verifies database connectivity before listening and disconnects on close.
 Tests can inject a database owner or build a database-free application. Storage uses

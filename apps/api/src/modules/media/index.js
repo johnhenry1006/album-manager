@@ -1,8 +1,10 @@
 import { createMediaRepository } from './repositories/media.repository.js';
+import { createMediaDetailRepository } from './repositories/mediaDetail.repository.js';
 import { createMediaListRepository } from './repositories/mediaList.repository.js';
 import { createMediaUploadCleanupRepository } from './repositories/mediaUploadCleanup.repository.js';
 import { createMediaVariantRepository } from './repositories/mediaVariant.repository.js';
 import { createMediaService } from './services/media.service.js';
+import { createMediaDetailService } from './services/mediaDetail.service.js';
 import { createMediaListService } from './services/mediaList.service.js';
 import { createMediaUploadCleanupService } from './services/mediaUploadCleanup.service.js';
 import { createMediaVariantService } from './services/mediaVariant.service.js';
@@ -34,3 +36,10 @@ export function createMediaListModule({ client, storage, config }) {
     });
 }
 export { default as mediaRoutes } from './routes/media.routes.js';
+
+export function createMediaDetailModule({ client, storage, config }) {
+    return Object.freeze({
+        service: createMediaDetailService({ repository: createMediaDetailRepository(client), storage, config }),
+    });
+}
+export { default as mediaDetailRoutes } from './routes/mediaDetail.routes.js';
