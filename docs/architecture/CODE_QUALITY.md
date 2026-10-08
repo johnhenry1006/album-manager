@@ -50,9 +50,9 @@ Examples are `@/app`, `@/pages`, `@/features`, `@/components`, `@/hooks`,
 `@/services`, and `@/utils`. Public feature imports must explicitly target
 `@/features/<feature>/index.js`. Aliases do not waive architecture boundaries.
 
-Vite is installed only as a build-tool foundation with alias resolution. No HTML
-entry point, React runtime, React plugin, app bootstrap, or dev/build command is
-provided yet. Future application setup must use the web workspace root/config.
+Vite builds the web workspace using the React plugin and its HTML entry point.
+The web manifest provides `dev`, `build`, and `preview` commands. The entry module
+is `src/app/main.jsx`; component styles use CSS modules and global CSS foundations.
 `jsconfig.json` is JavaScript editor configuration, not a TypeScript configuration
 or compiler pipeline.
 
@@ -82,5 +82,9 @@ test runner) from workspace test scripts. The API workspace uses Vitest configur
 in `apps/api/vitest.config.js` to discover `src/**/*.test.js` in a Node environment.
 Health tests exercise real Fastify route registration and serialization through
 `inject`; configuration, logging, centralized errors, and shutdown are tested too.
-No global test API is required; tests explicitly import Vitest helpers. Browser
-rendering/hook integration tests need a browser-capable runner when React is introduced.
+No global test API is required; tests explicitly import Vitest helpers. The web
+workspace uses Vitest with a jsdom environment configured in `vite.config.js`.
+React Testing Library exercises routing, providers, and reusable feedback UI;
+`src/test/setup.js` installs DOM matchers and cleans up after each test. Run
+`npm test --workspace @album-manager/web` once or `npm run test:watch --workspace
+@album-manager/web` for watch mode.

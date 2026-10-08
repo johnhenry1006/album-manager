@@ -11,11 +11,14 @@ authentication, media processing, and UI screens have not been implemented.
 album-manager/
 ├── apps/
 │   ├── web/
+│   │   ├── index.html
 │   │   ├── package.json
 │   │   ├── jsconfig.json
 │   │   ├── vite.config.js
 │   │   └── src/
 │   │       ├── app/
+│   │       │   ├── App.jsx
+│   │       │   ├── main.jsx
 │   │       │   ├── router/
 │   │       │   ├── providers/
 │   │       │   └── layouts/
@@ -108,7 +111,9 @@ npm run check
 ```
 
 The API workspace owns Fastify, dotenv, fastify-plugin, Prisma/PostgreSQL tooling, and Vitest. Root development
-dependencies provide ESLint, Prettier, Vite alias resolution, and tooling tests.
+dependencies provide ESLint, Prettier, Vite, and tooling tests. The web workspace
+owns React, React Router, TanStack Query/Virtual, Zustand, the React Vite plugin,
+Vitest, React Testing Library, and jsdom.
 `package-lock.json` records workspace links and tooling versions.
 Add future application dependencies to their owning workspace
 with `npm install <package> --workspace @album-manager/web` (or `/api` or `/shared`
@@ -120,8 +125,8 @@ in repository-owned files. It excludes dependencies, generated output, and local
 tool metadata. It does not enforce import boundaries or test application behavior;
 add appropriate linting and tests when application code is introduced.
 
-The API workspace provides `dev` and `start` commands; the frontend still has no
-application entry point or dev/build command. Vite supplies frontend alias configuration.
+The API workspace provides `dev` and `start` commands; the web workspace provides
+`dev`, `build`, and `preview` commands with Vite and frontend alias configuration.
 Docker Compose provides the local PostgreSQL, Redis, and S3 Ninja services described
 below. `infrastructure/docker` holds emulator/container configuration and
 `infrastructure/scripts` holds repository tooling.
@@ -129,6 +134,30 @@ below. `infrastructure/docker` holds emulator/container configuration and
 Docker Compose and the API load the root `.env`. The API validates its own settings
 and gives existing process variables precedence. Browser-visible values are public,
 and credentials stay backend-only.
+
+## Frontend development
+
+Run from the repository root:
+
+```sh
+npm run dev --workspace @album-manager/web
+npm run build --workspace @album-manager/web
+npm run preview --workspace @album-manager/web
+npm test --workspace @album-manager/web
+npm run test:watch --workspace @album-manager/web
+```
+
+The JavaScript React shell includes a sidebar, header, Query provider, and thin
+placeholder pages for dashboard, albums/details, media/details, upload, categories,
+tags, favorites, search, trash, settings, storage, and image optimization. The root
+redirects to `/dashboard`; unknown URLs show a not-found page. CSS modules and
+global CSS provide styling. No frontend business behavior or API calls are implemented.
+Zustand and TanStack Virtual are installed for future global client state and
+virtualized galleries. There is no speculative store or gallery implementation.
+
+Vitest runs frontend tests in jsdom using React Testing Library. Production SPA
+hosting must serve `apps/web/dist/index.html` for application URLs so direct links
+such as `/albums/123` work with browser history routing.
 
 ## API development
 

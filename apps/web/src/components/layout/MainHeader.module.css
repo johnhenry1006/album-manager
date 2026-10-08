@@ -1,0 +1,6 @@
+.header {
+  padding: 1.25rem 2rem;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-muted);
+}

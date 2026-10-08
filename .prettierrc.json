@@ -5,5 +5,14 @@
     "tabWidth": 4,
     "useTabs": false,
     "printWidth": 120,
-    "endOfLine": "lf"
+    "endOfLine": "lf",
+    "overrides": [
+        {
+            "files": "apps/web/**/*",
+            "options": {
+                "tabWidth": 2,
+                "printWidth": 100
+            }
+        }
+    ]
 }

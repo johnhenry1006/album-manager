@@ -5,6 +5,8 @@ The frontend workspace is `apps/web`. Its source tree is:
 ```text
 src/
 ├── app/
+│   ├── App.jsx
+│   ├── main.jsx
 │   ├── router/
 │   ├── providers/
 │   └── layouts/
@@ -25,11 +27,26 @@ src/
 └── test/
 ```
 
-These directories are scaffolded without application implementations. React,
-TanStack Query, and routing can be installed when application work begins.
-Vite is configured only for source alias resolution; there is no application
-entry point yet. See [Code quality foundations](CODE_QUALITY.md) for `@/` aliases
-and quality commands. The boundaries below apply to all future application code.
+React and Vite initialize a JavaScript-only application shell. `app/main.jsx`
+mounts `AppProviders` and React Router's `BrowserRouter`; `app/App.jsx` renders
+the base router. `QueryProvider` owns one stable TanStack Query client per mount.
+`AppLayout` composes the shared sidebar/header with a route outlet, and navigation
+metadata stays in `app/router` rather than shared components. Styling uses CSS
+modules with global foundations in `styles/global.css`.
+
+Routes cover dashboard, albums/details, media/details, upload, categories, tags,
+favorites, search, trash, settings, storage, and image optimization. `/` redirects
+to `/dashboard`; unmatched URLs show a not-found page. All pages remain minimal
+placeholders without API calls or business functionality. TanStack Virtual is
+installed for future galleries. Zustand is installed but no store exists until
+truly global client state is needed; server state belongs in TanStack Query.
+
+Run `npm run dev --workspace @album-manager/web`,
+`npm run build --workspace @album-manager/web`, or
+`npm test --workspace @album-manager/web` from the repository root. Vitest uses
+jsdom and React Testing Library with shared setup in `src/test/setup.js`.
+See [Code quality foundations](CODE_QUALITY.md) for `@/` aliases and quality
+commands. The boundaries below apply to all future application code.
 
 ## Responsibilities
 
