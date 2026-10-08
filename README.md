@@ -179,7 +179,7 @@ The root command runs scaffold checks, Node tooling tests, then workspace test s
 
 ## Database foundation
 
-Prisma uses a JavaScript config and a PostgreSQL schema without business models.
+Prisma uses a JavaScript config and the initial single-user PostgreSQL schema.
 The server and CLI load root `.env`; `DATABASE_URL` overrides the existing local
 `POSTGRES_*` settings. Generate the client after installation and schema changes:
 
@@ -192,11 +192,13 @@ npm run db:studio
 ```
 
 Generation does not require PostgreSQL. Migration, deployment, seed, and Studio
-commands need configured database access. There are no initial business migrations;
-the seed foundation verifies connectivity without writing data. Repository factories
+commands need configured database access. The initial migration creates the album,
+media, taxonomy, global favorite, upload, metadata, and settings models; authentication
+is deferred. The seed foundation verifies connectivity without writing data. Repository factories
 receive the application-owned client; controllers call services.
 See [Database conventions](docs/database/DATABASE_RULES.md) for lifecycle,
 schema naming, UUIDs, timestamps, deletion, indexes, and migration workflows.
+See [Schema](docs/database/SCHEMA.md) for relationships and integrity guarantees.
 
 ## Local development infrastructure
 

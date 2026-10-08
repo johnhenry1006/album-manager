@@ -149,6 +149,7 @@ contracts where applicable. Keep tests close to their responsibility without
 introducing an alternative top-level structure.
 
 Document schema and migration decisions in `docs/database`, and endpoint/error/
-pagination contracts in `docs/api`. The Prisma schema contains only provider/client
-configuration; business models remain absent. Follow the file size guidance in
+pagination contracts in `docs/api`. The initial single-user Prisma schema and migration
+are documented in [Schema](../database/SCHEMA.md); business APIs remain absent.
+Follow the file size guidance in
 [Architecture rules](ARCHITECTURE_RULES.md).

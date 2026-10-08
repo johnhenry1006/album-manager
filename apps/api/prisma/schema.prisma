@@ -7,4 +7,273 @@ datasource db {
   provider = "postgresql"
 }
 
-// Intentionally no business models. Add them with a reviewed migration.
+enum AlbumVisibility {
+  PRIVATE
+  PUBLIC
+
+  @@map("album_visibility")
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+
+  @@map("media_type")
+}
+
+enum MediaStatus {
+  PENDING
+  PROCESSING
+  READY
+  FAILED
+
+  @@map("media_status")
+}
+
+enum MediaVariantType {
+  ORIGINAL
+  OPTIMIZED
+  PREVIEW
+  THUMBNAIL
+  BLUR_PLACEHOLDER
+
+  @@map("media_variant_type")
+}
+
+enum UploadSessionStatus {
+  REGISTERED
+  UPLOADING
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+
+  @@map("upload_session_status")
+}
+
+enum UploadFileStatus {
+  REGISTERED
+  UPLOADING
+  PROCESSING
+  DUPLICATE_PENDING
+  READY
+  FAILED
+  CANCELLED
+
+  @@map("upload_file_status")
+}
+
+model Album {
+  id           String          @id @default(uuid()) @db.Uuid
+  name         String
+  slug         String          @unique
+  description  String?
+  coverMediaId String?         @map("cover_media_id") @db.Uuid
+  visibility   AlbumVisibility @default(PRIVATE)
+  createdAt    DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt    DateTime        @updatedAt @map("updated_at") @db.Timestamptz(3)
+  deletedAt    DateTime?       @map("deleted_at") @db.Timestamptz(3)
+  coverMedia   Media?          @relation("AlbumCover", fields: [coverMediaId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  media        AlbumMedia[]
+
+  @@index([coverMediaId])
+  @@index([deletedAt, createdAt, id])
+  @@index([deletedAt, visibility, createdAt, id])
+  @@map("albums")
+}
+
+model Media {
+  id               String          @id @default(uuid()) @db.Uuid
+  type             MediaType
+  originalFilename String          @map("original_filename")
+  mimeType         String          @map("mime_type")
+  extension        String
+  fileSize         BigInt          @map("file_size")
+  width            Int?
+  height           Int?
+  aspectRatio      Float?          @map("aspect_ratio")
+  checksum         String?         @unique @db.VarChar(64)
+  status           MediaStatus     @default(PENDING)
+  takenAt          DateTime?       @map("taken_at") @db.Timestamptz(3)
+  createdAt        DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt        DateTime        @updatedAt @map("updated_at") @db.Timestamptz(3)
+  deletedAt        DateTime?       @map("deleted_at") @db.Timestamptz(3)
+  albums           AlbumMedia[]
+  coverForAlbums   Album[]         @relation("AlbumCover")
+  variants         MediaVariant[]
+  categories       MediaCategory[]
+  tags             MediaTag[]
+  favorite         Favorite?
+  metadata         MediaMetadata?
+  uploadFiles      UploadFile[]    @relation("UploadFileMedia")
+  duplicateFiles   UploadFile[]    @relation("UploadFileDuplicate")
+
+  @@index([deletedAt, createdAt, id])
+  @@index([deletedAt, takenAt, id])
+  @@index([deletedAt, status, createdAt, id])
+  @@index([deletedAt, type, createdAt, id])
+  @@map("media")
+}
+
+model MediaVariant {
+  id         String           @id @default(uuid()) @db.Uuid
+  mediaId    String           @map("media_id") @db.Uuid
+  type       MediaVariantType
+  format     String
+  width      Int?
+  height     Int?
+  fileSize   BigInt           @map("file_size")
+  storageKey String           @unique @map("storage_key")
+  quality    Int?
+  createdAt  DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+  media      Media            @relation(fields: [mediaId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@unique([mediaId, type, format])
+  @@map("media_variants")
+}
+
+model AlbumMedia {
+  id        String   @id @default(uuid()) @db.Uuid
+  albumId   String   @map("album_id") @db.Uuid
+  mediaId   String   @map("media_id") @db.Uuid
+  position  Int      @default(0)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  album     Album    @relation(fields: [albumId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  media     Media    @relation(fields: [mediaId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@unique([albumId, mediaId])
+  @@index([albumId, position, id])
+  @@index([albumId, createdAt, id])
+  @@index([mediaId, albumId])
+  @@map("album_media")
+}
+
+model Category {
+  id        String          @id @default(uuid()) @db.Uuid
+  name      String
+  slug      String          @unique
+  parentId  String?         @map("parent_id") @db.Uuid
+  createdAt DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime        @updatedAt @map("updated_at") @db.Timestamptz(3)
+  parent    Category?       @relation("CategoryTree", fields: [parentId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  children  Category[]      @relation("CategoryTree")
+  media     MediaCategory[]
+
+  @@index([parentId, name, id])
+  @@index([createdAt, id])
+  @@map("categories")
+}
+
+model MediaCategory {
+  id         String   @id @default(uuid()) @db.Uuid
+  mediaId    String   @map("media_id") @db.Uuid
+  categoryId String   @map("category_id") @db.Uuid
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  media      Media    @relation(fields: [mediaId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@unique([mediaId, categoryId])
+  @@index([categoryId, mediaId])
+  @@map("media_categories")
+}
+
+model Tag {
+  id        String     @id @default(uuid()) @db.Uuid
+  name      String
+  slug      String     @unique
+  createdAt DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime   @updatedAt @map("updated_at") @db.Timestamptz(3)
+  media     MediaTag[]
+
+  @@index([createdAt, id])
+  @@map("tags")
+}
+
+model MediaTag {
+  id        String   @id @default(uuid()) @db.Uuid
+  mediaId   String   @map("media_id") @db.Uuid
+  tagId     String   @map("tag_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  media     Media    @relation(fields: [mediaId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  tag       Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@unique([mediaId, tagId])
+  @@index([tagId, mediaId])
+  @@map("media_tags")
+}
+
+model Favorite {
+  id        String   @id @default(uuid()) @db.Uuid
+  mediaId   String   @unique @map("media_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  media     Media    @relation(fields: [mediaId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@index([createdAt, id])
+  @@map("favorites")
+}
+
+model UploadSession {
+  id          String              @id @default(uuid()) @db.Uuid
+  status      UploadSessionStatus @default(REGISTERED)
+  createdAt   DateTime            @default(now()) @map("created_at") @db.Timestamptz(3)
+  completedAt DateTime?           @map("completed_at") @db.Timestamptz(3)
+  files       UploadFile[]
+
+  @@index([status, createdAt, id])
+  @@index([createdAt, id])
+  @@map("upload_sessions")
+}
+
+model UploadFile {
+  id                 String           @id @default(uuid()) @db.Uuid
+  uploadSessionId    String           @map("upload_session_id") @db.Uuid
+  clientFilename     String           @map("client_filename")
+  mimeType           String           @map("mime_type")
+  fileSize           BigInt           @map("file_size")
+  status             UploadFileStatus @default(REGISTERED)
+  storageKey         String?          @map("storage_key")
+  mediaId            String?          @map("media_id") @db.Uuid
+  duplicateOfMediaId String?          @map("duplicate_of_media_id") @db.Uuid
+  error              String?
+  createdAt          DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
+  uploadSession      UploadSession    @relation(fields: [uploadSessionId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  media              Media?           @relation("UploadFileMedia", fields: [mediaId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  duplicateOfMedia   Media?           @relation("UploadFileDuplicate", fields: [duplicateOfMediaId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  @@index([uploadSessionId, status, createdAt, id])
+  @@index([status, createdAt, id])
+  @@index([createdAt, id])
+  @@index([mediaId])
+  @@index([duplicateOfMediaId])
+  @@map("upload_files")
+}
+
+model MediaMetadata {
+  id           String   @id @default(uuid()) @db.Uuid
+  mediaId      String   @unique @map("media_id") @db.Uuid
+  cameraMake   String?  @map("camera_make")
+  cameraModel  String?  @map("camera_model")
+  lens         String?
+  focalLength  Float?   @map("focal_length")
+  aperture     Float?
+  iso          Int?
+  shutterSpeed String?  @map("shutter_speed")
+  latitude     Float?
+  longitude    Float?
+  rawMetadata  Json?    @map("raw_metadata") @db.JsonB
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  media        Media    @relation(fields: [mediaId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@map("media_metadata")
+}
+
+model ApplicationSetting {
+  id        String   @id @default(uuid()) @db.Uuid
+  key       String   @unique
+  value     Json     @db.JsonB
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@map("application_settings")
+}
