@@ -27,8 +27,11 @@ Fastify is the HTTP framework. `app/app.js` composes a testable instance;
 and graceful shutdown are separate focused modules in `app/`. A shared Fastify
 plugin installs centralized errors at the root so child route scopes inherit it.
 Health is the sole registered module under `/api`, with colocated Vitest inject tests.
-Infrastructure adapters, business modules, and image processing remain unimplemented;
-the local Compose services do not imply database/storage connections during startup.
+Database infrastructure owns a reusable Prisma client and PostgreSQL connection lifecycle.
+The server verifies database connectivity before listening and disconnects on close.
+Tests can inject a database owner or build a database-free application. Other adapters,
+business modules, and image processing remain unimplemented.
+See [Database conventions](../database/DATABASE_RULES.md) for client injection and migrations.
 
 Native Node aliases are configured in the workspace manifest: `#modules/*`,
 `#infrastructure/*`, `#shared/*`, and `#config/*`. Include explicit `.js` filenames.
@@ -146,6 +149,6 @@ contracts where applicable. Keep tests close to their responsibility without
 introducing an alternative top-level structure.
 
 Document schema and migration decisions in `docs/database`, and endpoint/error/
-pagination contracts in `docs/api`. Neither schema nor endpoints are implemented
-in the foundation phase. Follow the file size guidance in
+pagination contracts in `docs/api`. The Prisma schema contains only provider/client
+configuration; business models remain absent. Follow the file size guidance in
 [Architecture rules](ARCHITECTURE_RULES.md).

@@ -1,6 +1,6 @@
 import { Writable } from 'node:stream';
 
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { validateEnvironment } from '#config/environment.js';
 
@@ -9,6 +9,28 @@ import { buildApp } from './app.js';
 const apps = [];
 afterEach(async () => {
     await Promise.all(apps.splice(0).map((app) => app.close()));
+});
+
+describe('database application lifecycle', () => {
+    it('connects before serving and disconnects on close', async () => {
+        const database = { connect: vi.fn().mockResolvedValue(), disconnect: vi.fn().mockResolvedValue() };
+        const app = createApp({ database });
+        await app.inject('/api/health');
+        expect(database.connect).toHaveBeenCalledTimes(1);
+        await app.close();
+        expect(database.disconnect).toHaveBeenCalledTimes(1);
+    });
+
+    it('refuses to serve when database startup fails and still closes resources', async () => {
+        const database = {
+            connect: vi.fn().mockRejectedValue(new Error('Database connection failed')),
+            disconnect: vi.fn().mockResolvedValue(),
+        };
+        const app = createApp({ database });
+        await expect(app.ready()).rejects.toThrow('Database connection failed');
+        await app.close();
+        expect(database.disconnect).toHaveBeenCalledTimes(1);
+    });
 });
 
 function createApp(options = {}) {

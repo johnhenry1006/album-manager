@@ -1,0 +1,10 @@
+generator client {
+  // JavaScript runtime generation; no TypeScript build pipeline.
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// Intentionally no business models. Add them with a reviewed migration.

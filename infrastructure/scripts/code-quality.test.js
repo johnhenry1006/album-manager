@@ -76,6 +76,33 @@ test('Node rules require the node: protocol', async () => {
     assert.ok(rules.includes('n/prefer-node-protocol'));
 });
 
+test('Prisma construction is restricted to database client infrastructure', async () => {
+    const source = "import { PrismaClient } from '@prisma/client';\nexport { PrismaClient };";
+    assert.ok(
+        (await lint(source, 'apps/api/src/modules/example/repositories/example.repository.js')).includes(
+            'no-restricted-imports',
+        ),
+    );
+    assert.ok(
+        !(await lint(source, 'apps/api/src/infrastructure/database/client.js')).includes('no-restricted-imports'),
+    );
+});
+
+test('controllers cannot bypass services to access persistence', async () => {
+    for (const target of [
+        '@prisma/client',
+        '#infrastructure/database/index.js',
+        '../repositories/example.repository.js',
+    ]) {
+        const source = `import * as persistence from '${target}';\nexport { persistence };`;
+        assert.ok(
+            (await lint(source, 'apps/api/src/modules/example/controllers/example.controller.js')).includes(
+                'no-restricted-imports',
+            ),
+        );
+    }
+});
+
 test('browser, Node, and shared globals stay scoped', async () => {
     assert.ok(
         (await lint('export const secret = process.env.SECRET;', 'apps/web/src/utils/example.js')).includes('no-undef'),

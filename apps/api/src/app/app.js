@@ -4,7 +4,7 @@ import { validateEnvironment } from '#config/environment.js';
 
 import { registerPlugins } from './registerPlugins.js';
 
-export function buildApp({ config = validateEnvironment({}), logger } = {}) {
+export function buildApp({ config = validateEnvironment({}), logger, database } = {}) {
     const app = Fastify({
         logger: logger ?? {
             level: config.logLevel,
@@ -12,6 +12,10 @@ export function buildApp({ config = validateEnvironment({}), logger } = {}) {
         },
         forceCloseConnections: 'idle',
     });
+    if (database) {
+        app.addHook('onReady', async () => database.connect());
+        app.addHook('onClose', async () => database.disconnect());
+    }
     registerPlugins(app, config);
     return app;
 }

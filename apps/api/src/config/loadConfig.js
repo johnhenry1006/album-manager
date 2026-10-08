@@ -4,7 +4,10 @@ import dotenv from 'dotenv';
 
 import { validateEnvironment } from './environment.js';
 
-export function loadConfig({ environment = process.env, envFile = new URL('../../../../.env', import.meta.url) } = {}) {
+export function loadEnvironment({
+    environment = process.env,
+    envFile = new URL('../../../../.env', import.meta.url),
+} = {}) {
     const { error } = dotenv.config({
         path: envFile instanceof URL ? fileURLToPath(envFile) : envFile,
         processEnv: environment,
@@ -14,5 +17,9 @@ export function loadConfig({ environment = process.env, envFile = new URL('../..
     if (error && error.code !== 'ENOENT') {
         throw new Error('Unable to load API environment file', { cause: error });
     }
-    return validateEnvironment(environment);
+    return environment;
+}
+
+export function loadConfig(options) {
+    return validateEnvironment(loadEnvironment(options));
 }

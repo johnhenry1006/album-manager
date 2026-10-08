@@ -107,7 +107,7 @@ npm ci
 npm run check
 ```
 
-The API workspace owns Fastify, dotenv, fastify-plugin, and Vitest. Root development
+The API workspace owns Fastify, dotenv, fastify-plugin, Prisma/PostgreSQL tooling, and Vitest. Root development
 dependencies provide ESLint, Prettier, Vite alias resolution, and tooling tests.
 `package-lock.json` records workspace links and tooling versions.
 Add future application dependencies to their owning workspace
@@ -143,7 +143,8 @@ curl http://127.0.0.1:3000/api/health
 
 The response is JSON with `status: "ok"`, an ISO timestamp, and `version` from the
 API package manifest when available. This is process liveness, not readiness of
-PostgreSQL, Redis, or storage; startup and health tests do not require Docker.
+PostgreSQL, Redis, or storage. The production server requires PostgreSQL before listening;
+health/application tests inject dependencies and do not require Docker.
 
 Configuration accepts `NODE_ENV` (`development`, `test`, `production`), `API_HOST`
 (default `127.0.0.1`), `API_PORT` (default `3000`, range `1–65535`), `LOG_LEVEL`
@@ -155,7 +156,8 @@ workspace command works independently of the shell's current directory. A missin
 or local defaults. Existing infrastructure values are not copied into public app config.
 
 `src/app/app.js` builds an instance without loading dotenv, opening sockets, or
-installing process listeners. `registerPlugins.js` registers shared error handling
+installing process listeners. An injected database owner connects on readiness and
+disconnects on close. `registerPlugins.js` registers shared error handling
 and the API route scope. `server.js` loads validated configuration, listens, and
 wires the shutdown helper. SIGINT/SIGTERM stop accepting requests, close Fastify
 and its hooks once, and remove listeners. The shutdown deadline forces a nonzero
@@ -174,6 +176,27 @@ npm test
 
 Vitest runs API tests in Node with Fastify `inject`, without listening on a port.
 The root command runs scaffold checks, Node tooling tests, then workspace test scripts.
+
+## Database foundation
+
+Prisma uses a JavaScript config and a PostgreSQL schema without business models.
+The server and CLI load root `.env`; `DATABASE_URL` overrides the existing local
+`POSTGRES_*` settings. Generate the client after installation and schema changes:
+
+```sh
+npm run db:generate
+npm run db:migrate -- --name <change>
+npm run db:deploy
+npm run db:seed
+npm run db:studio
+```
+
+Generation does not require PostgreSQL. Migration, deployment, seed, and Studio
+commands need configured database access. There are no initial business migrations;
+the seed foundation verifies connectivity without writing data. Repository factories
+receive the application-owned client; controllers call services.
+See [Database conventions](docs/database/DATABASE_RULES.md) for lifecycle,
+schema naming, UUIDs, timestamps, deletion, indexes, and migration workflows.
 
 ## Local development infrastructure
 

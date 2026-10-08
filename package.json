@@ -19,7 +19,12 @@
         "format": "prettier . --write",
         "format:check": "prettier . --check",
         "test": "npm run check && npm run test:tooling && npm run test --workspaces --if-present",
-        "test:tooling": "node --test infrastructure/scripts/*.test.js"
+        "test:tooling": "node --test infrastructure/scripts/*.test.js",
+        "db:generate": "npm run db:generate --workspace @album-manager/api --",
+        "db:migrate": "npm run db:migrate --workspace @album-manager/api --",
+        "db:deploy": "npm run db:deploy --workspace @album-manager/api --",
+        "db:seed": "npm run db:seed --workspace @album-manager/api --",
+        "db:studio": "npm run db:studio --workspace @album-manager/api --"
     },
     "devDependencies": {
         "@eslint/js": "^10.0.1",

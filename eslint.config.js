@@ -74,6 +74,40 @@ export default [
         rules: { 'n/no-unpublished-import': 'off' },
     },
     {
+        files: ['apps/api/**/*.js'],
+        ignores: ['apps/api/src/infrastructure/database/client.js'],
+        rules: {
+            'no-restricted-imports': [
+                'error',
+                {
+                    patterns: [
+                        {
+                            group: ['@prisma/client', '@prisma/client/*', '@prisma/adapter-*'],
+                            message:
+                                'Prisma construction belongs in database/client.js; inject clients into repositories.',
+                        },
+                    ],
+                },
+            ],
+        },
+    },
+    {
+        files: ['apps/api/src/modules/**/controllers/*.js'],
+        rules: {
+            'no-restricted-imports': [
+                'error',
+                {
+                    patterns: [
+                        {
+                            regex: '^(@prisma/|#infrastructure/database/|.*(?:infrastructure/database|repositories)/)',
+                            message: 'Controllers call services; services coordinate injected repositories.',
+                        },
+                    ],
+                },
+            ],
+        },
+    },
+    {
         files: ['apps/web/src/**/*.{js,jsx}'],
         languageOptions: { globals: globals.browser, parserOptions: { ecmaFeatures: { jsx: true } } },
         plugins: { 'react-hooks': reactHooks },

@@ -11,7 +11,12 @@
         "dev": "node --watch src/app/server.js",
         "start": "node src/app/server.js",
         "test": "vitest run",
-        "test:watch": "vitest"
+        "test:watch": "vitest",
+        "db:generate": "prisma generate --config prisma.config.js",
+        "db:migrate": "prisma migrate dev --config prisma.config.js",
+        "db:deploy": "prisma migrate deploy --config prisma.config.js",
+        "db:seed": "prisma db seed --config prisma.config.js",
+        "db:studio": "prisma studio --config prisma.config.js"
     },
     "imports": {
         "#modules/*": "./src/modules/*",
@@ -20,11 +25,15 @@
         "#config/*": "./src/config/*"
     },
     "dependencies": {
+        "@prisma/adapter-pg": "^7.10.0",
+        "@prisma/client": "^7.10.0",
         "dotenv": "^18.0.6",
         "fastify": "^5.12.5",
-        "fastify-plugin": "^6.0.0"
+        "fastify-plugin": "^6.0.0",
+        "pg": "^8.23.1"
     },
     "devDependencies": {
+        "prisma": "^7.10.0",
         "vitest": "^5.0.3"
     }
 }

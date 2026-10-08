@@ -1,13 +1,16 @@
 import { pathToFileURL } from 'node:url';
 
-import { loadConfig } from '#config/loadConfig.js';
+import { validateDatabaseEnvironment } from '#config/database.js';
+import { loadConfig, loadEnvironment } from '#config/loadConfig.js';
+import { createDatabase } from '#infrastructure/database/index.js';
 
 import { buildApp } from './app.js';
 import { registerShutdown } from './registerShutdown.js';
 
 export async function startServer() {
     const config = loadConfig();
-    const app = buildApp({ config });
+    const database = createDatabase(validateDatabaseEnvironment(loadEnvironment()));
+    const app = buildApp({ config, database });
     const cleanup = registerShutdown(app, { timeoutMs: config.shutdownTimeoutMs });
     try {
         await app.listen({ host: config.host, port: config.port });
