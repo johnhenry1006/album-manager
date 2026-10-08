@@ -264,7 +264,9 @@ and create it. Leave the bucket private; do not enable public access. Bucket cre
 is a one-time step because the named volume preserves it. Automatic bucket creation
 is disabled. If `S3_BUCKET` is changed, create that bucket explicitly instead.
 
-The future backend storage provider can use these generic configuration values:
+The backend storage provider uses these server-only configuration values:
+
+- `STORAGE_DRIVER=s3`: selects the S3-compatible adapter, including local S3 Ninja.
 
 - `S3_ENDPOINT`: backend operations endpoint; default `http://localhost:9445` when
   the API runs on the host. A future API container on this network uses
@@ -316,8 +318,11 @@ curl -i -X OPTIONS http://localhost:9445/album-manager/check.txt \
 ```
 
 Expect `204`, the exact allowed origin, and `PUT, GET, HEAD, OPTIONS`. Repeat with
-`GET` and `HEAD`. A valid presigned PUT/GET/HEAD smoke test is still required when
-the backend signing implementation is added. The [S3 Ninja documentation](https://s3ninja.net/)
+`GET` and `HEAD`. Run `npm run test:storage --workspace @album-manager/api` for an
+isolated temporary-bucket smoke test of the provider and presigned PUT/GET/HEAD.
+See [Storage abstraction](docs/architecture/STORAGE.md) for key generation, injection,
+and the provider contract. No media upload workflow or endpoints are implemented.
+The [S3 Ninja documentation](https://s3ninja.net/)
 describes its local endpoint, path-style addressing, and persistent data directory.
 
 ## Architecture decisions

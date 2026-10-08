@@ -17,7 +17,8 @@
         "db:deploy": "prisma migrate deploy --config prisma.config.js",
         "db:seed": "prisma db seed --config prisma.config.js",
         "db:studio": "prisma studio --config prisma.config.js",
-        "test:database": "DATABASE_TESTS=1 vitest run src/infrastructure/database/schema.test.js"
+        "test:database": "DATABASE_TESTS=1 vitest run src/infrastructure/database/schema.test.js",
+        "test:storage": "STORAGE_TESTS=1 vitest run src/infrastructure/storage/s3/s3Storage.integration.test.js"
     },
     "imports": {
         "#modules/*": "./src/modules/*",
@@ -26,6 +27,8 @@
         "#config/*": "./src/config/*"
     },
     "dependencies": {
+        "@aws-sdk/client-s3": "^3.1147.0",
+        "@aws-sdk/s3-request-presigner": "^3.1147.0",
         "@prisma/adapter-pg": "^7.10.0",
         "@prisma/client": "^7.10.0",
         "dotenv": "^18.0.6",

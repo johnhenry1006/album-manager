@@ -124,6 +124,25 @@ test('browser, Node, and shared globals stay scoped', async () => {
     );
 });
 
+test('business services consume storage abstractions instead of S3 adapters', async () => {
+    for (const target of [
+        '@aws-sdk/client-s3',
+        '#infrastructure/storage/s3/s3Client.js',
+        '#infrastructure/storage/storageFactory.js',
+    ]) {
+        const rules = await lint(
+            `import * as storage from '${target}';\nexport { storage };`,
+            'apps/api/src/modules/example/services/example.service.js',
+        );
+        assert.ok(rules.includes('no-restricted-imports'), target);
+    }
+    const rules = await lint(
+        "import { generateStorageKey } from '#infrastructure/storage/index.js';\nexport { generateStorageKey };",
+        'apps/api/src/modules/example/services/example.service.js',
+    );
+    assert.ok(!rules.includes('no-restricted-imports'));
+});
+
 test('frontend editor and Vite aliases both target src', async () => {
     const editor = JSON.parse(await readFile(path.join(root, 'apps/web/jsconfig.json'), 'utf8'));
     assert.deepEqual(editor.compilerOptions.paths['@/*'], ['src/*']);

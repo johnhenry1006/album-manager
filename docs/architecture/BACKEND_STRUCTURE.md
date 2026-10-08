@@ -29,9 +29,11 @@ plugin installs centralized errors at the root so child route scopes inherit it.
 Health is the sole registered module under `/api`, with colocated Vitest inject tests.
 Database infrastructure owns a reusable Prisma client and PostgreSQL connection lifecycle.
 The server verifies database connectivity before listening and disconnects on close.
-Tests can inject a database owner or build a database-free application. Other adapters,
-business modules, and image processing remain unimplemented.
+Tests can inject a database owner or build a database-free application. Storage uses
+an injected provider backed by an S3-compatible adapter; application shutdown releases
+its clients. Queue/cache adapters, business modules, and image processing remain unimplemented.
 See [Database conventions](../database/DATABASE_RULES.md) for client injection and migrations.
+See [Storage abstraction](STORAGE.md) for the provider contract, keys, and endpoint signing.
 
 Native Node aliases are configured in the workspace manifest: `#modules/*`,
 `#infrastructure/*`, `#shared/*`, and `#config/*`. Include explicit `.js` filenames.

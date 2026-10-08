@@ -99,8 +99,33 @@ export default [
                 {
                     patterns: [
                         {
-                            regex: '^(@prisma/|#infrastructure/database/|.*(?:infrastructure/database|repositories)/)',
+                            regex: '^(@prisma/|@aws-sdk/|#infrastructure/(database|storage)/|.*(?:infrastructure/(database|storage)|repositories)/)',
                             message: 'Controllers call services; services coordinate injected repositories.',
+                        },
+                    ],
+                },
+            ],
+        },
+    },
+    {
+        files: ['apps/api/src/modules/**/*.js'],
+        ignores: ['apps/api/src/modules/**/controllers/*.js'],
+        rules: {
+            'no-restricted-imports': [
+                'error',
+                {
+                    paths: [
+                        {
+                            name: '#infrastructure/storage/index.js',
+                            importNames: ['createStorageProvider'],
+                            message: 'Application composition creates storage; services receive the provider.',
+                        },
+                    ],
+                    patterns: [
+                        {
+                            regex: '^(@prisma/|@aws-sdk/|.*storage/(s3/|storageFactory\\.js))',
+                            message:
+                                'Business modules receive database clients/repositories and storage providers; do not import vendor adapters.',
                         },
                     ],
                 },

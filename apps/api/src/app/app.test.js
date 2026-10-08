@@ -7,6 +7,24 @@ import { validateEnvironment } from '#config/environment.js';
 import { buildApp } from './app.js';
 
 const apps = [];
+it('closes an injected storage provider with the application', async () => {
+    const storage = { close: vi.fn() };
+    const app = createApp({ storage });
+    await app.inject('/api/health');
+    await app.close();
+    expect(storage.close).toHaveBeenCalledTimes(1);
+});
+it('closes storage even if database shutdown fails', async () => {
+    const storage = { close: vi.fn() };
+    const database = {
+        connect: vi.fn().mockResolvedValue(),
+        disconnect: vi.fn().mockRejectedValue(new Error('Database disconnection failed')),
+    };
+    const app = createApp({ storage, database });
+    await app.ready();
+    await expect(app.close()).rejects.toThrow('Database disconnection failed');
+    expect(storage.close).toHaveBeenCalledTimes(1);
+});
 afterEach(async () => {
     await Promise.all(apps.splice(0).map((app) => app.close()));
 });
