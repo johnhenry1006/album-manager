@@ -66,6 +66,16 @@ virtual grid, thumbnail cards, and ID selection. Its toolbar removes selected
 favorites through media mutations, retaining failed IDs for retry and disabling
 selection during writes. Loading, empty, error, and cursor retry states use the
 existing media query and shared presentation components.
+`/search` composes `SearchPage`, `useSearchPage`, and `useSearchFilters` with the
+public media feature. Metadata searches use only `GET /api/media` through
+`useInfiniteMedia`; there is no search API feature. URL filters are `q`, `album`,
+`category`, `tag` (one tag, matching the API), `takenAtFrom`, `takenAtTo`, `type`,
+`mimeType`, and `favorite`. Search and library share the media filter hook and
+form; the search page supplies paginated album/category/tag options. Cursor
+results reuse the virtual grid and ID selection, which persists across filters
+and loaded pages until explicitly cleared. Filter changes reset the grid's
+scroll position and cursor query; keyword and MIME requests are debounced by
+300 ms. Incomplete MIME values suspend media requests and show local feedback.
 Other pages remain minimal placeholders. The library page composes a
 page hook consuming public media/category/tag hooks, with cursor pagination and
 TanStack Virtual rendering thumbnail cards. Its URL filters are `q`, `type`,

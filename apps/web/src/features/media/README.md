@@ -18,6 +18,12 @@ adapter and query keys are private; no API client is exported.
   `retainSelection`. All operations take IDs or iterable ID collections, never
   page data. Selection persists across filters and loaded pages; page orchestration
   chooses when to clear it or retain only explicitly supplied IDs.
+- `useMediaFilters(filterNames)` owns URL metadata filters and their API mapping,
+  including debounced `q`/MIME values, local MIME validation, inclusive UTC
+  taken-date bounds, and boolean favorites.
+  The default fields include album and exact MIME type; library pages can pass
+  their smaller field set. `MediaFilterForm` renders these controlled filters
+  with caller-supplied paginated option queries. Neither makes media requests.
 - `useFavoriteMedia()` returns `favorite` and `unfavorite` mutation objects.
   Each accepts a media ID through `mutate` or `mutateAsync`. Favorites lists use
   `useInfiniteMedia({ favorite: true })`.
