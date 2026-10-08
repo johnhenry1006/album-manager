@@ -1,6 +1,6 @@
 import { albumRoutes } from '#modules/albums/index.js';
 import healthModule from '#modules/health/index.js';
-import { mediaDetailRoutes, mediaRoutes } from '#modules/media/index.js';
+import { mediaDetailRoutes, mediaFavoriteRoutes, mediaRoutes } from '#modules/media/index.js';
 import { taxonomyRoutes } from '#modules/taxonomy/index.js';
 import { uploadRoutes } from '#modules/uploads/index.js';
 import errorHandlingPlugin from '#shared/middleware/errorHandling.plugin.js';
@@ -8,7 +8,7 @@ import errorHandlingPlugin from '#shared/middleware/errorHandling.plugin.js';
 export function registerPlugins(
     app,
     config,
-    { albumService, taxonomyService, uploadService, mediaListService, mediaDetailService } = {},
+    { albumService, taxonomyService, uploadService, mediaListService, mediaDetailService, mediaFavoriteService } = {},
 ) {
     app.register(errorHandlingPlugin);
     app.register(
@@ -19,6 +19,7 @@ export function registerPlugins(
             if (uploadService) api.register(uploadRoutes, { service: uploadService });
             if (mediaListService) api.register(mediaRoutes, { service: mediaListService });
             if (mediaDetailService) api.register(mediaDetailRoutes, { service: mediaDetailService });
+            if (mediaFavoriteService) api.register(mediaFavoriteRoutes, { service: mediaFavoriteService });
         },
         { prefix: '/api' },
     );

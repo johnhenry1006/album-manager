@@ -2,6 +2,7 @@
 
 See [Media detail and original URLs](MEDIA_DETAIL.md) for individual media,
 EXIF, display renditions, and explicitly requested original access.
+See [Favorite mutations](MEDIA_FAVORITES.md) for adding and removing favorites.
 
 `GET /api/media` returns a compact, cursor-paginated gallery list. The MVP is
 single-user. Soft-deleted media is always excluded. No EXIF, original object

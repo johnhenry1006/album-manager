@@ -33,6 +33,8 @@ The media HTTP module adds a lightweight gallery list, individual detail with
 EXIF and signed display variants, and a dedicated original-URL endpoint when
 database and storage dependencies are supplied. See [Media list](../api/MEDIA.md)
 and [Media detail](../api/MEDIA_DETAIL.md) for contracts and expiry policies.
+The media module also registers favorite mutations when a database is supplied;
+see [Favorite mutations](../api/MEDIA_FAVORITES.md) for idempotent behavior.
 The albums module registers CRUD and ordered membership routes when a database is supplied;
 its service can also be injected in tests. It reuses the media public gallery service
 and storage provider for thumbnails. See [Albums](../api/ALBUMS.md) for soft deletion,

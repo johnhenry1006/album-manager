@@ -1,10 +1,12 @@
 import { createMediaRepository } from './repositories/media.repository.js';
 import { createMediaDetailRepository } from './repositories/mediaDetail.repository.js';
+import { createMediaFavoriteRepository } from './repositories/mediaFavorite.repository.js';
 import { createMediaListRepository } from './repositories/mediaList.repository.js';
 import { createMediaUploadCleanupRepository } from './repositories/mediaUploadCleanup.repository.js';
 import { createMediaVariantRepository } from './repositories/mediaVariant.repository.js';
 import { createMediaService } from './services/media.service.js';
 import { createMediaDetailService } from './services/mediaDetail.service.js';
+import { createMediaFavoriteService } from './services/mediaFavorite.service.js';
 import { createMediaListService } from './services/mediaList.service.js';
 import { createMediaUploadCleanupService } from './services/mediaUploadCleanup.service.js';
 import { createMediaVariantService } from './services/mediaVariant.service.js';
@@ -44,3 +46,10 @@ export function createMediaDetailModule({ client, storage, config }) {
 }
 export { default as mediaDetailRoutes } from './routes/mediaDetail.routes.js';
 export { createMediaGalleryItem } from './services/mediaGallery.service.js';
+
+export function createMediaFavoriteModule({ client }) {
+    return Object.freeze({
+        service: createMediaFavoriteService({ repository: createMediaFavoriteRepository(client) }),
+    });
+}
+export { default as mediaFavoriteRoutes } from './routes/mediaFavorite.routes.js';
