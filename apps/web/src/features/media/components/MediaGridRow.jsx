@@ -14,6 +14,9 @@ export const MediaGridRow = memo(function MediaGridRow({
   aspectRatio,
   sizes,
   onActivate,
+  isSelected,
+  onToggleSelection,
+  selectionDisabled,
 }) {
   const rowItems = useMemo(
     () => getMediaRowItems(items, rowIndex, columnCount),
@@ -38,6 +41,9 @@ export const MediaGridRow = memo(function MediaGridRow({
           aspectRatio={aspectRatio}
           sizes={sizes}
           onActivate={onActivate}
+          selected={isSelected?.(media.id) ?? false}
+          onToggleSelection={onToggleSelection}
+          selectionDisabled={selectionDisabled}
         />
       ))}
     </div>

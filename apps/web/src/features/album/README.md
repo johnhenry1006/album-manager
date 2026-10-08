@@ -15,9 +15,10 @@ public for consumers that need to coordinate cache refreshes.
   using `coverMediaId`; a cover must already belong to the album.
 - `useDeleteAlbum()` accepts an album ID. Soft deletion clears cached album
   detail/gallery data, refreshes lists and media memberships, and preserves files.
-- `useInfiniteAlbumMedia(albumId, { limit }, { enabled })` returns the infinite
+- `useInfiniteAlbumMedia(albumId, { limit, q, type, favorite }, { enabled })` returns the infinite
   query plus memoized deduplicated `items` and `nextCursor`. Call `fetchNextPage`
-  when `hasNextPage` is true. Consumers cannot pass a cursor or library filters.
+  when `hasNextPage` is true. Consumers cannot pass a cursor or other library filters.
+  Search matches filenames; type accepts `IMAGE`/`VIDEO` and favorite is boolean.
   Cursors remain opaque; the server owns `(position, membershipId)` ordering.
   Changing the album or limit selects a separate cache entry.
 - `useAlbumMediaActions(albumId)` returns `add` and `remove` mutation objects.
@@ -26,6 +27,8 @@ public for consumers that need to coordinate cache refreshes.
   `remove.mutate(mediaId)` removes membership and may clear the cover. Both refresh
   album lists and detail/counts, album gallery, media lists filtered by album,
   and the affected media detail.
+  `refreshMedia()` invalidates all cached album galleries after global media
+  changes, including inactive queries with different filters.
 
 Queries forward cancellation signals and follow shared retry/freshness defaults.
 Mutations expose their own pending/error state and refresh caches only on success.

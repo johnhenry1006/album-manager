@@ -1,0 +1,56 @@
+.header {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  margin: 1rem 0;
+}
+.cover {
+  width: 160px;
+  flex: 0 0 160px;
+}
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 1rem;
+  margin: 1rem 0;
+}
+.filters label,
+.picker label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.filters input,
+.filters select,
+.picker input {
+  padding: 0.6rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  background: var(--color-surface);
+  color: inherit;
+  max-width: 100%;
+}
+.actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 1rem 0;
+}
+.actions button:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+.picker {
+  padding: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  margin: 1rem 0;
+}
+@media (max-width: 500px) {
+  .header {
+    flex-direction: column;
+    align-items: start;
+  }
+}

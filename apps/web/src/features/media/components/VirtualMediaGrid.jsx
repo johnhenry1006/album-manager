@@ -23,6 +23,9 @@ export const VirtualMediaGrid = memo(function VirtualMediaGrid({
   paginationKey,
   nextCursor,
   onActivate,
+  isSelected,
+  onToggleSelection,
+  selectionDisabled = false,
   isLoading = false,
   label = 'Media gallery',
   className = '',
@@ -72,6 +75,9 @@ export const VirtualMediaGrid = memo(function VirtualMediaGrid({
               aspectRatio={aspectRatio}
               sizes={sizes}
               onActivate={onActivate}
+              isSelected={isSelected}
+              onToggleSelection={onToggleSelection}
+              selectionDisabled={selectionDisabled}
             />
           ))}
         </div>

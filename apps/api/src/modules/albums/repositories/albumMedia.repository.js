@@ -38,11 +38,18 @@ export function createAlbumMediaRepository(client) {
         removeMembership(albumId, mediaId) {
             return client.albumMedia.delete({ where: { albumId_mediaId: { albumId, mediaId } } });
         },
-        findMediaPage(albumId, { limit, cursor }) {
+        findMediaPage(albumId, { limit, cursor, q, type, favorite }) {
             return client.albumMedia.findMany({
                 where: {
                     albumId,
-                    media: { deletedAt: null },
+                    media: {
+                        deletedAt: null,
+                        ...(type ? { type } : {}),
+                        ...(favorite === undefined ? {} : { favorite: favorite ? { isNot: null } : { is: null } }),
+                        ...(q === undefined
+                            ? {}
+                            : { originalFilename: { contains: q.replace(/[\\%_]/g, '\\$&'), mode: 'insensitive' } }),
+                    },
                     ...(cursor
                         ? {
                               OR: [

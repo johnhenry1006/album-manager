@@ -6,20 +6,28 @@ export function validatePosition(value) {
     return value;
 }
 
-export function encodeAlbumMediaCursor(row, albumId) {
-    return Buffer.from(JSON.stringify({ v: 1, albumId, position: row.position, id: row.id })).toString('base64url');
+const filterKey = (query = {}) => JSON.stringify([query.q ?? null, query.type ?? null, query.favorite ?? null]);
+const emptyFilters = filterKey();
+
+export function encodeAlbumMediaCursor(row, albumId, query) {
+    const key = filterKey(query);
+    const data = { v: key === emptyFilters ? 1 : 2, albumId, position: row.position, id: row.id };
+    if (data.v === 2) data.filterKey = key;
+    return Buffer.from(JSON.stringify(data)).toString('base64url');
 }
 
-export function decodeAlbumMediaCursor(value, albumId) {
+export function decodeAlbumMediaCursor(value, albumId, query) {
     try {
-        if (!value || value.length > 1024 || !/^[A-Za-z0-9_-]+$/.test(value)) throw invalid('Invalid cursor');
+        if (!value || value.length > 4096 || !/^[A-Za-z0-9_-]+$/.test(value)) throw invalid('Invalid cursor');
         const bytes = Buffer.from(value, 'base64url');
         if (bytes.toString('base64url') !== value) throw invalid('Invalid cursor');
         const data = JSON.parse(bytes.toString('utf8'));
         if (
             !data ||
-            Object.keys(data).sort().join(',') !== 'albumId,id,position,v' ||
-            data.v !== 1 ||
+            ![1, 2].includes(data.v) ||
+            Object.keys(data).sort().join(',') !==
+                (data.v === 1 ? 'albumId,id,position,v' : 'albumId,filterKey,id,position,v') ||
+            (data.v === 1 ? filterKey(query) !== emptyFilters : data.filterKey !== filterKey(query)) ||
             data.albumId !== albumId
         )
             throw invalid('Invalid cursor');

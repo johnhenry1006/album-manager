@@ -47,6 +47,35 @@ const mediaItems = (count) =>
     variants: [{ type: 'ORIGINAL', width: 800, height: 600, url: `/original-${i}.jpg` }],
   }));
 
+it('exposes controlled selection independently of activation and disables it during actions', async () => {
+  const onToggleSelection = vi.fn();
+  const onActivate = vi.fn();
+  const items = mediaItems(1);
+  const { rerender } = render(
+    <VirtualMediaGrid
+      items={items}
+      isSelected={() => true}
+      onToggleSelection={onToggleSelection}
+      onActivate={onActivate}
+    />,
+  );
+  const checkbox = await screen.findByRole('checkbox', { name: 'Select Photo 0' });
+  expect(checkbox).toBeChecked();
+  fireEvent.click(checkbox);
+  expect(onToggleSelection).toHaveBeenCalledWith('m0');
+  expect(onActivate).not.toHaveBeenCalled();
+  rerender(
+    <VirtualMediaGrid
+      items={items}
+      isSelected={() => false}
+      onToggleSelection={onToggleSelection}
+      selectionDisabled
+    />,
+  );
+  expect(screen.getByRole('checkbox')).toBeDisabled();
+  expect(screen.getByRole('checkbox')).not.toBeChecked();
+});
+
 it('mounts a bounded number of cards for 10000 items and maps scroll offsets to later rows', async () => {
   const { container } = render(
     <VirtualMediaGrid

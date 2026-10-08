@@ -31,7 +31,7 @@ export function createAlbumMediaService({ repository, storage, config }) {
                     position: row.position,
                 })),
             );
-            return { items, nextCursor: hasMore ? encodeAlbumMediaCursor(page.at(-1), albumId) : null, hasMore };
+            return { items, nextCursor: hasMore ? encodeAlbumMediaCursor(page.at(-1), albumId, query) : null, hasMore };
         },
         async addMedia(id, input) {
             const albumId = validateAlbumId(id);

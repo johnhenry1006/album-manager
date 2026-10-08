@@ -43,7 +43,14 @@ URL controls are `q`, `visibility`, `sort`, `page`, `limit`, and `view`. Search 
 debounced by 300 ms; visibility and sorting run on the server before pagination.
 Pages hold at most 48 albums, with grid/list modes sharing card components and
 thumbnail-only feature covers. An inline creation form uses the feature mutation
-and returns to the unfiltered newest-first list after success. Other pages remain minimal
+and returns to the unfiltered newest-first list after success.
+`/albums/:albumId` uses `AlbumDetailPage` with page hooks composing album detail,
+cursor gallery filters (`q`, `type`, `favorite`), shared ID selection, and feature
+mutations. The shared virtual grid supports controlled checkboxes without owning
+selection state. Removal, favorites, and cover actions run through feature hooks;
+partial operations retain failed IDs for retry. A second instance of the same
+grid provides an on-demand library picker for adding existing media. Uploads
+remain a placeholder; this page does not implement file uploads. Other pages remain minimal
 placeholders. The library page composes a
 page hook consuming public media/category/tag hooks, with cursor pagination and
 TanStack Virtual rendering thumbnail cards. Its URL filters are `q`, `type`,

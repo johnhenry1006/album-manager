@@ -95,7 +95,7 @@ it('owns opaque media cursors, deduplicates overlaps, and resets for another alb
   expect(urls.at(-1).searchParams.has('cursor')).toBe(false);
 });
 
-it.each([{ cursor: 'caller' }, { q: 'unsupported' }])(
+it.each([{ cursor: 'caller' }, { status: 'unsupported' }])(
   'rejects unsupported gallery filters %j',
   (filters) => {
     expect(() => renderHook(() => album.useInfiniteAlbumMedia('a', filters), setup())).toThrow(

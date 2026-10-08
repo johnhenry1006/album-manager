@@ -90,6 +90,13 @@ item references; scroll updates therefore do not flatten the full library again.
 `MediaGridRow` and `MediaCard` are memoized. Pass a stable `onActivate(media)`
 callback to skip unchanged card renders.
 
+Selection is optional: pass `isSelected(mediaId)` and `onToggleSelection(mediaId)`
+from `useMediaSelection` to `VirtualMediaGrid`. Each visible card renders a
+controlled checkbox separate from its activation button. `selectionDisabled`
+locks checkboxes while an action runs; the caller also guards any activation
+callback that changes selection. The grid does not own or duplicate selection
+state. Existing galleries that omit these props retain their previous behavior.
+
 `MediaEmptyState` wraps the shared empty state with customizable `title`,
 `description`, and `action`. The grid supports `emptyTitle`, `emptyDescription`,
 `label`, and an outer `className`. No full pages are implemented.

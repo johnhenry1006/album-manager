@@ -112,9 +112,12 @@ POST returns:
 }
 ```
 
-GET accepts only `limit` (1 through the lesser of 200 and `MEDIA_LIST_MAX_LIMIT`)
-and `cursor`. Its default is 50, clamped to that maximum; explicit oversized media
-limits are rejected. Album list pagination instead caps valid requested sizes.
+GET accepts `limit` (requested integer 1–200, default 50, capped to
+`MEDIA_LIST_MAX_LIMIT`), `cursor`, `q`, `type`, and `favorite`. Search `q` is a
+trimmed case-insensitive literal filename substring (1–255 characters, no newline
+or NUL); wildcard characters are escaped. `type` accepts `IMAGE` or `VIDEO`.
+`favorite` accepts the scalar strings `true` or `false`. All filters apply before
+cursor pagination, within the album's live memberships.
 It sorts `(AlbumMedia.position ASC, AlbumMedia.id ASC)` and fetches `limit + 1`.
 Items use the [compact media gallery contract](MEDIA.md), with additional
 `membershipId` and `position`. Only thumbnails are selected and signed through
@@ -123,6 +126,9 @@ returned. Thumbnail expiry uses `MEDIA_LIST_URL_EXPIRY_SECONDS` (default 900).
 
 Response: `{ "items": [], "nextCursor": null, "hasMore": false }`.
 The versioned base64url cursor contains album ID, position and membership UUID.
+Filtered cursors use version 2 and also bind normalized search/type/favorite
+values; changing filters requires a fresh first page. Unfiltered version 1
+cursors remain compatible. Neither version binds the page size.
 It is opaque to clients, not signed or an authorization mechanism. Malformed
 cursors and cursors for another album return 400. Value-based comparisons
 continue after removing the anchor membership. On the final/empty page,

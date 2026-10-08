@@ -33,5 +33,8 @@ export function useAlbumMediaActions(albumId) {
     },
     onSuccess: (_data, mediaId) => refresh(mediaId),
   });
-  return { add, remove };
+  // Global media metadata changes (such as favorites) can affect any cached album gallery.
+  const refreshMedia = () =>
+    client.invalidateQueries({ queryKey: albumQueryKeys.mediaCollections() });
+  return { add, remove, refreshMedia };
 }

@@ -210,6 +210,34 @@ describe.skipIf(process.env.DATABASE_TESTS !== '1')('albums with PostgreSQL', ()
         });
     });
 
+    it('filters membership media before cursor pagination and rejects cursors from other searches', async () => {
+        await fixture(async (tx, service) => {
+            const album = await service.create({ name: 'Filtered gallery' });
+            await tx.media.update({ where: { id: mediaIds[0] }, data: { originalFilename: 'Beach_% one.jpg' } });
+            await tx.media.update({ where: { id: mediaIds[2] }, data: { originalFilename: 'Beach_% two.jpg' } });
+            await tx.favorite.create({ data: { mediaId: mediaIds[0] } });
+            for (const id of mediaIds.slice(0, 3)) await service.addMedia(album.id, { mediaId: id, position: 5 });
+            const filters = { q: 'beach_%', type: 'IMAGE', limit: '1' };
+            const first = await service.listMedia(album.id, filters);
+            expect(first.items).toHaveLength(1);
+            expect(first.hasMore).toBe(true);
+            const second = await service.listMedia(album.id, { ...filters, cursor: first.nextCursor });
+            expect(second.hasMore).toBe(false);
+            expect(new Set([...first.items, ...second.items].map((row) => row.id))).toEqual(
+                new Set([mediaIds[0], mediaIds[2]]),
+            );
+            expect(
+                (await service.listMedia(album.id, { ...filters, favorite: 'true' })).items.map((row) => row.id),
+            ).toEqual([mediaIds[0]]);
+            expect(
+                (await service.listMedia(album.id, { ...filters, favorite: 'false' })).items.map((row) => row.id),
+            ).toEqual([mediaIds[2]]);
+            await expect(
+                service.listMedia(album.id, { ...filters, q: 'changed', cursor: first.nextCursor }),
+            ).rejects.toMatchObject({ statusCode: 400 });
+        });
+    });
+
     it('maps slug conflicts and rolls back failed writes without corrupting the transaction', async () => {
         await fixture(async (_tx, service) => {
             const first = await service.create({ name: 'First', slug: 'same' });
