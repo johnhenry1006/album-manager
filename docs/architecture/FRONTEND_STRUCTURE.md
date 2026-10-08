@@ -50,30 +50,80 @@ commands. The boundaries below apply to all future application code.
 
 ## Responsibilities
 
-| Location            | Responsibility                                                             |
-| ------------------- | -------------------------------------------------------------------------- |
-| `app/router`        | Route registration and route composition                                   |
-| `app/providers`     | Application-wide provider composition                                      |
-| `app/layouts`       | Route shells and layout composition                                        |
-| `pages`             | Thin route-facing React components and page-specific orchestration         |
-| `features`          | Business-domain UI, services/domain logic, hooks, actions, and API modules |
-| `components/ui`     | Domain-independent visual primitives                                       |
-| `components/common` | Reusable components with no feature or page dependencies                   |
-| `components/media`  | Reusable media presentation primitives, independent of feature data access |
-| `components/layout` | Reusable layout primitives used by application shells                      |
-| `hooks`             | Completely domain-independent reusable hooks                               |
-| `services`          | Generic infrastructure clients, including the future HTTP client           |
-| `store`             | Generic client state infrastructure; domain state belongs to its feature   |
-| `utils`             | Domain-independent pure helpers                                            |
-| `constants`         | Shared frontend constants without feature dependencies                     |
-| `config`            | Validated public frontend configuration                                    |
-| `styles`            | Global styling foundations                                                 |
-| `test`              | Shared test setup, fixtures, and helpers                                   |
+| Location            | Responsibility                                                              |
+| ------------------- | --------------------------------------------------------------------------- |
+| `app/router`        | Route registration and route composition                                    |
+| `app/providers`     | Application-wide provider composition                                       |
+| `app/layouts`       | Route shells and layout composition                                         |
+| `pages`             | Thin route-facing React components and page-specific orchestration          |
+| `features`          | Business-domain UI, services/domain logic, hooks, actions, and API modules  |
+| `components/ui`     | Domain-independent visual primitives                                        |
+| `components/common` | Reusable components with no feature or page dependencies                    |
+| `components/media`  | Reusable media presentation primitives, independent of feature data access  |
+| `components/layout` | Reusable layout primitives used by application shells                       |
+| `hooks`             | Completely domain-independent reusable hooks                                |
+| `services`          | Generic HTTP transport, API errors, and TanStack Query client configuration |
+| `store`             | Generic client state infrastructure; domain state belongs to its feature    |
+| `utils`             | Domain-independent pure helpers                                             |
+| `constants`         | Shared frontend constants without feature dependencies                      |
+| `config`            | Validated public frontend configuration                                     |
+| `styles`            | Global styling foundations                                                  |
+| `test`              | Shared test setup, fixtures, and helpers                                    |
 
 Feature-specific components and helpers stay inside their feature. Promote them
 to shared layers only when their responsibility is genuinely shared and they
 can remain independent of features/pages. `packages/shared` is for cross-application
 contracts and pure helpers, not a replacement for frontend shared folders.
+
+## Frontend infrastructure
+
+`config/api.js` validates `VITE_API_BASE_URL` at startup. Set this public value in
+`apps/web/.env.local` (see `apps/web/.env.example`), then restart Vite or rebuild.
+The default is `/api` on the browser's current origin; same-origin hosting must
+forward that prefix to the backend. An absolute HTTP(S) URL must include the API
+prefix (for example `http://localhost:3000/api`) and requires the backend to permit
+the frontend origin through CORS. Credentials, query strings, and fragments are
+rejected in the base URL. Never put server secrets in `VITE_*` configuration.
+
+Feature API modules call `httpClient.request(path, { method, body, headers, signal })`.
+Paths are relative to the API prefix, with an optional leading slash; external
+URLs are rejected. The default method is GET. `body` is a JSON value, serialized
+with a JSON content type. Successful JSON responses are parsed; empty, HEAD,
+204, and 205 responses return `null`. Malformed JSON or non-JSON success bodies
+throw `ApiError` with `code: 'INVALID_RESPONSE'`. Binary responses and direct
+presigned storage uploads require their own future transport, not this JSON client.
+
+`services/apiError.js` exports `ApiError` and `normalizeApiError`. Errors expose
+`message`, `status` (actual HTTP status, or `0` without a response), `code`,
+`requestId` (or `null`), and an optional diagnostic `cause`. HTTP errors consume
+the backend's `{ error, message, requestId }` envelope, validating field types.
+Unusable error bodies fall back to `HTTP_ERROR` with a generic status message;
+network failures use `NETWORK_ERROR`. Raw HTML or network exception messages are
+never used as display messages. Cancellation retains the AbortSignal's reason or
+original AbortError and is not normalized as an API failure.
+
+`services/queryClient.js` exports `createQueryClient`; `QueryProvider` uses it once
+per mount. Queries use a **30-second stale time** and retain inactive cache entries
+for **5 minutes**. Queries and mutations have **no automatic retries**, and window
+focus does not trigger refetches. Stale queries retain TanStack Query's default
+refetch-on-mount and refetch-on-reconnect behavior. Feature hooks may override
+these defaults deliberately; the HTTP client itself never retries.
+
+Reusable feature hooks own query keys and queries/mutations. Pass the query
+function's AbortSignal through the feature API module to the HTTP transport:
+
+```js
+// Inside a feature hook; its API module owns the actual HTTP call.
+queryFn: ({ signal }) => mediaApi.list({ signal });
+
+// Inside that feature's private API module:
+httpClient.request('media', { signal });
+```
+
+Pages and page hooks continue to consume the feature's public `index.js`, never
+the generic HTTP client or private feature API modules. Tests cover transport
+responses, normalized failures, cancellation, public configuration, cache
+freshness, retry behavior, and provider cache isolation.
 
 ## Hook placement
 
