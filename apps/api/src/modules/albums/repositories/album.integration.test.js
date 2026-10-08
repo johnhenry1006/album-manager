@@ -177,6 +177,39 @@ describe.skipIf(process.env.DATABASE_TESTS !== '1')('albums with PostgreSQL', ()
         });
     });
 
+    it('filters and sorts the full collection before selecting a page', async () => {
+        await fixture(async (tx, service) => {
+            const ids = [1, 2, 3, 4].map((n) => `a0000000-0000-4000-8000-${String(n).padStart(12, '0')}`);
+            for (const [index, id] of ids.entries()) {
+                await tx.album.create({
+                    data: {
+                        id,
+                        slug: `sorted-${index}`,
+                        name: index === 0 ? 'Zulu' : 'Alpha',
+                        visibility: index === 3 ? 'PRIVATE' : 'PUBLIC',
+                        createdAt: new Date(index === 0 ? '2026-01-02T00:00:00.000Z' : '2026-01-01T00:00:00.000Z'),
+                    },
+                });
+            }
+            for (const [sort, expected] of [
+                ['newest', [ids[0], ids[2], ids[1]]],
+                ['oldest', [ids[1], ids[2], ids[0]]],
+                ['name', [ids[1], ids[2], ids[0]]],
+            ]) {
+                const seen = [];
+                for (let page = 1; page <= 3; page++) {
+                    const result = await service.list({ visibility: 'PUBLIC', sort, page: String(page), limit: '1' });
+                    expect(result.pagination).toMatchObject({ total: 3, totalPages: 3 });
+                    seen.push(result.items[0].id);
+                }
+                expect(seen).toEqual(expected);
+            }
+            expect((await service.list({ visibility: 'PRIVATE', sort: 'name' })).items.map((row) => row.id)).toEqual([
+                ids[3],
+            ]);
+        });
+    });
+
     it('maps slug conflicts and rolls back failed writes without corrupting the transaction', async () => {
         await fixture(async (_tx, service) => {
             const first = await service.create({ name: 'First', slug: 'same' });

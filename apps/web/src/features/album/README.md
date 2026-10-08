@@ -6,8 +6,10 @@ public for consumers that need to coordinate cache refreshes.
 
 - `useAlbum(albumId, { enabled })` returns the detail query, including counts.
   Missing IDs disable the query.
-- `useAlbums({ page, limit, q }, { enabled })` returns the lightweight list envelope
+- `useAlbums({ page, limit, q, visibility, sort }, { enabled })` returns the lightweight list envelope
   `{ items, pagination }` and query state. Page defaults to 1, limit to 50.
+  Visibility accepts `PRIVATE` or `PUBLIC`; omit it for all albums. Sort accepts
+  `newest` (the default), `oldest`, or `name` and applies before pagination.
 - `useCreateAlbum()` accepts metadata through `mutate` or `mutateAsync`.
 - `useUpdateAlbum()` accepts `{ id, ...metadata }`. Set/change/clear the cover
   using `coverMediaId`; a cover must already belong to the album.

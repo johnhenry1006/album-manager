@@ -37,7 +37,13 @@ modules with global foundations in `styles/global.css`.
 Routes cover dashboard, albums/details, media/details, upload, categories, tags,
 favorites, search, trash, settings, storage, and image optimization. `/` redirects
 to `/dashboard`; unmatched URLs show a not-found page. `/media` renders the media
-library, and `/media/:mediaId` renders media details; other pages remain minimal
+library, and `/media/:mediaId` renders media details. `/albums` composes a thin
+`AlbumListPage` with page hooks consuming public album feature hooks. Album list
+URL controls are `q`, `visibility`, `sort`, `page`, `limit`, and `view`. Search is
+debounced by 300 ms; visibility and sorting run on the server before pagination.
+Pages hold at most 48 albums, with grid/list modes sharing card components and
+thumbnail-only feature covers. An inline creation form uses the feature mutation
+and returns to the unfiltered newest-first list after success. Other pages remain minimal
 placeholders. The library page composes a
 page hook consuming public media/category/tag hooks, with cursor pagination and
 TanStack Virtual rendering thumbnail cards. Its URL filters are `q`, `type`,

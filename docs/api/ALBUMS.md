@@ -61,13 +61,17 @@ metadata and counts are read from a consistent transaction snapshot.
 
 Optional scalar query parameters:
 
-| Parameter | Meaning                                                                                                 |
-| --------- | ------------------------------------------------------------------------------------------------------- |
-| `page`    | Positive integer, default 1; offset must fit a PostgreSQL integer                                       |
-| `limit`   | Integer 1 through the lesser of 200 and `MEDIA_LIST_MAX_LIMIT`; default 50, clamped to that maximum     |
-| `q`       | Trimmed literal substring in name or description; 1–255 characters, case-insensitive, no newline or NUL |
+| Parameter    | Meaning                                                                                                        |
+| ------------ | -------------------------------------------------------------------------------------------------------------- |
+| `page`       | Positive integer, default 1; offset must fit a PostgreSQL integer                                              |
+| `limit`      | Requested integer 1–200, default 50; capped to `MEDIA_LIST_MAX_LIMIT`. Pagination returns the effective limit. |
+| `q`          | Trimmed literal substring in name or description; 1–255 characters, case-insensitive, no newline or NUL        |
+| `visibility` | `PRIVATE` or `PUBLIC`; omitted means all active albums                                                         |
+| `sort`       | `newest` (default), `oldest`, or `name`; unknown values are rejected                                           |
 
-Albums sort by `(createdAt DESC, id DESC)`. `%`, `_` and backslashes are searched
+Newest sorts by `(createdAt DESC, id DESC)`, oldest by `(createdAt ASC, id ASC)`,
+and name by `(name ASC, id ASC)` using the database collation. Visibility and
+search apply before pagination and to the matching total. `%`, `_` and backslashes are searched
 literally. Deleted albums never appear. List returns lightweight metadata and
 `pagination`; it does not load all memberships or calculate per-album counts.
 
@@ -108,7 +112,9 @@ POST returns:
 }
 ```
 
-GET accepts only `limit` (same bounds/default as album list) and `cursor`.
+GET accepts only `limit` (1 through the lesser of 200 and `MEDIA_LIST_MAX_LIMIT`)
+and `cursor`. Its default is 50, clamped to that maximum; explicit oversized media
+limits are rejected. Album list pagination instead caps valid requested sizes.
 It sorts `(AlbumMedia.position ASC, AlbumMedia.id ASC)` and fetches `limit + 1`.
 Items use the [compact media gallery contract](MEDIA.md), with additional
 `membershipId` and `position`. Only thumbnails are selected and signed through

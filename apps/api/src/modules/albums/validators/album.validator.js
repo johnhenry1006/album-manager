@@ -30,11 +30,19 @@ export function validateAlbum(input, { create = false } = {}) {
 
 export function validateAlbumListQuery(input = {}, { maxLimit = 200 } = {}) {
     maxLimit = Math.min(200, maxLimit);
-    const data = validateQuery(input, ['page', 'limit', 'q']);
+    const data = validateQuery(input, ['page', 'limit', 'q', 'visibility', 'sort']);
     const page = validatePositiveInteger(data.page, 1, 2147483647);
-    const limit = validatePositiveInteger(data.limit, Math.min(50, maxLimit), maxLimit);
+    const limit = Math.min(validatePositiveInteger(data.limit, Math.min(50, maxLimit), 200), maxLimit);
     if ((page - 1) * limit > 2147483647) throw invalid('Page offset too large');
     const query = { page, limit };
+    if (data.visibility !== undefined) {
+        if (!['PRIVATE', 'PUBLIC'].includes(data.visibility)) throw invalid('Invalid visibility');
+        query.visibility = data.visibility;
+    }
+    if (data.sort !== undefined) {
+        if (!['newest', 'oldest', 'name'].includes(data.sort)) throw invalid('Invalid sort');
+        query.sort = data.sort;
+    }
     if (data.q !== undefined) {
         const text = data.q.trim();
         if (!text || text.length > 255 || /[\r\n\0]/.test(text)) throw invalid('Invalid search');

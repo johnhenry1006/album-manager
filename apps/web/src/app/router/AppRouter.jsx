@@ -1,7 +1,7 @@
 import { Navigate, Route, Routes } from 'react-router';
 
 import { AlbumDetailsPage } from '@/pages/albums/AlbumDetailsPage.jsx';
-import { AlbumsPage } from '@/pages/albums/AlbumsPage.jsx';
+import { AlbumListPage } from '@/pages/albums/AlbumListPage.jsx';
 import { CategoriesPage } from '@/pages/categories/CategoriesPage.jsx';
 import { DashboardPage } from '@/pages/dashboard/DashboardPage.jsx';
 import { FavoritesPage } from '@/pages/favorites/FavoritesPage.jsx';
@@ -24,7 +24,7 @@ export function AppRouter() {
       <Route element={<AppLayout />}>
         <Route index element={<Navigate to="/dashboard" replace />} />
         <Route path="dashboard" element={<DashboardPage />} />
-        <Route path="albums" element={<AlbumsPage />} />
+        <Route path="albums" element={<AlbumListPage />} />
         <Route path="albums/:albumId" element={<AlbumDetailsPage />} />
         <Route path="media" element={<MediaLibraryPage />} />
         <Route path="media/:mediaId" element={<MediaDetailPage />} />

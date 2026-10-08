@@ -1,0 +1,111 @@
+.header,
+.actions,
+.pagination,
+.details {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.actions {
+  justify-content: flex-start;
+}
+.filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr));
+  align-items: end;
+  gap: 1rem;
+  margin: 1rem 0;
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+}
+.field input,
+.field select,
+.field textarea {
+  width: 100%;
+  padding: 0.6rem;
+  background: var(--color-surface);
+  color: inherit;
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+}
+.createForm {
+  display: grid;
+  gap: 1rem;
+  max-width: 40rem;
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.75rem;
+  background: var(--color-surface);
+}
+.grid,
+.list {
+  display: grid;
+  gap: 1rem;
+  padding: 0;
+  margin: 1rem 0;
+  list-style: none;
+}
+.grid {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 15rem), 1fr));
+}
+.card {
+  min-width: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 0.75rem;
+  background: var(--color-surface);
+  overflow: hidden;
+}
+.cardLink {
+  display: block;
+  height: 100%;
+  color: inherit;
+  text-decoration: none;
+}
+.cardLink:hover {
+  background: #f5f8ff;
+}
+.metadata {
+  padding: 1rem;
+  min-width: 0;
+}
+.metadata h2 {
+  overflow-wrap: anywhere;
+  margin: 0 0 0.5rem;
+}
+.description {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  color: var(--color-muted);
+}
+.details {
+  font-size: 0.85rem;
+  color: var(--color-muted);
+  flex-wrap: wrap;
+}
+.list .cardLink {
+  display: flex;
+  align-items: center;
+}
+.list .cover {
+  width: 96px;
+  flex: 0 0 96px;
+}
+.pagination {
+  flex-wrap: wrap;
+  margin-top: 1.5rem;
+}
+.filters button:disabled,
+.createForm button:disabled,
+.pagination button:disabled {
+  cursor: default;
+  opacity: 0.5;
+}

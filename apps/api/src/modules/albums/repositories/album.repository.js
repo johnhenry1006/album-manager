@@ -45,13 +45,17 @@ export function createAlbumRepository(client, { inTransaction = typeof client.$c
         updateAlbum(id, data) {
             return client.album.update({ where: { id }, data, select: ALBUM_SELECT });
         },
-        listAlbums({ page, limit, q }) {
+        listAlbums({ page, limit, q, visibility, sort = 'newest' }) {
             const text = q === undefined ? undefined : { contains: q.replace(/[\\%_]/g, '\\$&'), mode: 'insensitive' };
-            const where = { deletedAt: null, ...(text ? { OR: [{ name: text }, { description: text }] } : {}) };
+            const where = {
+                deletedAt: null,
+                ...(visibility ? { visibility } : {}),
+                ...(text ? { OR: [{ name: text }, { description: text }] } : {}),
+            };
             return repository.transaction(
                 async (tx) => {
                     const [rows, total] = await Promise.all([
-                        tx.findAlbumPage(where, page, limit),
+                        tx.findAlbumPage(where, page, limit, sort),
                         tx.countAlbums(where),
                     ]);
                     return { rows, total };
@@ -59,10 +63,15 @@ export function createAlbumRepository(client, { inTransaction = typeof client.$c
                 { readOnly: true },
             );
         },
-        findAlbumPage(where, page, limit) {
+        findAlbumPage(where, page, limit, sort = 'newest') {
+            const orderBy = {
+                newest: [{ createdAt: 'desc' }, { id: 'desc' }],
+                oldest: [{ createdAt: 'asc' }, { id: 'asc' }],
+                name: [{ name: 'asc' }, { id: 'asc' }],
+            }[sort];
             return client.album.findMany({
                 where,
-                orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+                orderBy,
                 skip: (page - 1) * limit,
                 take: limit,
                 select: ALBUM_SELECT,
