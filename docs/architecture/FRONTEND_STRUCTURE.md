@@ -50,7 +50,7 @@ mutations. The shared virtual grid supports controlled checkboxes without owning
 selection state. Removal, favorites, and cover actions run through feature hooks;
 partial operations retain failed IDs for retry. A second instance of the same
 grid provides an on-demand library picker for adding existing media. Uploads
-remain a placeholder; this page does not implement file uploads. Other pages remain minimal
+remain a placeholder on album details; that page does not implement file uploads. Other pages remain minimal
 placeholders. The library page composes a
 page hook consuming public media/category/tag hooks, with cursor pagination and
 TanStack Virtual rendering thumbnail cards. Its URL filters are `q`, `type`,
@@ -64,6 +64,15 @@ Page action hooks coordinate favorite/trash feedback and return to the library
 after trash succeeds. Metadata and album/category/tag memberships render in a
 separate panel. Zustand is installed but no store exists until
 truly global client state is needed; server state belongs in TanStack Query.
+
+`/upload` composes a thin page with `useUploadPage`, consuming the upload feature's
+public hooks. The feature owns session metadata, direct presigned storage PUTs,
+byte progress, processing polling across session pages, retry checkpoints,
+cancellation, duplicate decisions, and the final media ID. Processing is displayed
+separately from transfer progress. The page provides single-file upload controls;
+the reusable session/file hooks also support pre-registering batch files.
+Album, Category, and Tag assignment belongs only in page orchestration after a
+final media ID is returned, never inside the upload feature.
 
 Run `npm run dev --workspace @album-manager/web`,
 `npm run build --workspace @album-manager/web`, or

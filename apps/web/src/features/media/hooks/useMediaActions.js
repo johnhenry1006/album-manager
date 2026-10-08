@@ -31,5 +31,5 @@ export function useMediaActions() {
     // A failed purge can still mark the item as unrestoreable on the server.
     onSettled: refresh,
   });
-  return { trash, restore, permanentDelete };
+  return { trash, restore, permanentDelete, refresh };
 }
