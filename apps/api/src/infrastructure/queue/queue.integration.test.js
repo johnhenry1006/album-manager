@@ -1,0 +1,46 @@
+import { randomUUID } from 'node:crypto';
+
+import { Queue } from 'bullmq';
+import { expect, it } from 'vitest';
+
+import { loadEnvironment } from '#config/loadConfig.js';
+import { validateQueueEnvironment } from '#config/queue.js';
+
+import { createQueueInfrastructure, QUEUE_NAMES } from './index.js';
+
+it.skipIf(process.env.QUEUE_TESTS !== '1')(
+    'accepts a stable processing job once in Redis',
+    async () => {
+        const config = { ...validateQueueEnvironment(loadEnvironment()), prefix: `upload-test-${randomUUID()}` };
+        const owner = createQueueInfrastructure(config);
+        const inspection = new Queue(QUEUE_NAMES.MEDIA_PROCESSING, {
+            prefix: config.prefix,
+            connection: {
+                host: config.host,
+                port: config.port,
+                password: config.password,
+                db: config.db,
+                ...(config.tls ? { tls: {} } : {}),
+                maxRetriesPerRequest: 1,
+            },
+        });
+        inspection.on('error', () => {});
+        try {
+            const data = { mediaId: randomUUID(), uploadFileId: randomUUID() };
+            await owner.enqueueMediaProcessing(data);
+            await owner.enqueueMediaProcessing(data);
+            expect(await inspection.getWaitingCount()).toBe(1);
+            const job = await inspection.getJob(data.mediaId);
+            expect(job.data).toEqual(data);
+            expect(job.opts).toMatchObject({ attempts: 3, backoff: { type: 'exponential', delay: 1000 } });
+        } finally {
+            try {
+                await inspection.obliterate({ force: true });
+            } finally {
+                await inspection.close();
+                await owner.close();
+            }
+        }
+    },
+    20000,
+);

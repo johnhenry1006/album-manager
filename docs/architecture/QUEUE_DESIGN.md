@@ -1,6 +1,9 @@
 # Queue infrastructure design
 
-Status: proposed; runtime implementation awaits design approval.
+Status: the media-processing producer is implemented for the upload API. The broader
+queue/worker infrastructure below remains proposed. The producer exposes readiness,
+job acceptance with stable media IDs, retries, and shutdown through `infrastructure/queue/index.js`;
+no workers or media-cleanup queue are registered. See [Direct uploads](../api/UPLOADS.md).
 
 ## Scope and boundaries
 

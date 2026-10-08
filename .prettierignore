@@ -11,5 +11,7 @@ coverage/
 .env.*
 package-lock.json
 uploads/
+!apps/api/src/modules/uploads/
+!apps/api/src/modules/uploads/**
 storage-data/
 **/.gitkeep

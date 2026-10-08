@@ -133,17 +133,24 @@ export class S3StorageProvider extends StorageProvider {
         const Command = method === 'GET' ? GetObjectCommand : HeadObjectCommand;
         return this.#presign(new Command({ Bucket: this.#bucket, Key: validateKey(key) }), method, {}, expiresIn);
     }
-    async copyObject({ sourceKey, destinationKey }) {
+    async copyObject({ sourceKey, destinationKey, sourceEtag }) {
         validateKey(sourceKey);
         validateKey(destinationKey);
         if (sourceKey === destinationKey) throw new TypeError('Storage copy requires a different destination');
+        if (sourceEtag !== undefined && (typeof sourceEtag !== 'string' || !sourceEtag || /[\r\n\0]/.test(sourceEtag)))
+            throw new TypeError('Invalid source ETag');
         const source = `${this.#bucket}/${sourceKey}`
             .split('/')
             .map((part) => encodeURIComponent(part))
             .join('/');
         const result = await this.#send(
             'copy',
-            new CopyObjectCommand({ Bucket: this.#bucket, Key: destinationKey, CopySource: source }),
+            new CopyObjectCommand({
+                Bucket: this.#bucket,
+                Key: destinationKey,
+                CopySource: source,
+                ...(sourceEtag === undefined ? {} : { CopySourceIfMatch: sourceEtag }),
+            }),
         );
         return { key: destinationKey, etag: result.CopyObjectResult?.ETag ?? null };
     }

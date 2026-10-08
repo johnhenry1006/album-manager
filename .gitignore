@@ -21,4 +21,6 @@ Thumbs.db
 
 # Local media and runtime data
 uploads/
+!apps/api/src/modules/uploads/
+!apps/api/src/modules/uploads/**
 storage-data/

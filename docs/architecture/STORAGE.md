@@ -39,7 +39,7 @@ Object keys are relative to the configured bucket, without a bucket name or lead
 | `getObjectMetadata`          | `{ key }`                                               | `{ key, fileSize, contentType, etag, lastModified, metadata }`, or `null` for a missing object |
 | `createPresignedUploadUrl`   | `{ key, contentType, expiresIn? }`                      | `{ url, method: 'PUT', headers, expiresIn }`                                                   |
 | `createPresignedDownloadUrl` | `{ key, expiresIn?, method? }`                          | `{ url, method: 'GET' or 'HEAD', headers, expiresIn }`                                         |
-| `copyObject`                 | `{ sourceKey, destinationKey }`                         | `{ key, etag }` for the destination                                                            |
+| `copyObject`                 | `{ sourceKey, destinationKey, sourceEtag? }`            | `{ key, etag }` for the destination                                                            |
 | `close`                      | None                                                    | Destroys owned clients once; subsequent operations reject                                      |
 
 Upload bodies can be strings, Uint8Array/Buffer, or Node Readable streams. Streams
@@ -47,6 +47,8 @@ require a known `contentLength`. This foundation uses single-object PUT, not mul
 upload; its maximum is 5 GiB. Add multipart capability deliberately when required.
 Metadata is a map of lowercase ASCII names to string values, without control characters.
 Copy stays within one configured bucket, encodes the source key, and rejects self-copy.
+When sourceEtag is supplied, the adapter sends CopySourceIfMatch so upload completion
+can preserve the exact staged object version it verified.
 
 Original-object immutability belongs to service orchestration: persist unique UUID
 keys, never upload/copy over an existing original, and handle retries explicitly.

@@ -33,7 +33,8 @@ it.skipIf(process.env.STORAGE_TESTS !== '1')(
                 contentType: 'text/plain',
                 metadata: { purpose: 'test' },
             });
-            await provider.copyObject({ sourceKey: key, destinationKey: copyKey });
+            const verified = await provider.getObjectMetadata({ key });
+            await provider.copyObject({ sourceKey: key, destinationKey: copyKey, sourceEtag: verified.etag });
             expect(await provider.exists({ key: copyKey })).toBe(true);
             const upload = await provider.createPresignedUploadUrl({ key, contentType: 'text/plain' });
             const put = await fetch(upload.url, {

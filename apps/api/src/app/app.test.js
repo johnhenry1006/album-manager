@@ -113,3 +113,12 @@ it('logs incoming requests and their completion', async () => {
     expect(records.some((record) => record.req?.url === '/api/health')).toBe(true);
     expect(records.some((record) => record.res?.statusCode === 200)).toBe(true);
 });
+
+it('readies and closes the injected processing queue with the application', async () => {
+    const queue = { ready: vi.fn().mockResolvedValue(), close: vi.fn().mockResolvedValue() };
+    const app = createApp({ queue });
+    expect((await app.inject('/api/health')).statusCode).toBe(200);
+    expect(queue.ready).toHaveBeenCalledTimes(1);
+    await app.close();
+    expect(queue.close).toHaveBeenCalledTimes(1);
+});

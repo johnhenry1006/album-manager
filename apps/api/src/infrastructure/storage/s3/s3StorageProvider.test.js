@@ -135,3 +135,13 @@ describe('S3 storage adapter', () => {
         expect(client.send).not.toHaveBeenCalled();
     });
 });
+
+it('conditionally copies the verified source version into an original key', async () => {
+    const { provider, client } = setup();
+    await provider.copyObject({
+        sourceKey: 'staging/source',
+        destinationKey: 'media/original',
+        sourceEtag: '"verified"',
+    });
+    expect(client.send.mock.calls[0][0].input).toMatchObject({ CopySourceIfMatch: '"verified"' });
+});

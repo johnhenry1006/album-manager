@@ -2,8 +2,11 @@ import { pathToFileURL } from 'node:url';
 
 import { validateDatabaseEnvironment } from '#config/database.js';
 import { loadConfig, loadEnvironment } from '#config/loadConfig.js';
+import { validateQueueEnvironment } from '#config/queue.js';
 import { validateStorageEnvironment } from '#config/storage.js';
+import { validateUploadEnvironment } from '#config/uploads.js';
 import { createDatabase } from '#infrastructure/database/index.js';
+import { createQueueInfrastructure } from '#infrastructure/queue/index.js';
 import { createStorageProvider } from '#infrastructure/storage/index.js';
 
 import { buildApp } from './app.js';
@@ -14,9 +17,12 @@ export async function startServer() {
     const config = loadConfig({ environment });
     const databaseConfig = validateDatabaseEnvironment(environment);
     const storageConfig = validateStorageEnvironment(environment);
+    const queueConfig = validateQueueEnvironment(environment);
+    const uploadConfig = validateUploadEnvironment(environment);
     const database = createDatabase(databaseConfig);
     const storage = createStorageProvider(storageConfig);
-    const app = buildApp({ config, database, storage });
+    const queue = createQueueInfrastructure(queueConfig);
+    const app = buildApp({ config, database, storage, queue, uploadConfig });
     const cleanup = registerShutdown(app, { timeoutMs: config.shutdownTimeoutMs });
     try {
         await app.listen({ host: config.host, port: config.port });

@@ -26,12 +26,16 @@ Fastify is the HTTP framework. `app/app.js` composes a testable instance;
 `app/server.js` loads validated dotenv configuration and listens. Plugin registration
 and graceful shutdown are separate focused modules in `app/`. A shared Fastify
 plugin installs centralized errors at the root so child route scopes inherit it.
-Health is the sole registered module under `/api`, with colocated Vitest inject tests.
+Health is registered under `/api`. The uploads module registers five metadata-only routes
+when database, storage, and queue dependencies are supplied; tests can inject its service.
+See [Direct uploads](../api/UPLOADS.md) for the request and response contracts.
 Database infrastructure owns a reusable Prisma client and PostgreSQL connection lifecycle.
 The server verifies database connectivity before listening and disconnects on close.
 Tests can inject a database owner or build a database-free application. Storage uses
 an injected provider backed by an S3-compatible adapter; application shutdown releases
-its clients. Queue/cache adapters, business modules, and image processing remain unimplemented.
+its clients. A Redis/BullMQ producer accepts media-processing jobs and follows application readiness
+and shutdown. Cache adapters, worker handlers, and image processing remain unimplemented.
+The shared media domain and upload module own their documented business responsibilities.
 See [Database conventions](../database/DATABASE_RULES.md) for client injection and migrations.
 See [Storage abstraction](STORAGE.md) for the provider contract, keys, and endpoint signing.
 
