@@ -1,8 +1,10 @@
 import { useInfiniteQuery } from '@tanstack/react-query';
+import { useMemo } from 'react';
 
 import { mediaApi } from '../api/mediaApi.js';
 import { mediaQueryKeys } from '../api/mediaQueryKeys.js';
 import { DEFAULT_MEDIA_PAGE_SIZE } from '../constants/mediaConstants.js';
+import { flattenMediaPages } from '../utils/flattenMediaPages.js';
 
 /** Filters mirror GET /media. Trash accepts only limit; cursors are hook-owned. */
 export function useInfiniteMedia(filters = {}, { collection = 'media', enabled = true } = {}) {
@@ -27,5 +29,6 @@ export function useInfiniteMedia(filters = {}, { collection = 'media', enabled =
     getNextPageParam: (page) => (page.hasMore ? (page.nextCursor ?? undefined) : undefined),
     enabled,
   });
-  return { ...query, items: query.data?.pages.flatMap((page) => page.items) ?? [] };
+  const items = useMemo(() => flattenMediaPages(query.data?.pages), [query.data?.pages]);
+  return { ...query, items, nextCursor: query.data?.pages.at(-1)?.nextCursor };
 }

@@ -53,6 +53,10 @@ it('uses opaque cursors and starts fresh when collection filters change', async 
     initialProps: { q: 'cats & dogs' },
   });
   await waitFor(() => expect(result.current.isSuccess).toBe(true));
+  expect(result.current.nextCursor).toBe('opaque+/=');
+  const initialItems = result.current.items;
+  rerender({ q: 'cats & dogs' });
+  expect(result.current.items).toBe(initialItems);
   await act(() => result.current.fetchNextPage());
   await waitFor(() =>
     expect(result.current.items.map(({ id }) => id)).toEqual(['first', 'second']),
@@ -62,6 +66,7 @@ it('uses opaque cursors and starts fresh when collection filters change', async 
   expect(requests[0].query.get('q')).toBe('cats & dogs');
   expect(requests[0].signal).toBeInstanceOf(AbortSignal);
   expect(result.current.hasNextPage).toBe(false);
+  expect(result.current.nextCursor).toBeNull();
   rerender({ q: 'birds' });
   await waitFor(() => expect(result.current.isSuccess).toBe(true));
   expect(result.current.items).toEqual([{ id: 'first' }]);

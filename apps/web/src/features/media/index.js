@@ -1,6 +1,11 @@
+export { MediaCard } from './components/MediaCard.jsx';
+export { MediaEmptyState } from './components/MediaEmptyState.jsx';
+export { MediaGridRow } from './components/MediaGridRow.jsx';
+export { VirtualMediaGrid } from './components/VirtualMediaGrid.jsx';
 export { useFavoriteMedia } from './hooks/useFavoriteMedia.js';
 export { useInfiniteMedia } from './hooks/useInfiniteMedia.js';
 export { useMedia } from './hooks/useMedia.js';
 export { useMediaActions } from './hooks/useMediaActions.js';
 export { useMediaSelection } from './hooks/useMediaSelection.js';
 export { useMediaVariants } from './hooks/useMediaVariants.js';
+export { useVirtualMediaGrid } from './hooks/useVirtualMediaGrid.js';
