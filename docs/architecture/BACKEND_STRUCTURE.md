@@ -37,6 +37,12 @@ The albums module registers CRUD and ordered membership routes when a database i
 its service can also be injected in tests. It reuses the media public gallery service
 and storage provider for thumbnails. See [Albums](../api/ALBUMS.md) for soft deletion,
 counts, cover membership and pagination contracts.
+The taxonomy module registers category/tag CRUD and individual/batch media assignment
+routes when a database is supplied; its service can also be injected in tests.
+Categories and tags share focused CRUD and assignment services within the taxonomy
+feature to avoid duplicating their metadata contracts; category hierarchy rules have
+a dedicated service. See [Categories and tags](../api/TAXONOMY.md) for pagination,
+tree output, hierarchy locking and permanent deletion contracts.
 Database infrastructure owns a reusable Prisma client and PostgreSQL connection lifecycle.
 The server verifies database connectivity before listening and disconnects on close.
 Tests can inject a database owner or build a database-free application. Storage uses

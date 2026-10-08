@@ -6,6 +6,7 @@ import { validateMediaListEnvironment } from '#config/mediaList.js';
 import { validateUploadEnvironment } from '#config/uploads.js';
 import { createAlbumModule } from '#modules/albums/index.js';
 import { createMediaDetailModule, createMediaListModule } from '#modules/media/index.js';
+import { createTaxonomyModule } from '#modules/taxonomy/index.js';
 import { createUploadModule } from '#modules/uploads/index.js';
 
 import { registerPlugins } from './registerPlugins.js';
@@ -19,6 +20,7 @@ export function buildApp({
     uploadService,
     uploadConfig = validateUploadEnvironment({}),
     albumService,
+    taxonomyService,
     mediaListService,
     mediaListConfig = validateMediaListEnvironment({}),
     mediaDetailService,
@@ -60,7 +62,10 @@ export function buildApp({
         (database?.client
             ? createAlbumModule({ client: database.client, storage, config: mediaListConfig }).service
             : undefined);
+    const taxonomy =
+        taxonomyService ?? (database?.client ? createTaxonomyModule({ client: database.client }).service : undefined);
     registerPlugins(app, config, {
+        taxonomyService: taxonomy,
         albumService: albums,
         uploadService: uploads,
         mediaListService: mediaList,

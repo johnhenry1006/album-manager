@@ -1,22 +1,10 @@
-import { randomUUID } from 'node:crypto';
+import { generatedSlug } from '#shared/utils/generatedSlug.js';
 
 import { mapAlbum } from '../mappers/album.mapper.js';
 import { validateAlbum, validateAlbumId, validateAlbumListQuery } from '../validators/album.validator.js';
 import { albumWrite, invalid } from './album.errors.js';
 import { requireAlbum } from './albumAccess.service.js';
 import { createAlbumMediaService } from './albumMedia.service.js';
-
-function generatedSlug(name) {
-    const stem = name
-        .normalize('NFKD')
-        .replace(/[\u0300-\u036f]/g, '')
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-|-$/g, '')
-        .slice(0, 180)
-        .replace(/-$/, '');
-    return `${stem || 'album'}-${randomUUID()}`;
-}
 
 export function createAlbumService({ repository, storage, config = { maxLimit: 200, urlExpirySeconds: 900 } }) {
     return Object.freeze({

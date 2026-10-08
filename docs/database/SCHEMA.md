@@ -196,3 +196,12 @@ Database integration tests run the migration inside a transaction and an isolate
 schema, exercise constraints and relationships, then roll back without touching
 application tables. Run `npm run test:database --workspace @album-manager/api`
 against configured PostgreSQL. Default `npm test` remains database-independent.
+
+## Taxonomy API behavior
+
+The [category/tag API](../api/TAXONOMY.md) uses the existing taxonomy and join
+models without a migration. Categories and tags are permanently deleted; category
+deletion is rejected while children exist, matching the self-reference `Restrict`
+action. Leaf/tag deletion cascades assignment rows, preserving media. Services
+enforce acyclic hierarchy changes under a transaction-scoped taxonomy table lock.
+Assignments are additive, idempotent, and atomic across selected live media.
