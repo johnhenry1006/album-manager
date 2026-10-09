@@ -9,7 +9,7 @@ import { MediaDetailPage } from '@/pages/media/MediaDetailPage.jsx';
 import { MediaLibraryPage } from '@/pages/media/MediaLibraryPage.jsx';
 import { NotFoundPage } from '@/pages/NotFoundPage.jsx';
 import { SearchPage } from '@/pages/search/SearchPage.jsx';
-import { ImageOptimizationPage } from '@/pages/settings/ImageOptimizationPage.jsx';
+import { ImageOptimizationSettingsPage } from '@/pages/settings/ImageOptimizationSettingsPage.jsx';
 import { SettingsPage } from '@/pages/settings/SettingsPage.jsx';
 import { StoragePage } from '@/pages/settings/StoragePage.jsx';
 import { TagListPage } from '@/pages/tags/TagListPage.jsx';
@@ -36,7 +36,7 @@ export function AppRouter() {
         <Route path="trash" element={<TrashPage />} />
         <Route path="settings" element={<SettingsPage />} />
         <Route path="settings/storage" element={<StoragePage />} />
-        <Route path="settings/image-optimization" element={<ImageOptimizationPage />} />
+        <Route path="settings/image-optimization" element={<ImageOptimizationSettingsPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>

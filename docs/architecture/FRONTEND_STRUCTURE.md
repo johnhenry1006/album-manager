@@ -97,6 +97,16 @@ per-item requests and original image sources. Loading, error/retry, empty lists
 and manual refresh are supported, retaining the last summary after refresh errors.
 Storage strings are formatted with BigInt. See the dashboard feature README for
 cache and presentation behavior.
+`/settings/image-optimization` composes the thin `ImageOptimizationSettingsPage`
+with `useImageOptimizationSettingsPage`, which consumes the public settings query
+and mutation hooks. A controlled page form edits the four optimization modes,
+optimized/preview dimensions, thumbnail sizes, and the applicable lossy quality.
+WebP output and original preservation remain fixed by the backend contract.
+The page hook owns draft validation, partial PATCH values, save feedback and reset;
+it retains edits during background refresh and after failed saves. Loading and
+retry states use the shared feedback components. The form explains the difference
+between visually high quality and mathematically lossless output, and the limits
+of lossless encoding after resizing/orientation/metadata transformations.
 Other pages remain minimal placeholders. The library page composes a
 page hook consuming public media/category/tag hooks, with cursor pagination and
 TanStack Virtual rendering thumbnail cards. Its URL filters are `q`, `type`,
