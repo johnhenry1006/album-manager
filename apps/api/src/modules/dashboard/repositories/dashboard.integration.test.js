@@ -72,7 +72,7 @@ describe.skipIf(process.env.DATABASE_TESTS !== '1')('dashboard with PostgreSQL',
                 coverMedia: null,
             });
             expect(result.recentAlbums.find(({ slug }) => slug === 'live').coverMedia.thumbnails).toHaveLength(3);
-            expect(keys).toHaveLength(6);
+            expect(keys).toHaveLength(3);
             expect(keys.every((key) => key.startsWith(`${live.id}/THUMBNAIL-`))).toBe(true);
             expect(JSON.stringify(result)).not.toContain('storageKey');
             expect((await service.summary()).recentMedia[0].thumbnails).not.toEqual(result.recentMedia[0].thumbnails);

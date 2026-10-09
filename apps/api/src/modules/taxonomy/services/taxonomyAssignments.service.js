@@ -11,7 +11,7 @@ export function createTaxonomyAssignments({ repository, kind }) {
                 // Stable order for all callers avoids deadlocks on overlapping media batches.
                 const liveIds = await tx.lockMedia(data.mediaIds);
                 if (liveIds.length !== data.mediaIds.length) throw notFound('Media');
-                for (const id of entityIds) if (!(await tx.find(id))) throw notFound(kind);
+                if ((await tx.findEntityIds(entityIds)).length !== entityIds.length) throw notFound(kind);
                 await tx.assign(data.mediaIds, entityIds);
                 return data;
             }),

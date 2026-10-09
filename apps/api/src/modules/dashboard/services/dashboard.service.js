@@ -18,10 +18,20 @@ export function createDashboardService({
                 repository.recentMedia(),
             ]);
             // Only aggregates are cached; signed thumbnails are refreshed on every request.
+            // Covers can reuse recent media. Share signing promises only in this response.
+            const signedUrls = new Map();
+            const thumbnailStorage = storage && {
+                createPresignedDownloadUrl(options) {
+                    if (!signedUrls.has(options.key)) {
+                        signedUrls.set(options.key, storage.createPresignedDownloadUrl(options));
+                    }
+                    return signedUrls.get(options.key);
+                },
+            };
             const thumbnails = (record) =>
                 storage
                     ? createMediaThumbnails(record.variants ?? [], {
-                          storage,
+                          storage: thumbnailStorage,
                           urlExpirySeconds: config.urlExpirySeconds,
                       })
                     : Promise.resolve([]);

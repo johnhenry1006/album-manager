@@ -107,10 +107,10 @@ describe('dashboard service', () => {
             coverMedia: { id: 'cover', thumbnails: [thumbnail] },
         });
         expect(JSON.stringify(result)).not.toContain('private/thumb.webp');
-        expect(keys).toEqual([
-            { key: 'private/thumb.webp', expiresIn: 900 },
-            { key: 'private/thumb.webp', expiresIn: 900 },
-        ]);
+        expect(keys).toEqual([{ key: 'private/thumb.webp', expiresIn: 900 }]);
+        await service.summary();
+        // Signing reuse is request-scoped: never serve cached/expired URLs on later requests.
+        expect(keys).toHaveLength(2);
     });
 
     it('clears deleted covers and supports metadata-only responses without storage', async () => {

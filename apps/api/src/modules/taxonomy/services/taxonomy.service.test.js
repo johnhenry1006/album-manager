@@ -16,6 +16,7 @@ function fixture(kind = 'categories') {
         transaction: async (run) => run(repository),
         lock: async () => {},
         find: async (id) => rows.get(id),
+        findEntityIds: async (ids) => ids.filter((id) => rows.has(id)),
         children: async (id) => [...rows.values()].filter((row) => row.parentId === id).length,
         create: async (data) => {
             if ([...rows.values()].some((row) => row.slug === data.slug)) throw { code: 'P2002' };
