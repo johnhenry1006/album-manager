@@ -14,14 +14,16 @@ export function mapDashboard({ data, updatedAt }, albums, media) {
             estimatedSavedBytes: String(data.savedBytes),
         },
         summaryUpdatedAt: updatedAt.toISOString(),
-        recentAlbums: albums.map(({ id, name, slug, visibility, createdAt }) => ({
+        recentAlbums: albums.map(({ id, name, slug, visibility, createdAt, coverMediaId, coverMedia }) => ({
             id,
             name,
             slug,
             visibility,
             createdAt: createdAt.toISOString(),
+            coverMediaId,
+            coverMedia,
         })),
-        recentMedia: media.map(({ id, type, originalFilename, status, width, height, createdAt }) => ({
+        recentMedia: media.map(({ id, type, originalFilename, status, width, height, createdAt, thumbnails }) => ({
             id,
             type,
             originalFilename,
@@ -29,6 +31,7 @@ export function mapDashboard({ data, updatedAt }, albums, media) {
             width,
             height,
             createdAt: createdAt.toISOString(),
+            thumbnails,
         })),
     };
 }

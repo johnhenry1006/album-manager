@@ -47,8 +47,9 @@ export function createMediaDetailModule({ client, storage, config }) {
         service: createMediaDetailService({ repository: createMediaDetailRepository(client), storage, config }),
     });
 }
+export { mediaThumbnailQuery } from './repositories/mediaThumbnail.query.js';
 export { default as mediaDetailRoutes } from './routes/mediaDetail.routes.js';
-export { createMediaGalleryItem } from './services/mediaGallery.service.js';
+export { createMediaGalleryItem, createMediaThumbnails } from './services/mediaGallery.service.js';
 
 export function createMediaFavoriteModule({ client }) {
     return Object.freeze({

@@ -59,6 +59,75 @@ function fixture() {
 }
 
 describe('dashboard service', () => {
+    it('includes supplied cover and recent thumbnails signed through storage without exposing keys', async () => {
+        const { repository } = fixture();
+        const variant = { name: 'small', format: 'webp', width: 200, height: 150, storageKey: 'private/thumb.webp' };
+        repository.recentAlbums = async () => [
+            {
+                id: 'album',
+                name: 'Trip',
+                slug: 'trip',
+                visibility: 'PRIVATE',
+                createdAt: date,
+                coverMediaId: 'cover',
+                coverMedia: { id: 'cover', deletedAt: null, variants: [variant] },
+            },
+        ];
+        repository.recentMedia = async () => [
+            {
+                id: 'media',
+                type: 'IMAGE',
+                originalFilename: 'photo.jpg',
+                status: 'READY',
+                width: 800,
+                height: 600,
+                createdAt: date,
+                variants: [variant],
+            },
+        ];
+        const keys = [];
+        const storage = {
+            createPresignedDownloadUrl: async ({ key, expiresIn }) => {
+                keys.push({ key, expiresIn });
+                return { url: 'https://assets.example/thumb.webp' };
+            },
+        };
+        const service = createDashboardService({ repository, storage, config: { urlExpirySeconds: 900 } });
+        const result = await service.summary();
+        const thumbnail = {
+            name: 'small',
+            format: 'webp',
+            width: 200,
+            height: 150,
+            url: 'https://assets.example/thumb.webp',
+        };
+        expect(result.recentMedia[0].thumbnails).toEqual([thumbnail]);
+        expect(result.recentAlbums[0]).toMatchObject({
+            coverMediaId: 'cover',
+            coverMedia: { id: 'cover', thumbnails: [thumbnail] },
+        });
+        expect(JSON.stringify(result)).not.toContain('private/thumb.webp');
+        expect(keys).toEqual([
+            { key: 'private/thumb.webp', expiresIn: 900 },
+            { key: 'private/thumb.webp', expiresIn: 900 },
+        ]);
+    });
+
+    it('clears deleted covers and supports metadata-only responses without storage', async () => {
+        const { repository } = fixture();
+        repository.recentAlbums = async () => [
+            {
+                id: 'album',
+                name: 'Trip',
+                createdAt: date,
+                coverMediaId: 'deleted',
+                coverMedia: { id: 'deleted', deletedAt: date, variants: [{ storageKey: 'private' }] },
+            },
+        ];
+        const result = await createDashboardService({ repository }).summary();
+        expect(result.recentAlbums[0]).toMatchObject({ coverMediaId: null, coverMedia: null });
+        expect(result.recentMedia[0].thumbnails).toEqual([]);
+    });
     it('returns precise storage totals and explicitly projected recent metadata', async () => {
         const { service } = fixture();
         expect(await service.summary()).toEqual({
@@ -66,7 +135,15 @@ describe('dashboard service', () => {
             storage: { originalBytes: '9007199254740993', optimizedBytes: '200', estimatedSavedBytes: '300' },
             summaryUpdatedAt: date.toISOString(),
             recentAlbums: [
-                { id: 'album', name: 'Trip', slug: 'trip', visibility: 'PRIVATE', createdAt: date.toISOString() },
+                {
+                    id: 'album',
+                    name: 'Trip',
+                    slug: 'trip',
+                    visibility: 'PRIVATE',
+                    createdAt: date.toISOString(),
+                    coverMediaId: null,
+                    coverMedia: null,
+                },
             ],
             recentMedia: [
                 {
@@ -77,6 +154,7 @@ describe('dashboard service', () => {
                     width: null,
                     height: null,
                     createdAt: date.toISOString(),
+                    thumbnails: [],
                 },
             ],
         });

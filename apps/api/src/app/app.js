@@ -74,7 +74,10 @@ export function buildApp({
     const taxonomy =
         taxonomyService ?? (database?.client ? createTaxonomyModule({ client: database.client }).service : undefined);
     const dashboard =
-        dashboardService ?? (database?.client ? createDashboardModule({ client: database.client }).service : undefined);
+        dashboardService ??
+        (database?.client
+            ? createDashboardModule({ client: database.client, storage, config: mediaListConfig }).service
+            : undefined);
     const mediaFavorite =
         mediaFavoriteService ??
         (database?.client ? createMediaFavoriteModule({ client: database.client }).service : undefined);

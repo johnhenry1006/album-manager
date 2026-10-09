@@ -10,6 +10,75 @@ describe.skipIf(process.env.DATABASE_TESTS !== '1')('dashboard with PostgreSQL',
     beforeAll(() => database.open());
     afterAll(() => database.close());
 
+    it('selects bounded thumbnails and live covers, signing fresh URLs without exposing originals', async () => {
+        await database.rollback(async (client) => {
+            const live = await client.media.create({
+                data: {
+                    type: 'IMAGE',
+                    originalFilename: 'photo.jpg',
+                    mimeType: 'image/jpeg',
+                    extension: 'jpg',
+                    fileSize: 1000n,
+                },
+            });
+            const deleted = await client.media.create({
+                data: {
+                    type: 'IMAGE',
+                    originalFilename: 'deleted.jpg',
+                    mimeType: 'image/jpeg',
+                    extension: 'jpg',
+                    fileSize: 1000n,
+                    deletedAt: new Date(),
+                },
+            });
+            await client.album.create({ data: { name: 'Live cover', slug: 'live', coverMediaId: live.id } });
+            await client.album.create({ data: { name: 'Deleted cover', slug: 'deleted', coverMediaId: deleted.id } });
+            for (const mediaId of [live.id, deleted.id]) {
+                for (const [index, type] of [
+                    'THUMBNAIL',
+                    'THUMBNAIL',
+                    'THUMBNAIL',
+                    'THUMBNAIL',
+                    'ORIGINAL',
+                    'PREVIEW',
+                ].entries()) {
+                    await client.mediaVariant.create({
+                        data: {
+                            mediaId,
+                            type,
+                            name: `size-${index}`,
+                            format: 'webp',
+                            width: 100 * (index + 1),
+                            height: 100,
+                            fileSize: 10n,
+                            storageKey: `${mediaId}/${type}-${index}`,
+                        },
+                    });
+                }
+            }
+            const keys = [];
+            const storage = {
+                createPresignedDownloadUrl: async ({ key }) => {
+                    keys.push(key);
+                    return { url: `https://assets.example/thumb?signature=${keys.length}` };
+                },
+            };
+            const { service } = createDashboardModule({ client, storage });
+            const result = await service.summary();
+            expect(result.recentMedia).toHaveLength(1);
+            expect(result.recentMedia[0].thumbnails.map(({ width }) => width)).toEqual([100, 200, 300]);
+            expect(result.recentAlbums.find(({ slug }) => slug === 'deleted')).toMatchObject({
+                coverMediaId: null,
+                coverMedia: null,
+            });
+            expect(result.recentAlbums.find(({ slug }) => slug === 'live').coverMedia.thumbnails).toHaveLength(3);
+            expect(keys).toHaveLength(6);
+            expect(keys.every((key) => key.startsWith(`${live.id}/THUMBNAIL-`))).toBe(true);
+            expect(JSON.stringify(result)).not.toContain('storageKey');
+            expect((await service.summary()).recentMedia[0].thumbnails).not.toEqual(result.recentMedia[0].thumbnails);
+        });
+    });
+
     it('returns zero counts and byte totals for an empty library', async () => {
         await database.rollback(async (client) => {
             const { service } = createDashboardModule({ client });

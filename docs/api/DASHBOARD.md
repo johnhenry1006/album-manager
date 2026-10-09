@@ -4,6 +4,7 @@
 parameters; unsupported parameters receive the centralized HTTP 400 response.
 The route is registered when the application has a database (or an injected
 dashboard service in tests). No storage or queue connection is required.
+When storage is supplied, recent items include freshly signed thumbnail URLs.
 
 ```json
 {
@@ -27,7 +28,9 @@ dashboard service in tests). No storage or queue connection is required.
             "name": "Trip",
             "slug": "trip",
             "visibility": "PRIVATE",
-            "createdAt": "2026-10-08T12:00:00.000Z"
+            "createdAt": "2026-10-08T12:00:00.000Z",
+            "coverMediaId": null,
+            "coverMedia": null
         }
     ],
     "recentMedia": [
@@ -38,7 +41,8 @@ dashboard service in tests). No storage or queue connection is required.
             "status": "PROCESSING",
             "width": null,
             "height": null,
-            "createdAt": "2026-10-08T12:00:00.000Z"
+            "createdAt": "2026-10-08T12:00:00.000Z",
+            "thumbnails": []
         }
     ]
 }
@@ -81,8 +85,21 @@ The two recent lists are fetched fresh on each request and each contains at most
 5 active records, ordered by `(createdAt DESC, id DESC)` using existing indexes.
 Recent media means newest persisted media, including pending/failed processing,
 not upload sessions or duplicate attempts. Recent lists may therefore be newer
-than the aggregate snapshot. They select compact metadata only: no originals,
-signed URLs, storage keys, EXIF, descriptions, or unbounded relations.
+than the aggregate snapshot. They select compact metadata and at most three
+`THUMBNAIL` variants per media item/album cover, ordered by `(width ASC, id ASC)`.
+There are no originals, previews, storage keys, EXIF, descriptions or unbounded
+relations in the response.
+
+`recentMedia[].thumbnails` uses the existing compact gallery contract:
+`{ name, format, width, height, url }`. A live album cover returns `coverMediaId`
+and `coverMedia: { id, thumbnails }`, allowing `AlbumCover` to render supplied
+thumbnails without a detail request. Missing/deleted covers return both fields
+as null. No thumbnails, or no injected storage provider, yields an empty array.
+URLs are signed through the storage abstraction using `MEDIA_LIST_URL_EXPIRY_SECONDS`
+(900 seconds by default). Thumbnail queries are bounded relations on the recent
+records, with no per-item database queries. Only aggregates are cached; thumbnail
+URLs are signed fresh on every request. Storage signing failures use centralized
+error handling.
 
 `createDashboardService` accepts an asynchronous `summaryReader` returning
 `{ data, updatedAt }`, where `data` uses the repository aggregate contract and

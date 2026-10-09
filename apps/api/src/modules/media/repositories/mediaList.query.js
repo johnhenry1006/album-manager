@@ -1,3 +1,5 @@
+import { mediaThumbnailQuery } from './mediaThumbnail.query.js';
+
 function afterCursor({ sort, order, cursor }) {
     const field = sort === 'filename' ? 'originalFilename' : sort;
     const compare = order === 'asc' ? 'gt' : 'lt';
@@ -66,11 +68,7 @@ export function buildMediaListQuery(query) {
             takenAt: true,
             ...(query.sort === 'createdAt' ? { createdAt: true } : {}),
             favorite: { select: { id: true } },
-            variants: {
-                where: { type: 'THUMBNAIL' },
-                orderBy: [{ width: 'asc' }, { id: 'asc' }],
-                select: { name: true, format: true, width: true, height: true, storageKey: true },
-            },
+            variants: mediaThumbnailQuery,
         },
     };
 }

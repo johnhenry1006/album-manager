@@ -1,4 +1,7 @@
+import { mediaThumbnailQuery } from '#modules/media/index.js';
+
 const RECENT_LIMIT = 5;
+const DASHBOARD_THUMBNAILS = { ...mediaThumbnailQuery, take: 3 };
 const RECENT_QUERY = {
     where: { deletedAt: null },
     orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
@@ -37,7 +40,15 @@ export function createDashboardRepository(client) {
         recentAlbums() {
             return client.album.findMany({
                 ...RECENT_QUERY,
-                select: { id: true, name: true, slug: true, visibility: true, createdAt: true },
+                select: {
+                    id: true,
+                    name: true,
+                    slug: true,
+                    visibility: true,
+                    createdAt: true,
+                    coverMediaId: true,
+                    coverMedia: { select: { id: true, deletedAt: true, variants: DASHBOARD_THUMBNAILS } },
+                },
             });
         },
         recentMedia() {
@@ -51,6 +62,7 @@ export function createDashboardRepository(client) {
                     width: true,
                     height: true,
                     createdAt: true,
+                    variants: DASHBOARD_THUMBNAILS,
                 },
             });
         },

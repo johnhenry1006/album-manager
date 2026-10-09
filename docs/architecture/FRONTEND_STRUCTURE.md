@@ -88,6 +88,15 @@ eligibility. Loading, empty, initial error and cursor retry states reuse existin
 presentation components. Media soft deletion invalidates collections without
 importing consuming features; trash imports media and album only through public
 indexes, keeping dependencies acyclic.
+`/dashboard` composes a thin `DashboardPage` with `useDashboardPage`, consuming
+the dashboard feature's public `useDashboardSummary` hook. Its private API adapter
+calls `GET /api/dashboard` through the shared HTTP client. Statistics, storage and
+bounded recent lists render in page components. Recent albums reuse `AlbumCover`
+with supplied thumbnail data; recent media reuse `ResponsiveImage`, avoiding
+per-item requests and original image sources. Loading, error/retry, empty lists
+and manual refresh are supported, retaining the last summary after refresh errors.
+Storage strings are formatted with BigInt. See the dashboard feature README for
+cache and presentation behavior.
 Other pages remain minimal placeholders. The library page composes a
 page hook consuming public media/category/tag hooks, with cursor pagination and
 TanStack Virtual rendering thumbnail cards. Its URL filters are `q`, `type`,
