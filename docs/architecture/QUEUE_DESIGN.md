@@ -3,7 +3,8 @@
 Status: the media-processing producer is implemented for the upload API. The broader
 queue/worker infrastructure below remains proposed. The producer exposes readiness,
 job acceptance with stable media IDs, retries, and shutdown through `infrastructure/queue/index.js`;
-no workers or media-cleanup queue are registered. See [Direct uploads](../api/UPLOADS.md).
+Dedicated media-processing and cleanup workers are implemented; cleanup uses a
+separate BullMQ Job Scheduler registration module. See [Direct uploads](../api/UPLOADS.md).
 
 ## Scope and boundaries
 
@@ -126,3 +127,6 @@ maxRetriesPerRequest null; listeners are registered before run(), readiness has 
 deadline, and fatal loop errors trigger runtime cleanup and unsuccessful exit.
 The producer supports explicit duplicate acceptance with a separate stable job ID.
 See [Media-processing worker](MEDIA_PROCESSING.md) for domain flow and persistence.
+
+See [Media cleanup worker](MEDIA_CLEANUP.md) for retention policy, idempotent
+purging and stable scheduler registration across application processes.

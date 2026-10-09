@@ -61,10 +61,10 @@ transformations stay outside this guarded storage/persistence transaction, which
 has a 30-second timeout. Unregistered objects left by earlier database failures
 remain a separate reconciliation concern; purge uses the recorded variant manifest.
 
-## Future retention cleanup
+## Retention cleanup
 
 The public media module exports `createMediaTrashModule({ client, storage, config })`.
-Its service exposes `cleanupExpired({ before: Date, limit: number })`. A future
+Its service exposes `cleanupExpired({ before: Date, limit: number })`. The dedicated BullMQ
 job computes an explicit retention cutoff and calls this service without HTTP
 objects. The cutoff must be valid and no later than the current time. Batches
 default to 50, accept 1–200 candidates, and order by `(deletedAt ASC, id ASC)`.
@@ -72,7 +72,8 @@ default to 50, accept 1–200 candidates, and order by `(deletedAt ASC, id ASC)`
 Eligibility is rechecked under the media lock before marking, so restored or
 recently re-trashed media is skipped. Pending purges retry through the same path.
 Results contain `deleted`, `skipped` and `failed` ID arrays; a failed candidate
-does not abort the batch. No timer, scheduler or implicit retention policy is enabled.
+does not abort the batch. The dedicated cleanup process registers an hourly schedule with a default thirty-day
+retention. See [Media cleanup worker](../architecture/MEDIA_CLEANUP.md).
 
 ## Migration and tests
 

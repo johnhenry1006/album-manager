@@ -60,10 +60,20 @@ export function createMediaTrashRepository(client, { inTransaction = typeof clie
                 take: limit + 1,
             });
         },
-        expired({ before, limit }) {
+        expired({ before, limit, after }) {
             return client.media.findMany({
-                where: { deletedAt: { lte: before } },
-                select: { id: true },
+                where: {
+                    deletedAt: { lte: before },
+                    ...(after
+                        ? {
+                              OR: [
+                                  { deletedAt: { gt: after.deletedAt } },
+                                  { deletedAt: after.deletedAt, id: { gt: after.id } },
+                              ],
+                          }
+                        : {}),
+                },
+                select: { id: true, deletedAt: true },
                 orderBy: [{ deletedAt: 'asc' }, { id: 'asc' }],
                 take: limit,
             });

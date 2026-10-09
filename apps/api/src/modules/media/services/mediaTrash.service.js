@@ -2,6 +2,7 @@ import { mapMediaTrashItem } from '../mappers/mediaTrash.mapper.js';
 import { encodeMediaListCursor } from '../validators/mediaListCursor.js';
 import {
     TRASH_ORDER,
+    validateCleanupMedia,
     validateRetentionCleanup,
     validateTrashMutation,
     validateTrashQuery,
@@ -76,6 +77,10 @@ export function createMediaTrashService({ repository, storageDeletion, storage, 
         async permanent(id, body, query) {
             const mediaId = validateTrashMutation(id, query, body, { permanent: true });
             await purge(mediaId);
+        },
+        async cleanupMedia(id, before) {
+            validateCleanupMedia(id, before, now());
+            return purge(id, before);
         },
         async cleanupExpired(input) {
             const options = validateRetentionCleanup(input, now());

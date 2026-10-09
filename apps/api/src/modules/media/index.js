@@ -69,3 +69,5 @@ export function createMediaTrashModule({ client, storage, config }) {
     });
 }
 export { default as mediaTrashRoutes } from './routes/mediaTrash.routes.js';
+export { createMediaCleanupService } from './services/mediaCleanup.service.js';
+export { createMediaTrashRepository };

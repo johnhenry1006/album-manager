@@ -61,3 +61,28 @@ it('can enqueue duplicate acceptance after the initial job has completed', async
     );
     await owner.close();
 });
+
+it('owns a separate cleanup queue with the same retry defaults and rejects access after close', async () => {
+    const connection = Object.assign(new EventEmitter(), { connect: vi.fn(), disconnect: vi.fn() });
+    const queue = Object.assign(new EventEmitter(), { waitUntilReady: vi.fn(), close: vi.fn() });
+    const createQueue = vi.fn(() => queue);
+    const owner = createQueueInfrastructure(
+        { prefix: 'test-cleanup' },
+        {
+            queueName: 'media-cleanup',
+            createConnection: () => connection,
+            createQueue,
+        },
+    );
+    expect(await owner.getQueue()).toBe(queue);
+    expect(createQueue).toHaveBeenCalledWith(
+        'media-cleanup',
+        expect.objectContaining({
+            prefix: 'test-cleanup',
+            defaultJobOptions: expect.objectContaining({ attempts: 3 }),
+        }),
+    );
+    await expect(owner.enqueueMediaProcessing({})).rejects.toThrow('Unsupported queue operation');
+    await owner.close();
+    await expect(owner.getQueue()).rejects.toThrow();
+});

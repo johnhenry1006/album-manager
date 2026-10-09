@@ -1,7 +1,7 @@
 import { Queue } from 'bullmq';
 import Redis from 'ioredis';
 
-export const QUEUE_NAMES = Object.freeze({ MEDIA_PROCESSING: 'media-processing' });
+export const QUEUE_NAMES = Object.freeze({ MEDIA_PROCESSING: 'media-processing', MEDIA_CLEANUP: 'media-cleanup' });
 
 export function createQueueInfrastructure(
     config,
@@ -9,14 +9,16 @@ export function createQueueInfrastructure(
         createConnection = (options) => new Redis(options),
         createQueue = (name, options) => new Queue(name, options),
         logger,
+        queueName = QUEUE_NAMES.MEDIA_PROCESSING,
     } = {},
 ) {
+    if (!Object.values(QUEUE_NAMES).includes(queueName)) throw new TypeError('Unsupported queue');
     let connection;
     let queue;
     let readiness;
     let closing;
     let closed = false;
-    const onError = () => logger?.error({ component: 'media-processing-queue' }, 'Queue transport error');
+    const onError = () => logger?.error({ queue: queueName }, 'Queue transport error');
     function close() {
         if (!closing) {
             closed = true;
@@ -52,7 +54,7 @@ export function createQueueInfrastructure(
                 connection.on('error', onError);
                 await connection.connect();
                 if (closed) throw new Error('Queue closed');
-                queue = createQueue(QUEUE_NAMES.MEDIA_PROCESSING, {
+                queue = createQueue(queueName, {
                     connection,
                     prefix: config.prefix,
                     defaultJobOptions: {
@@ -74,7 +76,13 @@ export function createQueueInfrastructure(
     return Object.freeze({
         ready,
         close,
+        async getQueue() {
+            await ready();
+            if (closed) throw new Error('Queue closed');
+            return queue;
+        },
         async enqueueMediaProcessing({ mediaId, uploadFileId, allowDuplicate = false }) {
+            if (queueName !== QUEUE_NAMES.MEDIA_PROCESSING) throw new TypeError('Unsupported queue operation');
             const uuid = /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i;
             if (
                 typeof mediaId !== 'string' ||

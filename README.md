@@ -407,3 +407,11 @@ It uses the same database, storage and Redis configuration as the API.
 `QUEUE_WORKER_CONCURRENCY` defaults to 1 (range 1–32). See
 [Media-processing worker](docs/architecture/MEDIA_PROCESSING.md) for duplicate
 acceptance, immutable originals, retry behavior and isolated integration checks.
+
+### Trash cleanup worker
+
+Run `npm run worker:cleanup --workspace @album-manager/api` as a separate process.
+`TRASH_RETENTION_DAYS=30` controls how long media stays in trash before permanent
+cleanup. The worker registers one hourly BullMQ schedule across all processes
+sharing its Redis/queue namespace. See [Media cleanup worker](docs/architecture/MEDIA_CLEANUP.md)
+for storage-first deletion, retries, lifecycle and mocked-storage tests.

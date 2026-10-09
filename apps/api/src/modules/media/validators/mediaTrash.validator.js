@@ -64,3 +64,8 @@ export function validateRetentionCleanup(input, now) {
         throw invalid('Invalid retention cutoff or batch size');
     return { before: new Date(before), limit };
 }
+
+export function validateCleanupMedia(id, before, now) {
+    validateId(id);
+    validateRetentionCleanup({ before }, now);
+}
