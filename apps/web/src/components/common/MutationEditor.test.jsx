@@ -68,7 +68,7 @@ it('disables all editing controls while saving and exposes failure feedback', as
 it('focuses the deletion confirmation and blocks its actions while deleting', async () => {
   const state = editor({ draft: null, deleting: { id: 'item', name: 'Travel' } });
   const view = render(form(state));
-  expect(screen.getByRole('dialog', { name: 'Delete item' })).toHaveFocus();
+  expect(screen.getByRole('button', { name: 'Cancel' })).toHaveFocus();
   expect(screen.getByRole('dialog')).toHaveTextContent('Delete Travel?');
   expect(screen.getByRole('dialog')).toHaveTextContent('Removes assignments.');
   await userEvent.setup().click(screen.getByRole('button', { name: 'Delete item' }));

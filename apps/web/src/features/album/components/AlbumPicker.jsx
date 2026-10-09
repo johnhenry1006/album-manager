@@ -1,5 +1,8 @@
 import { useId, useState } from 'react';
 
+import { EmptyState } from '@/components/common/EmptyState.jsx';
+import { ErrorState } from '@/components/common/ErrorState.jsx';
+import { Spinner } from '@/components/ui/Spinner.jsx';
 import { useDebounce } from '@/hooks/useDebounce.js';
 
 import { useAlbum } from '../hooks/useAlbum.js';
@@ -58,10 +61,26 @@ export function AlbumPicker({
           </option>
         ))}
       </select>
-      {albums.isFetching && <p role="status">Loading albums…</p>}
-      {albums.isError && <p role="alert">{albums.error.message}</p>}
-      {selected.isError && <p role="alert">{selected.error.message}</p>}
-      {albums.isSuccess && options.length === 0 && <p>No albums found.</p>}
+      {albums.isFetching && <Spinner label="Loading albums…" />}
+      {albums.isError && (
+        <ErrorState
+          title="Could not load albums"
+          description={albums.error.message}
+          onRetry={albums.refetch}
+          isRetrying={disabled || searchPending || albums.isFetching}
+        />
+      )}
+      {selected.isError && (
+        <ErrorState
+          title="Could not load selected album"
+          description={selected.error.message}
+          onRetry={selected.refetch}
+          isRetrying={disabled || selected.isFetching}
+        />
+      )}
+      {albums.isSuccess && !albums.isFetching && !searchPending && options.length === 0 && (
+        <EmptyState title="No albums found." />
+      )}
       <button
         type="button"
         disabled={disabled || searchPending || albums.isFetching || page <= 1}

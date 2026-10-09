@@ -1,0 +1,12 @@
+.loading {
+  padding: 1rem;
+}
+.placeholders {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+}
+.placeholder {
+  height: 8rem;
+}

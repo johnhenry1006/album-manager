@@ -1,4 +1,5 @@
 import { ErrorState } from '@/components/common/ErrorState.jsx';
+import { Spinner } from '@/components/ui/Spinner.jsx';
 import { VirtualMediaGrid } from '@/features/media/index.js';
 
 import styles from './AlbumDetail.module.css';
@@ -23,9 +24,10 @@ export function AlbumMediaPicker({ picker }) {
           title="Could not load library media"
           description={picker.error.message}
           onRetry={picker.retry}
+          isRetrying={picker.isFetching}
         />
       )}
-      {picker.isSearchPending && <p role="status">Searching library media…</p>}
+      {picker.isSearchPending && <Spinner label="Searching library media…" />}
       {!picker.isSearchPending && (!picker.error || picker.gridProps.items.length > 0) && (
         <VirtualMediaGrid
           {...picker.gridProps}

@@ -1,5 +1,6 @@
 import { ErrorState } from '@/components/common/ErrorState.jsx';
 import { PageContainer } from '@/components/layout/PageContainer.jsx';
+import { Spinner } from '@/components/ui/Spinner.jsx';
 import { VirtualMediaGrid } from '@/features/media/index.js';
 
 import { MediaFilterBar } from './components/MediaFilterBar.jsx';
@@ -19,12 +20,13 @@ export function MediaLibraryPage() {
         tags={page.tags}
         dateError={page.dateError}
       />
-      {page.isSearchPending && <p role="status">Searching media…</p>}
+      {page.isSearchPending && <Spinner label="Searching media…" />}
       {page.mediaError && !page.dateError && (
         <ErrorState
           title="Could not load media"
           description={page.mediaError.message}
           onRetry={page.retryMedia}
+          isRetrying={page.isFetchingMedia}
         />
       )}
       {!page.dateError && (!page.mediaError || page.loadedCount > 0) && (

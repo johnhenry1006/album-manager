@@ -12,7 +12,8 @@ export function useMediaDetailPage() {
   return {
     mediaId,
     media: query.data,
-    isLoading: query.isPending || actions.isTrashPending,
+    isLoading: query.isPending,
+    isRefreshing: query.isFetching,
     error: query.error,
     refresh: query.refetch,
     preview: variants.preview,

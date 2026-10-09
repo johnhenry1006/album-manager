@@ -12,14 +12,16 @@ export function useAlbumDetailActions(albumId, selection, addSelection) {
   const [isBusy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+  const [removalIds, setRemovalIds] = useState(null);
   async function run(ids, action, onSuccess, label, refresh = false) {
-    if (lock.current || !ids.length) return;
+    if (lock.current || !ids.length || (removalIds && label !== 'Remove from album')) return;
     lock.current = true;
     setBusy(true);
     setError('');
     setNotice('');
     let completed = 0;
     const failures = [];
+    const failedIds = [];
     try {
       for (const id of [...ids]) {
         try {
@@ -28,6 +30,7 @@ export function useAlbumDetailActions(albumId, selection, addSelection) {
           onSuccess?.(id);
         } catch (failure) {
           failures.push(failure);
+          failedIds.push(id);
         }
       }
       if (refresh && completed) await membership.refreshMedia();
@@ -35,6 +38,7 @@ export function useAlbumDetailActions(albumId, selection, addSelection) {
         `${label}: ${completed} succeeded${failures.length ? `, ${failures.length} failed` : ''}.`,
       );
       if (failures.length) setError(failures[0].message);
+      return failedIds;
     } finally {
       lock.current = false;
       setBusy(false);
@@ -44,19 +48,30 @@ export function useAlbumDetailActions(albumId, selection, addSelection) {
     isBusy,
     error,
     notice,
+    selectionLocked: isBusy || Boolean(removalIds),
+    removalConfirmation: {
+      open: Boolean(removalIds),
+      count: removalIds?.length ?? 0,
+      isPending: isBusy,
+      error,
+      onCancel: () => {
+        if (!lock.current) setRemovalIds(null);
+      },
+      onConfirm: async () => {
+        if (lock.current || !removalIds) return;
+        const failedIds = await run(
+          removalIds,
+          membership.remove.mutateAsync,
+          selection.deselect,
+          'Remove from album',
+        );
+        setRemovalIds(failedIds.length ? failedIds : null);
+      },
+    },
     removeSelected: () => {
-      if (
-        lock.current ||
-        !selection.selectedCount ||
-        !window.confirm(`Remove ${selection.selectedCount} selected media from this album?`)
-      )
-        return;
-      return run(
-        selection.selectedIds,
-        membership.remove.mutateAsync,
-        selection.deselect,
-        'Remove from album',
-      );
+      if (lock.current || removalIds || !selection.selectedCount) return;
+      setError('');
+      setRemovalIds([...selection.selectedIds]);
     },
     favoriteSelected: () =>
       run(

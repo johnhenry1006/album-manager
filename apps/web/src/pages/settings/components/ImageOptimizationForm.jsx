@@ -1,3 +1,5 @@
+import { ErrorState } from '@/components/common/ErrorState.jsx';
+
 import {
   DIMENSION_FIELDS,
   getActiveQualityField,
@@ -109,7 +111,7 @@ export function ImageOptimizationForm({ form }) {
           WebP is the supported output format. Original files are always preserved.
         </p>
       </fieldset>
-      {error && <p role="alert">{error}</p>}
+      {error && <ErrorState title="Could not save settings" description={error} />}
       {notice && <p role="status">{notice}</p>}
       <div className={styles.actions}>
         <button type="submit" disabled={!isDirty || isSaving}>

@@ -14,12 +14,15 @@ export function TrashPage() {
     >
       <TrashToolbar {...page.toolbarProps} />
       {page.notice && <p role="status">{page.notice}</p>}
-      {page.actionError && <p role="alert">{page.actionError}</p>}
+      {page.actionError && !page.toolbarProps.confirmationCount && (
+        <ErrorState title="Could not update trash" description={page.actionError} />
+      )}
       {page.mediaError && (
         <ErrorState
           title="Could not load trash"
           description={page.mediaError.message}
           onRetry={page.retryMedia}
+          isRetrying={page.isFetchingMedia}
         />
       )}
       {(!page.mediaError || page.loadedCount > 0) && (

@@ -182,3 +182,31 @@ it('uses thumbnails and refuses restoration of media with a purge in progress', 
   expect(screen.getByRole('button', { name: 'Restore selected' })).toBeDisabled();
   expect(screen.getByText(/cannot be restored/)).toBeVisible();
 });
+
+it('keeps failed deletion IDs in the confirmation and retries only those IDs', async () => {
+  let remaining = [item('first'), item('second')];
+  let fail = true;
+  setup((url, method) => {
+    if (method !== 'DELETE') return respond({ items: remaining, hasMore: false, nextCursor: null });
+    if (url.pathname.endsWith('/second/permanent') && fail)
+      return respond({ error: 'UNAVAILABLE', message: 'Delete failed' }, 503);
+    remaining = remaining.filter(({ id }) => !url.pathname.includes(`/${id}/`));
+    return respond(null);
+  });
+  await screen.findByRole('checkbox', { name: 'Select first.jpg' });
+  fireEvent.click(screen.getByRole('button', { name: 'Select loaded' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Permanently delete selected' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Confirm permanent deletion' }));
+  expect(await screen.findByRole('alert')).toHaveTextContent('Delete failed');
+  expect(screen.getByRole('alertdialog')).toHaveTextContent('1 selected media');
+  fail = false;
+  fireEvent.click(screen.getByRole('button', { name: 'Confirm permanent deletion' }));
+  await screen.findByRole('heading', { name: 'Trash is empty' });
+  expect(
+    requests.filter(({ method }) => method === 'DELETE').map(({ url }) => url.pathname),
+  ).toEqual([
+    '/api/trash/first/permanent',
+    '/api/trash/second/permanent',
+    '/api/trash/second/permanent',
+  ]);
+});

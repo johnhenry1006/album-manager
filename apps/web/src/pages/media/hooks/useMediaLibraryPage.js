@@ -25,11 +25,13 @@ export function useMediaLibraryPage() {
     categories: { query: categories, page: categoryPage, setPage: setCategoryPage },
     tags: { query: tags, page: tagPage, setPage: setTagPage },
     mediaError: media.error,
+    isFetchingMedia: media.isFetching,
     retryMedia,
     loadedCount: media.items.length,
     gridProps: {
       items: media.items,
       isLoading: media.isPending,
+      isRefreshing: media.isFetching && !media.isFetchingNextPage,
       hasNextPage: media.hasNextPage && !media.isError && !filterState.isSearchPending,
       isFetchingNextPage: media.isFetchingNextPage,
       onLoadMore: media.fetchNextPage,

@@ -1,5 +1,6 @@
 import { Link } from 'react-router';
 
+import { ConfirmDialog } from '@/components/common/ConfirmDialog.jsx';
 import { ErrorState } from '@/components/common/ErrorState.jsx';
 
 import styles from './MediaDetail.module.css';
@@ -109,14 +110,22 @@ export function MediaMetadataPanel({ media, actions }) {
           {actions.isTrashPending ? 'Moving to trash…' : 'Move to trash'}
         </button>
       </div>
+      <ConfirmDialog
+        {...actions.trashConfirmation}
+        title={`Move ${media.originalFilename} to trash?`}
+        description="You can restore this media from Trash."
+        confirmLabel="Confirm move to trash"
+        pendingLabel="Moving to trash…"
+      />
       {actions.favoriteError && (
         <ErrorState
           title="Could not update favorite"
           description={actions.favoriteError.message}
           onRetry={actions.changeFavorite}
+          isRetrying={actions.disabled}
         />
       )}
-      {actions.trashError && (
+      {actions.trashError && !actions.trashConfirmation.open && (
         <ErrorState
           title="Could not move to trash"
           description={actions.trashError.message}

@@ -1,5 +1,8 @@
 import { Link } from 'react-router';
 
+import { ErrorState } from '@/components/common/ErrorState.jsx';
+import { Spinner } from '@/components/ui/Spinner.jsx';
+
 import styles from '../UploadPage.module.css';
 
 const labels = {
@@ -35,7 +38,7 @@ export function UploadQueueItem({ item, onRetry, onCancel, onRemove, onResolve }
         <strong>{item.file.name}</strong>
         <span>{(item.file.size / 1024 ** 2).toFixed(2)} MiB</span>
       </div>
-      <p role="status">{label}</p>
+      {active && !duplicate ? <Spinner label={label} /> : <p role="status">{label}</p>}
       {progress?.isUploading && item.status === 'running' && (
         <div>
           <label htmlFor={`progress-${item.id}`}>
@@ -56,12 +59,19 @@ export function UploadQueueItem({ item, onRetry, onCancel, onRemove, onResolve }
           </div>
         </div>
       )}
-      {item.error && <p role="alert">{item.error.message}</p>}
+      {item.error && (
+        <ErrorState
+          title={item.status === 'invalid' ? 'Invalid file' : 'Upload failed'}
+          description={item.error.message}
+          onRetry={item.canRetry && !active ? () => onRetry(item.id) : undefined}
+          retryLabel="Retry"
+        />
+      )}
       {item.status === 'failed' && item.finalMediaId && (
         <p>Upload is ready; retry the remaining assignments.</p>
       )}
       <div className={styles.actions}>
-        {item.canRetry && !active && (
+        {item.canRetry && !active && !item.error && (
           <button type="button" onClick={() => onRetry(item.id)}>
             Retry
           </button>

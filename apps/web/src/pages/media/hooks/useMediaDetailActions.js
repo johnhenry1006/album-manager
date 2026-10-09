@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 
 import { useFavoriteMedia, useMediaActions, useMediaOriginalUrl } from '@/features/media/index.js';
@@ -8,6 +8,8 @@ export function useMediaDetailActions(mediaId, media, { isRefreshing = false } =
   const { trash } = useMediaActions();
   const original = useMediaOriginalUrl();
   const navigate = useNavigate();
+  const [trashConfirmationId, setTrashConfirmationId] = useState(null);
+  const isConfirmingTrash = trashConfirmationId === mediaId;
   const currentId = useRef(mediaId);
   useEffect(() => {
     currentId.current = mediaId;
@@ -19,7 +21,7 @@ export function useMediaDetailActions(mediaId, media, { isRefreshing = false } =
   const isTrashPending = forCurrentMedia(trash) && trash.isPending;
   const isOriginalPending = forCurrentMedia(original) && original.isPending;
   const isBusy = isFavoritePending || isTrashPending;
-  const disabled = !media || isBusy || isRefreshing;
+  const disabled = !media || isBusy || isRefreshing || isConfirmingTrash;
   const changeFavorite = () => {
     if (disabled) return;
     favorite.reset();
@@ -27,7 +29,12 @@ export function useMediaDetailActions(mediaId, media, { isRefreshing = false } =
     (media.favorite ? unfavorite : favorite).mutate(mediaId);
   };
   const moveToTrash = () => {
-    if (disabled || !window.confirm(`Move ${media.originalFilename} to trash?`)) return;
+    if (disabled) return;
+    trash.reset();
+    setTrashConfirmationId(mediaId);
+  };
+  const confirmTrash = () => {
+    if (!media || !isConfirmingTrash || isBusy || isRefreshing) return;
     trash.mutate(mediaId, {
       onSuccess: () => {
         if (currentId.current === mediaId) navigate('/media', { replace: true });
@@ -44,6 +51,15 @@ export function useMediaDetailActions(mediaId, media, { isRefreshing = false } =
     isTrashPending,
     changeFavorite,
     moveToTrash,
+    trashConfirmation: {
+      open: isConfirmingTrash,
+      isPending: isTrashPending || isRefreshing,
+      onConfirm: confirmTrash,
+      onCancel: () => {
+        if (!isTrashPending) setTrashConfirmationId(null);
+      },
+      error: forCurrentMedia(trash) ? trash.error : null,
+    },
     favoriteError: [favorite, unfavorite].find(
       (mutation) => forCurrentMedia(mutation) && mutation.isError,
     )?.error,
@@ -52,7 +68,7 @@ export function useMediaDetailActions(mediaId, media, { isRefreshing = false } =
       data: forCurrentMedia(original) ? original.data : null,
       error: forCurrentMedia(original) ? original.error : null,
       isPending: isOriginalPending,
-      disabled: !media || isTrashPending || isOriginalPending,
+      disabled: !media || isTrashPending || isOriginalPending || isConfirmingTrash,
       request: requestOriginal,
     },
   };

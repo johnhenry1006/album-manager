@@ -27,6 +27,7 @@ export function useTrashActions(selection, items) {
     setNotice('');
     let completed = 0;
     const failures = [];
+    const failedIds = [];
     try {
       for (const id of ids) {
         try {
@@ -35,12 +36,14 @@ export function useTrashActions(selection, items) {
           completed++;
         } catch (failure) {
           failures.push(failure);
+          failedIds.push(id);
         }
       }
       setNotice(
         `${label}: ${completed} succeeded${failures.length ? `, ${failures.length} failed` : ''}.`,
       );
       if (failures.length) setError(failures[0].message);
+      return failedIds;
     } finally {
       lock.current = false;
       setBusy(false);
@@ -61,6 +64,7 @@ export function useTrashActions(selection, items) {
     },
     requestPermanentDelete: () => {
       if (isLocked() || !selection.selectedCount) return;
+      setError('');
       const ids = [...selection.selectedIds];
       confirmationIds.current = ids;
       setConfirmation(ids);
@@ -70,16 +74,16 @@ export function useTrashActions(selection, items) {
       confirmationIds.current = null;
       setConfirmation(null);
     },
-    confirmPermanentDelete: () => {
+    confirmPermanentDelete: async () => {
       const ids = confirmationIds.current;
       if (lock.current || !ids) return;
-      confirmationIds.current = null;
-      setConfirmation(null);
-      run(
+      const failedIds = await run(
         ids,
         (mediaId) => permanentDelete.mutateAsync({ mediaId, confirm: true }),
         'Permanent delete',
       );
+      confirmationIds.current = failedIds.length ? failedIds : null;
+      setConfirmation(confirmationIds.current);
     },
   };
 }

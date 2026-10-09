@@ -50,6 +50,7 @@ export function useAlbumDetailPage(albumId) {
   const gridProps = {
     items: media.items,
     isLoading: media.isPending,
+    isRefreshing: media.isFetching && !media.isFetchingNextPage,
     hasNextPage: media.hasNextPage && !media.isError && !state.isSearchPending && !actions.isBusy,
     isFetchingNextPage: media.isFetchingNextPage,
     onLoadMore: media.fetchNextPage,
@@ -58,7 +59,7 @@ export function useAlbumDetailPage(albumId) {
     onActivate: openMedia,
     isSelected: selection.isSelected,
     onToggleSelection: selection.toggle,
-    selectionDisabled: actions.isBusy,
+    selectionDisabled: actions.selectionLocked,
   };
   return {
     ...state,
@@ -79,11 +80,13 @@ export function useAlbumDetailPage(albumId) {
       selection: addSelection,
       actions,
       error: picker.error,
+      isFetching: picker.isFetching,
       isSearchPending: debounced !== cleanAddSearch,
       retry: () => (picker.isFetchNextPageError ? picker.fetchNextPage() : picker.refetch()),
       gridProps: {
         items: picker.items,
         isLoading: picker.isPending,
+        isRefreshing: picker.isFetching && !picker.isFetchingNextPage,
         hasNextPage:
           picker.hasNextPage && !picker.isError && !actions.isBusy && debounced === cleanAddSearch,
         isFetchingNextPage: picker.isFetchingNextPage,
@@ -93,7 +96,7 @@ export function useAlbumDetailPage(albumId) {
         onActivate: togglePickerMedia,
         isSelected: addSelection.isSelected,
         onToggleSelection: addSelection.toggle,
-        selectionDisabled: actions.isBusy,
+        selectionDisabled: actions.selectionLocked,
       },
     },
   };

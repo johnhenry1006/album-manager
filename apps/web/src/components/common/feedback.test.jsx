@@ -46,3 +46,12 @@ it('announces loading while hiding decorative skeletons from assistive technolog
   expect(screen.getByRole('status')).toHaveTextContent('Loading media');
   expect(container.querySelector('[aria-hidden="true"]')).toBeInTheDocument();
 });
+
+it('keeps retry visible but blocks repeat requests while retrying', async () => {
+  const onRetry = vi.fn();
+  render(<ErrorState onRetry={onRetry} isRetrying />);
+  const retry = screen.getByRole('button', { name: 'Trying again…' });
+  expect(retry).toBeDisabled();
+  await userEvent.setup().click(retry);
+  expect(onRetry).not.toHaveBeenCalled();
+});

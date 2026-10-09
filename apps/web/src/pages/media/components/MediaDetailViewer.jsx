@@ -1,5 +1,6 @@
 import { useState } from 'react';
 
+import { EmptyState } from '@/components/common/EmptyState.jsx';
 import { ErrorState } from '@/components/common/ErrorState.jsx';
 import { Spinner } from '@/components/ui/Spinner.jsx';
 
@@ -42,7 +43,10 @@ export function MediaDetailViewer({ media, preview, original, onRefresh }) {
           onRefresh={onRefresh}
         />
       ) : (
-        <p>No preview available</p>
+        <EmptyState
+          title="No preview available"
+          description="A display preview is not available for this media."
+        />
       )}
       <div className={styles.actions}>
         <button type="button" disabled={original.disabled} onClick={original.request}>
@@ -63,6 +67,7 @@ export function MediaDetailViewer({ media, preview, original, onRefresh }) {
           title="Could not open original"
           description={original.error.message}
           onRetry={original.request}
+          isRetrying={original.disabled}
         />
       )}
     </section>

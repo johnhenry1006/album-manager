@@ -1,5 +1,6 @@
 import { ErrorState } from '@/components/common/ErrorState.jsx';
 import { PageContainer } from '@/components/layout/PageContainer.jsx';
+import { Spinner } from '@/components/ui/Spinner.jsx';
 
 import { AlbumFilters } from './components/AlbumFilters.jsx';
 import { AlbumGrid } from './components/AlbumGrid.jsx';
@@ -20,12 +21,14 @@ export function AlbumListPage() {
         pageSizes={page.pageSizes}
       />
       {page.notice && <p role="status">{page.notice}</p>}
-      {page.isSearchPending && <p role="status">Searching albums…</p>}
+      {page.isSearchPending && <Spinner label="Searching albums…" />}
+      {!page.albums.isPending && page.albums.isFetching && <Spinner label="Refreshing albums…" />}
       {page.albums.isError && (
         <ErrorState
           title="Could not load albums"
           description={page.albums.error.message}
           onRetry={page.albums.refetch}
+          isRetrying={page.albums.isFetching}
         />
       )}
       {!page.isSearchPending && (!page.albums.isError || page.items.length > 0) && (

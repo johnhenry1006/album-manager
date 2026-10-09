@@ -1,5 +1,6 @@
 import { memo } from 'react';
 
+import { LoadingState } from '@/components/common/LoadingState.jsx';
 import { Spinner } from '@/components/ui/Spinner.jsx';
 
 import { useVirtualMediaGrid } from '../hooks/useVirtualMediaGrid.js';
@@ -27,6 +28,7 @@ export const VirtualMediaGrid = memo(function VirtualMediaGrid({
   onToggleSelection,
   selectionDisabled = false,
   isLoading = false,
+  isRefreshing = false,
   label = 'Media gallery',
   className = '',
   emptyTitle,
@@ -54,7 +56,7 @@ export const VirtualMediaGrid = memo(function VirtualMediaGrid({
       tabIndex={0}
       className={`${styles.viewport} ${className}`}
       style={{ height }}
-      aria-busy={isLoading || grid.isLoadingMore}
+      aria-busy={isLoading || isRefreshing || grid.isLoadingMore}
     >
       {items.length > 0 ? (
         <div
@@ -82,10 +84,11 @@ export const VirtualMediaGrid = memo(function VirtualMediaGrid({
           ))}
         </div>
       ) : isLoading ? (
-        <Spinner label="Loading media" />
+        <LoadingState label="Loading media" />
       ) : (
         <MediaEmptyState title={emptyTitle} description={emptyDescription} />
       )}
+      {isRefreshing && !isLoading && !grid.isLoadingMore && <Spinner label="Refreshing media…" />}
       {grid.isLoadingMore && <Spinner label="Loading more media" />}
     </div>
   );

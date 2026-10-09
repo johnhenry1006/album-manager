@@ -316,3 +316,25 @@ Future feature tests belong with the behavior they exercise; `src/test` holds
 shared test support. Test domain functions, feature hooks, page orchestration,
 and important UI behavior as appropriate. Use the file size guidance in
 [Architecture rules](ARCHITECTURE_RULES.md), splitting by responsibility.
+
+## UI state conventions
+
+Use shared, domain-independent components for page and picker feedback:
+`LoadingState` composes `Skeleton` and an accessible `Spinner` for initial loads;
+`Spinner` indicates searches, background refreshes, additional cursor pages and
+active uploads while retaining existing content. `EmptyState` renders only after
+a successful empty result, and `ErrorState` exposes recoverable failures with
+explicit retry controls disabled during requests. Form mutation failures retain
+the draft so the same submit action can retry; bulk actions retain failed IDs.
+
+`ConfirmDialog` uses a native modal dialog with Cancel focused first, Escape
+cancellation when idle, focus restoration, and disabled controls while pending.
+Reuse it for taxonomy deletion, album membership removal, moving media to trash,
+and permanent media deletion. Failed destructive operations keep their dialog
+open; bulk retries target only unsuccessful IDs. Pages and page hooks still own
+action orchestration, and shared components never import features or pages.
+
+Upload rows distinguish queued, uploading, processing, completed, duplicate,
+failed and cancelled states. Transfer progress remains separate from processing;
+duplicate decisions and failure retries use the existing feature lifecycle.
+Settings and not-found routes without remote data do not invent query states.

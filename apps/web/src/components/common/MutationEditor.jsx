@@ -1,15 +1,14 @@
 import { useEffect, useRef } from 'react';
 
+import { ConfirmDialog } from './ConfirmDialog.jsx';
+import { ErrorState } from './ErrorState.jsx';
+
 export function MutationEditor({ editor, noun, fields, deleteDescription }) {
   const form = useRef(null);
-  const dialog = useRef(null);
   const isEditing = Boolean(editor.draft);
   useEffect(() => {
     form.current?.querySelector('input')?.focus();
   }, [editor.editingId, isEditing]);
-  useEffect(() => {
-    dialog.current?.focus();
-  }, [editor.deleting]);
   return (
     <>
       {editor.draft && (
@@ -30,19 +29,22 @@ export function MutationEditor({ editor, noun, fields, deleteDescription }) {
           </fieldset>
         </form>
       )}
-      {editor.deleting && (
-        <section ref={dialog} role="dialog" aria-label={`Delete ${noun}`} tabIndex={-1}>
-          <h2>Delete {editor.deleting.name}?</h2>
-          <p>{deleteDescription}</p>
-          <button type="button" disabled={editor.isPending} onClick={editor.confirmDelete}>
-            {editor.isPending ? 'Deleting…' : `Delete ${noun}`}
-          </button>{' '}
-          <button type="button" disabled={editor.isPending} onClick={editor.cancel}>
-            Cancel
-          </button>
-        </section>
+      <ConfirmDialog
+        open={Boolean(editor.deleting)}
+        role="dialog"
+        label={`Delete ${noun}`}
+        title={`Delete ${editor.deleting?.name}?`}
+        description={deleteDescription}
+        confirmLabel={`Delete ${noun}`}
+        pendingLabel="Deleting…"
+        isPending={editor.isPending}
+        onConfirm={editor.confirmDelete}
+        onCancel={editor.cancel}
+        error={editor.error}
+      />
+      {editor.error && !editor.deleting && (
+        <ErrorState title="Could not save changes" description={editor.error} />
       )}
-      {editor.error && <p role="alert">{editor.error}</p>}
       {editor.notice && <p role="status">{editor.notice}</p>}
     </>
   );

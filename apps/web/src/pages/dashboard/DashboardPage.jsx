@@ -1,4 +1,5 @@
 import { ErrorState } from '@/components/common/ErrorState.jsx';
+import { LoadingState } from '@/components/common/LoadingState.jsx';
 import { PageContainer } from '@/components/layout/PageContainer.jsx';
 import { Spinner } from '@/components/ui/Spinner.jsx';
 
@@ -13,14 +14,16 @@ export function DashboardPage() {
   const page = useDashboardPage();
   return (
     <PageContainer title="Dashboard" description="An overview of your media library.">
-      {page.isLoading && <Spinner label="Loading dashboard" />}
+      {page.isLoading && <LoadingState label="Loading dashboard" />}
       {page.error && (
         <ErrorState
           title="Could not load dashboard"
           description={page.error.message}
-          onRetry={page.isRefreshing ? undefined : page.refresh}
+          onRetry={page.refresh}
+          isRetrying={page.isRefreshing}
         />
       )}
+      {!page.isLoading && page.isRefreshing && <Spinner label="Refreshing dashboard…" />}
       {page.hasSummary && (
         <>
           <div className={styles.toolbar}>

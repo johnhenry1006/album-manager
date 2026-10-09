@@ -46,10 +46,12 @@ export function useSearchPage() {
     filterError: state.dateError || state.mimeError,
     isSearchPending: state.isSearchPending,
     mediaError: media.error,
+    isFetchingMedia: media.isFetching,
     retryMedia: () => (media.isFetchNextPageError ? media.fetchNextPage() : media.refetch()),
     gridProps: {
       items: media.items,
       isLoading: media.isPending,
+      isRefreshing: media.isFetching && !media.isFetchingNextPage,
       hasNextPage: media.hasNextPage && !media.isError && !state.isSearchPending,
       isFetchingNextPage: media.isFetchingNextPage,
       onLoadMore: media.fetchNextPage,

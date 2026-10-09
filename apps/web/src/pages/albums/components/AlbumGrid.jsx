@@ -1,10 +1,11 @@
 import { EmptyState } from '@/components/common/EmptyState.jsx';
+import { LoadingState } from '@/components/common/LoadingState.jsx';
 
 import { AlbumCard } from './AlbumCard.jsx';
 import styles from './AlbumList.module.css';
 
 export function AlbumGrid({ albums, view = 'grid', isLoading = false, hasFilters, resetFilters }) {
-  if (isLoading) return <p role="status">Loading albums…</p>;
+  if (isLoading) return <LoadingState label="Loading albums…" />;
   if (albums.length === 0)
     return (
       <EmptyState

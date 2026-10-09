@@ -1,5 +1,6 @@
+import { EmptyState } from '@/components/common/EmptyState.jsx';
 export function TagList({ tags, onEdit, onDelete, disabled }) {
-  if (!tags.length) return <p>No tags yet.</p>;
+  if (!tags.length) return <EmptyState title="No tags yet." />;
   return (
     <ul aria-label="Tags">
       {tags.map((tag) => (

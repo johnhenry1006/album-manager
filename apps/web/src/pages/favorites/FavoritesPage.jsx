@@ -11,12 +11,15 @@ export function FavoritesPage() {
     <PageContainer title="Favorites" description="Browse and manage your favorite media.">
       <FavoritesToolbar {...page.toolbarProps} />
       {page.notice && <p role="status">{page.notice}</p>}
-      {page.actionError && <p role="alert">{page.actionError}</p>}
+      {page.actionError && (
+        <ErrorState title="Could not update favorites" description={page.actionError} />
+      )}
       {page.mediaError && (
         <ErrorState
           title="Could not load favorites"
           description={page.mediaError.message}
           onRetry={page.retryMedia}
+          isRetrying={page.isFetchingMedia}
         />
       )}
       {(!page.mediaError || page.loadedCount > 0) && (

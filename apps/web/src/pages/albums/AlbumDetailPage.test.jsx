@@ -57,12 +57,8 @@ function defaultResponse(url) {
   return respond({ items: [media('one'), media('two')], hasMore: false, nextCursor: null });
 }
 beforeEach(() => {
-  vi.spyOn(window, 'confirm').mockReturnValue(true);
-  vi.spyOn(window, 'confirm').mockReturnValue(true);
   vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockReturnValue(620);
-  vi.spyOn(window, 'confirm').mockReturnValue(true);
   vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(620);
-  vi.spyOn(window, 'confirm').mockReturnValue(true);
   vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockReturnValue(300);
   vi.stubGlobal(
     'ResizeObserver',
@@ -130,7 +126,9 @@ it('removes selected memberships and retains failed IDs for retry', async () => 
   await screen.findByRole('checkbox', { name: 'Select one.jpg' });
   fireEvent.click(screen.getByRole('button', { name: 'Select loaded media' }));
   fireEvent.click(screen.getByRole('button', { name: 'Remove selected from album' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Confirm removal' }));
   expect(await screen.findByRole('alert')).toHaveTextContent('Membership unavailable');
+  expect(screen.getByRole('alertdialog')).toHaveTextContent('Remove 1 selected media');
   expect(screen.getByText('1 selected')).toBeVisible();
   expect(
     requests.filter(({ method }) => method === 'DELETE').map(({ url }) => url.pathname),
@@ -294,12 +292,12 @@ it('keeps loaded media after a cursor failure and retries the same opaque cursor
 });
 
 it('requires confirmation before removing selected album memberships', async () => {
-  const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
   serve(defaultResponse);
   setup();
   fireEvent.click(await screen.findByRole('checkbox', { name: 'Select one.jpg' }));
   fireEvent.click(screen.getByRole('button', { name: 'Remove selected from album' }));
-  expect(confirm).toHaveBeenCalled();
+  expect(screen.getByRole('alertdialog')).toHaveTextContent('Remove 1 selected media');
+  fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
   expect(requests.some((request) => request.method === 'DELETE')).toBe(false);
   expect(screen.getByText('1 selected')).toBeVisible();
 });

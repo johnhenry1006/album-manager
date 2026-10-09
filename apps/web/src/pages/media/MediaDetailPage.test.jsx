@@ -1,13 +1,11 @@
 import { QueryClientProvider } from '@tanstack/react-query';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes, useNavigate } from 'react-router';
-import { afterEach, beforeEach, expect, it, vi } from 'vitest';
+import { afterEach, expect, it, vi } from 'vitest';
 
 import { createQueryClient } from '@/services/queryClient.js';
 
 import { MediaDetailPage } from './MediaDetailPage.jsx';
-
-beforeEach(() => vi.spyOn(window, 'confirm').mockReturnValue(true));
 
 const clients = [];
 const requests = [];
@@ -187,6 +185,7 @@ it('keeps failed favorite and trash actions recoverable without navigating away'
   expect(await screen.findByRole('alert')).toHaveTextContent('Action unavailable');
   expect(screen.getByRole('button', { name: 'Add to favorites' })).toBeEnabled();
   fireEvent.click(screen.getByRole('button', { name: 'Move to trash' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Confirm move to trash' }));
   await waitFor(() =>
     expect(
       requests.some(({ url, method }) => url === '/api/media/photo' && method === 'DELETE'),
@@ -199,6 +198,7 @@ it('returns to the library only after trash succeeds', async () => {
   serve((_url, { method }) => (method === 'DELETE' ? respond(null, 204) : respond(detail)));
   setup();
   fireEvent.click(await screen.findByRole('button', { name: 'Move to trash' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Confirm move to trash' }));
   expect(await screen.findByRole('heading', { name: 'Media library' })).toBeVisible();
 });
 
@@ -269,6 +269,7 @@ it('does not redirect a different media page when an earlier trash request finis
   );
   setup();
   fireEvent.click(await screen.findByRole('button', { name: 'Move to trash' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Confirm move to trash' }));
   fireEvent.click(screen.getByRole('button', { name: 'Next media' }));
   await waitFor(() => expect(requests.some(({ url }) => url === '/api/media/other')).toBe(true));
   resolve(respond(null, 204));
@@ -316,13 +317,39 @@ it('allows original signing for another media while an earlier original request 
 });
 
 it('requires confirmation before moving media to trash and renders filenames as text', async () => {
-  const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
   serve(() => respond({ ...detail, originalFilename: '<img src=x onerror=alert(1)>.jpg' }));
   setup();
   fireEvent.click(await screen.findByRole('button', { name: 'Move to trash' }));
-  expect(confirm).toHaveBeenCalled();
+  expect(screen.getByRole('alertdialog')).toHaveTextContent('<img src=x onerror=alert(1)>.jpg');
+  expect(screen.getByRole('button', { name: 'Cancel' })).toHaveFocus();
   expect(requests.some((request) => request.method === 'DELETE')).toBe(false);
-  expect(screen.getAllByText('<img src=x onerror=alert(1)>.jpg').length).toBeGreaterThan(0);
+  fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+  expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+  expect(requests.some((request) => request.method === 'DELETE')).toBe(false);
   expect(document.querySelector('img[onerror]')).toBeNull();
-  confirm.mockRestore();
+});
+
+it('retains a failed trash confirmation and disables both actions during retry', async () => {
+  let resolve;
+  let failed = false;
+  serve((_url, { method }) => {
+    if (method !== 'DELETE') return respond(detail);
+    if (!failed) {
+      failed = true;
+      return respond({ error: 'UNAVAILABLE', message: 'Please retry deletion' }, 503);
+    }
+    return new Promise((done) => {
+      resolve = done;
+    });
+  });
+  setup();
+  fireEvent.click(await screen.findByRole('button', { name: 'Move to trash' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Confirm move to trash' }));
+  const dialog = await screen.findByRole('alertdialog');
+  await within(dialog).findByText('Please retry deletion');
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Confirm move to trash' }));
+  expect(await within(dialog).findByRole('button', { name: 'Moving to trash…' })).toBeDisabled();
+  expect(within(dialog).getByRole('button', { name: 'Cancel' })).toBeDisabled();
+  resolve(respond(null, 204));
+  expect(await screen.findByRole('heading', { name: 'Media library' })).toBeVisible();
 });

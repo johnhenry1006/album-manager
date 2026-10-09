@@ -1,5 +1,7 @@
 import { ErrorState } from '@/components/common/ErrorState.jsx';
+import { LoadingState } from '@/components/common/LoadingState.jsx';
 import { PageContainer } from '@/components/layout/PageContainer.jsx';
+import { Spinner } from '@/components/ui/Spinner.jsx';
 
 import { TagForm } from './components/TagForm.jsx';
 import { TagList } from './components/TagList.jsx';
@@ -14,12 +16,14 @@ export function TagListPage() {
         Create tag
       </button>
       <TagForm editor={editor} />
-      {tags.isPending && <p role="status">Loading tags…</p>}
+      {tags.isPending && <LoadingState label="Loading tags…" />}
+      {!tags.isPending && tags.isFetching && <Spinner label="Refreshing tags…" />}
       {tags.isError && (
         <ErrorState
           title="Could not load tags"
           description={tags.error.message}
           onRetry={tags.refetch}
+          isRetrying={tags.isFetching}
         />
       )}
       {!tags.isPending && (!tags.isError || items.length > 0) && (

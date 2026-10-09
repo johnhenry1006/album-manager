@@ -291,7 +291,7 @@ it('allows upload when optional categories are unavailable', async () => {
   unavailableCategories = true;
   ready = true;
   mount();
-  await screen.findByText('Categories unavailable');
+  expect(await screen.findByRole('alert')).toHaveTextContent('Categories unavailable');
   selectFiles(photo('no-category.jpg'));
   fireEvent.click(screen.getByRole('button', { name: 'Upload queued files' }));
   await within(row('no-category.jpg')).findByText('Completed', {}, { timeout: 3000 });

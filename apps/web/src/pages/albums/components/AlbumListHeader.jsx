@@ -1,5 +1,7 @@
 import { useId } from 'react';
 
+import { ErrorState } from '@/components/common/ErrorState.jsx';
+
 import styles from './AlbumList.module.css';
 
 export function AlbumListHeader({ total, create }) {
@@ -59,7 +61,7 @@ export function AlbumListHeader({ total, create }) {
               <option value="PUBLIC">Public</option>
             </select>
           </label>
-          {create.error && <p role="alert">{create.error}</p>}
+          {create.error && <ErrorState title="Could not create album" description={create.error} />}
           <div className={styles.actions}>
             <button type="submit" disabled={create.isPending}>
               {create.isPending ? 'Saving…' : 'Save album'}

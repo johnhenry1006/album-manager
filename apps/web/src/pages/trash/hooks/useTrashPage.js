@@ -10,6 +10,7 @@ export function useTrashPage() {
   return {
     loadedCount: media.items.length,
     mediaError: media.error,
+    isFetchingMedia: media.isFetching,
     actionError: actions.error,
     notice: actions.notice,
     retryMedia: () => (media.isFetchNextPageError ? media.fetchNextPage() : media.refetch()),
@@ -20,6 +21,7 @@ export function useTrashPage() {
       selectionLocked: actions.selectionLocked,
       restoreAllowed: actions.restoreAllowed,
       confirmationCount: actions.confirmationCount,
+      error: actions.error,
       onRestore: actions.restoreSelected,
       onRequestDelete: actions.requestPermanentDelete,
       onConfirmDelete: actions.confirmPermanentDelete,
@@ -34,6 +36,7 @@ export function useTrashPage() {
     gridProps: {
       items: media.items,
       isLoading: media.isPending,
+      isRefreshing: media.isFetching && !media.isFetchingNextPage,
       hasNextPage: media.hasNextPage && !media.isError && !actions.selectionLocked,
       isFetchingNextPage: media.isFetchingNextPage,
       onLoadMore: media.fetchNextPage,

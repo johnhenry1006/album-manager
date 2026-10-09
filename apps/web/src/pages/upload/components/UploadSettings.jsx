@@ -1,3 +1,7 @@
+import { EmptyState } from '@/components/common/EmptyState.jsx';
+import { ErrorState } from '@/components/common/ErrorState.jsx';
+import { Spinner } from '@/components/ui/Spinner.jsx';
+
 import styles from '../UploadPage.module.css';
 
 function OptionList({ label, list, selected, onToggle, onClear, disabled }) {
@@ -12,15 +16,17 @@ function OptionList({ label, list, selected, onToggle, onClear, disabled }) {
           onChange={(event) => list.setSearch(event.target.value)}
         />
       </label>
-      {list.isLoading && <p role="status">Loading {label.toLowerCase()}…</p>}
-      {list.error ? (
-        <div>
-          <p role="alert">{label} unavailable</p>
-          <button type="button" onClick={() => list.retry()}>
-            Retry {label.toLowerCase()}
-          </button>
-        </div>
-      ) : (
+      {list.isFetching && <Spinner label={`Loading ${label.toLowerCase()}…`} />}
+      {list.error && (
+        <ErrorState
+          title={`${label} unavailable`}
+          description={list.error.message}
+          onRetry={list.retry}
+          retryLabel={`Retry ${label.toLowerCase()}`}
+          isRetrying={list.isFetching}
+        />
+      )}
+      {(!list.error || list.items.length > 0) && (
         <>
           {list.items.map((item) => (
             <label key={item.id} className={styles.checkbox}>
@@ -32,7 +38,9 @@ function OptionList({ label, list, selected, onToggle, onClear, disabled }) {
               {item.name}
             </label>
           ))}
-          {!list.isLoading && list.items.length === 0 && <p>No {label.toLowerCase()} available.</p>}
+          {!list.isFetching && !list.error && list.items.length === 0 && (
+            <EmptyState title={`No ${label.toLowerCase()} available.`} />
+          )}
         </>
       )}
       <p>{selected.length} selected</p>
@@ -98,14 +106,18 @@ export function UploadSettings({ options, disabled }) {
             </option>
           ))}
         </select>
-        {albums.isLoading && <p role="status">Loading albums…</p>}
+        {albums.isFetching && <Spinner label="Loading albums…" />}
         {albums.error && (
-          <div>
-            <p role="alert">Albums unavailable</p>
-            <button type="button" onClick={() => albums.retry()}>
-              Retry albums
-            </button>
-          </div>
+          <ErrorState
+            title="Albums unavailable"
+            description={albums.error.message}
+            onRetry={albums.retry}
+            retryLabel="Retry albums"
+            isRetrying={albums.isFetching}
+          />
+        )}
+        {!albums.isFetching && !albums.error && albums.items.length === 0 && (
+          <EmptyState title="No albums available." />
         )}
         <Pagination label="albums" list={albums} />
       </fieldset>

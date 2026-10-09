@@ -1,4 +1,6 @@
+import { EmptyState } from '@/components/common/EmptyState.jsx';
 import { ErrorState } from '@/components/common/ErrorState.jsx';
+import { Spinner } from '@/components/ui/Spinner.jsx';
 
 import styles from './MediaFilters.module.css';
 
@@ -28,13 +30,17 @@ function OptionFilter({ label, emptyLabel, value, onChange, source }) {
           ))}
         </select>
       </label>
-      {query.isPending && <span role="status">Loading {label.toLowerCase()} options</span>}
+      {query.isFetching && <Spinner label={`Loading ${label.toLowerCase()} options`} />}
       {query.isError && (
         <ErrorState
           title={`Could not load ${label.toLowerCase()} options`}
           description={query.error.message}
           onRetry={() => query.refetch()}
+          isRetrying={query.isFetching}
         />
+      )}
+      {query.isSuccess && !query.isFetching && options.length === 0 && (
+        <EmptyState title={`No ${label.toLowerCase()} options`} />
       )}
       <div className={styles.optionPages}>
         <button

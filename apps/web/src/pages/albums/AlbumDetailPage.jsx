@@ -1,6 +1,7 @@
 import { useParams } from 'react-router';
 
 import { ErrorState } from '@/components/common/ErrorState.jsx';
+import { LoadingState } from '@/components/common/LoadingState.jsx';
 import { PageContainer } from '@/components/layout/PageContainer.jsx';
 import { Spinner } from '@/components/ui/Spinner.jsx';
 import { VirtualMediaGrid } from '@/features/media/index.js';
@@ -14,14 +15,16 @@ function AlbumDetailContent({ albumId }) {
   const page = useAlbumDetailPage(albumId);
   return (
     <PageContainer title={page.album.data?.name || 'Album details'}>
-      {page.album.isPending && <Spinner label="Loading album" />}
+      {page.album.isPending && <LoadingState label="Loading album" />}
       {page.album.isError && (
         <ErrorState
           title="Could not load album"
           description={page.album.error.message}
           onRetry={page.album.refetch}
+          isRetrying={page.album.isFetching}
         />
       )}
+      {!page.album.isPending && page.album.isFetching && <Spinner label="Refreshing album…" />}
       {page.album.data && (
         <>
           <AlbumDetailHeader album={page.album.data} coverMedia={page.coverMedia} />
@@ -35,16 +38,19 @@ function AlbumDetailContent({ albumId }) {
             hasCover={Boolean(page.album.data.coverMediaId)}
             openPicker={page.pickerProps.open}
           />
-          {page.actions.isBusy && <p role="status">Updating media…</p>}
+          {page.actions.isBusy && <Spinner label="Updating media…" />}
           {page.actions.notice && <p role="status">{page.actions.notice}</p>}
-          {page.actions.error && <p role="alert">{page.actions.error}</p>}
+          {page.actions.error && !page.actions.removalConfirmation.open && (
+            <ErrorState title="Could not update album media" description={page.actions.error} />
+          )}
           <AlbumMediaPicker picker={page.pickerProps} />
-          {page.isSearchPending && <p role="status">Searching album media…</p>}
+          {page.isSearchPending && <Spinner label="Searching album media…" />}
           {page.media.isError && (
             <ErrorState
               title="Could not load album media"
               description={page.media.error.message}
               onRetry={page.retryMedia}
+              isRetrying={page.media.isFetching}
             />
           )}
           {!page.isSearchPending && (!page.media.isError || page.media.items.length > 0) && (

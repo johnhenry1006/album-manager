@@ -1,5 +1,7 @@
 import { useState } from 'react';
 
+import { EmptyState } from '@/components/common/EmptyState.jsx';
+
 import styles from '../UploadPage.module.css';
 import { UploadQueueItem } from './UploadQueueItem.jsx';
 
@@ -39,7 +41,7 @@ export function UploadQueue({ queue }) {
         </button>
       </div>
       {queue.items.length === 0 ? (
-        <p>Add files to begin.</p>
+        <EmptyState title="No files queued" description="Add files to begin." />
       ) : (
         <ul className={styles.queue}>
           {visibleItems.map((item) => (

@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react';
 
+import { EmptyState } from '@/components/common/EmptyState.jsx';
+import { Spinner } from '@/components/ui/Spinner.jsx';
 import { useDebounce } from '@/hooks/useDebounce.js';
 
 /** Local hierarchy options: search and paginate without additional requests. */
@@ -7,6 +9,7 @@ export function CategoryParentPicker({ options, value, onChange }) {
   const [search, setSearch] = useState('');
   const [requestedPage, setPage] = useState(1);
   const debouncedSearch = useDebounce(search.trim().toLowerCase());
+  const isSearching = search.trim().toLowerCase() !== debouncedSearch;
   const matches = useMemo(
     () => options.filter((option) => option.label.toLowerCase().includes(debouncedSearch)),
     [options, debouncedSearch],
@@ -46,15 +49,30 @@ export function CategoryParentPicker({ options, value, onChange }) {
           </select>
         </label>
       </p>
+      {isSearching && <Spinner label="Searching parent categories…" />}
+      {!isSearching && matches.length === 0 && (
+        <EmptyState
+          title="No matching parent categories"
+          description="Choose None to create a root category, or change your search."
+        />
+      )}
       {matches.length > 50 && (
         <nav aria-label="Parent category pagination">
-          <button type="button" disabled={page <= 1} onClick={() => setPage(page - 1)}>
+          <button
+            type="button"
+            disabled={isSearching || page <= 1}
+            onClick={() => setPage(page - 1)}
+          >
             Previous parents
           </button>{' '}
           <span>
             Page {page} of {totalPages}
           </span>{' '}
-          <button type="button" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>
+          <button
+            type="button"
+            disabled={isSearching || page >= totalPages}
+            onClick={() => setPage(page + 1)}
+          >
             Next parents
           </button>
         </nav>

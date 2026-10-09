@@ -1,3 +1,6 @@
+import { ConfirmDialog } from '@/components/common/ConfirmDialog.jsx';
+import { Spinner } from '@/components/ui/Spinner.jsx';
+
 export function TrashToolbar({
   loadedCount,
   selectedCount,
@@ -5,6 +8,7 @@ export function TrashToolbar({
   selectionLocked,
   restoreAllowed,
   confirmationCount,
+  error,
   onSelectLoaded,
   onClearSelection,
   onRestore,
@@ -35,25 +39,18 @@ export function TrashToolbar({
           status is unavailable.
         </p>
       )}
-      {isBusy && <p role="status">Updating trash…</p>}
-      {confirmationCount > 0 && (
-        <section
-          role="alertdialog"
-          aria-labelledby="trash-delete-title"
-          aria-describedby="trash-delete-description"
-        >
-          <h2 id="trash-delete-title">Permanently delete {confirmationCount} selected media?</h2>
-          <p id="trash-delete-description">
-            This will delete the files permanently and cannot be undone.
-          </p>
-          <button type="button" disabled={isBusy} onClick={onCancelDelete} autoFocus>
-            Cancel
-          </button>{' '}
-          <button type="button" disabled={isBusy} onClick={onConfirmDelete}>
-            Confirm permanent deletion
-          </button>
-        </section>
-      )}
+      {isBusy && <Spinner label="Updating trash…" />}
+      <ConfirmDialog
+        open={confirmationCount > 0}
+        title={`Permanently delete ${confirmationCount} selected media?`}
+        description="This will delete the files permanently and cannot be undone."
+        confirmLabel="Confirm permanent deletion"
+        pendingLabel="Deleting…"
+        isPending={isBusy}
+        error={error}
+        onConfirm={onConfirmDelete}
+        onCancel={onCancelDelete}
+      />
     </section>
   );
 }

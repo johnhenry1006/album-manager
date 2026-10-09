@@ -49,6 +49,7 @@ export function useFavoritesPage() {
   return {
     loadedCount: media.items.length,
     mediaError: media.error,
+    isFetchingMedia: media.isFetching,
     actionError,
     notice,
     retryMedia: () => (media.isFetchNextPageError ? media.fetchNextPage() : media.refetch()),
@@ -67,6 +68,7 @@ export function useFavoritesPage() {
     gridProps: {
       items: media.items,
       isLoading: media.isPending,
+      isRefreshing: media.isFetching && !media.isFetchingNextPage,
       hasNextPage: media.hasNextPage && !media.isError && !isBusy,
       isFetchingNextPage: media.isFetchingNextPage,
       onLoadMore: media.fetchNextPage,

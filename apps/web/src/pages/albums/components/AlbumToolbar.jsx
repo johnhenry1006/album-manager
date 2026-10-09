@@ -1,5 +1,7 @@
 import { useId } from 'react';
 
+import { ConfirmDialog } from '@/components/common/ConfirmDialog.jsx';
+
 import styles from './AlbumDetail.module.css';
 
 export function AlbumToolbar({
@@ -49,43 +51,54 @@ export function AlbumToolbar({
           Clear filters
         </button>
       </div>
+      <ConfirmDialog
+        {...actions.removalConfirmation}
+        title={`Remove ${actions.removalConfirmation.count} selected media from this album?`}
+        description="Media files will remain in your library."
+        confirmLabel="Confirm removal"
+        pendingLabel="Removing…"
+      />
       <div className={styles.actions}>
         <span>{selection.selectedCount} selected</span>
-        <button type="button" disabled={actions.isBusy} onClick={selectLoaded}>
+        <button type="button" disabled={actions.selectionLocked} onClick={selectLoaded}>
           Select loaded media
         </button>
         <button
           type="button"
-          disabled={actions.isBusy || !selection.selectedCount}
+          disabled={actions.selectionLocked || !selection.selectedCount}
           onClick={selection.clearSelection}
         >
           Clear selection
         </button>
         <button
           type="button"
-          disabled={actions.isBusy || !selection.selectedCount}
+          disabled={actions.selectionLocked || !selection.selectedCount}
           onClick={actions.removeSelected}
         >
           Remove selected from album
         </button>
         <button
           type="button"
-          disabled={actions.isBusy || !selection.selectedCount}
+          disabled={actions.selectionLocked || !selection.selectedCount}
           onClick={actions.favoriteSelected}
         >
           Favorite selected
         </button>
         <button
           type="button"
-          disabled={actions.isBusy || selection.selectedCount !== 1}
+          disabled={actions.selectionLocked || selection.selectedCount !== 1}
           onClick={actions.setCover}
         >
           Set selected as cover
         </button>
-        <button type="button" disabled={actions.isBusy || !hasCover} onClick={actions.clearCover}>
+        <button
+          type="button"
+          disabled={actions.selectionLocked || !hasCover}
+          onClick={actions.clearCover}
+        >
           Clear cover
         </button>
-        <button type="button" disabled={actions.isBusy} onClick={openPicker}>
+        <button type="button" disabled={actions.selectionLocked} onClick={openPicker}>
           Add media
         </button>
       </div>

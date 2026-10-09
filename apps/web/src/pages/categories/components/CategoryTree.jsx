@@ -1,5 +1,6 @@
+import { EmptyState } from '@/components/common/EmptyState.jsx';
 export function CategoryTree({ categories, onEdit, onDelete, disabled }) {
-  if (!categories.length) return <p>No categories yet.</p>;
+  if (!categories.length) return <EmptyState title="No categories yet." />;
   return (
     <ul aria-label="Categories">
       {categories.map((category) => (
