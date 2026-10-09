@@ -6,7 +6,8 @@ import { CategoryTree } from './components/CategoryTree.jsx';
 import { useCategoryListPage } from './hooks/useCategoryListPage.js';
 
 export function CategoryListPage() {
-  const { categories, items, editor, parentOptions } = useCategoryListPage();
+  const { categories, items, editor, parentOptions, page, setPage, totalPages } =
+    useCategoryListPage();
   return (
     <PageContainer title="Categories" description="Organize media with a category hierarchy.">
       <button
@@ -24,6 +25,27 @@ export function CategoryListPage() {
           description={categories.error.message}
           onRetry={categories.refetch}
         />
+      )}
+      {totalPages > 1 && (
+        <nav aria-label="Category pagination">
+          <button
+            type="button"
+            disabled={editor.isPending || page <= 1}
+            onClick={() => setPage(page - 1)}
+          >
+            Previous page
+          </button>{' '}
+          <span>
+            Page {page} of {totalPages}
+          </span>{' '}
+          <button
+            type="button"
+            disabled={editor.isPending || page >= totalPages}
+            onClick={() => setPage(page + 1)}
+          >
+            Next page
+          </button>
+        </nav>
       )}
       {!categories.isPending && (!categories.isError || items.length > 0) && (
         <CategoryTree

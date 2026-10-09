@@ -1,5 +1,9 @@
 import { QueryClient } from '@tanstack/react-query';
 
+// Cursor galleries can accumulate many pages; release inactive filter caches sooner.
+// Keep active pages intact: forward-only cursors cannot recover evicted earlier pages.
+export const INFINITE_GALLERY_GC_TIME = 60_000;
+
 /**
  * Data stays fresh for 30 seconds; inactive queries are retained for 5 minutes.
  * Retries are opt-in per feature hook, including mutations. Stale queries still

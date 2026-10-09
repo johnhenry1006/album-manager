@@ -104,7 +104,7 @@ export function ResponsiveImage({
   const srcSet = buildMediaSrcSet(sources);
   return (
     <ImageContent
-      key={JSON.stringify([source?.url, srcSet, sizes])}
+      key={JSON.stringify([source?.url, srcSet])}
       src={source?.url}
       srcSet={srcSet}
       sizes={sizes}

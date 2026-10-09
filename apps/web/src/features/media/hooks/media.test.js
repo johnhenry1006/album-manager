@@ -3,6 +3,8 @@ import { act, renderHook, waitFor } from '@testing-library/react';
 import { createElement } from 'react';
 import { afterEach, expect, it, vi } from 'vitest';
 
+import { useInfiniteAlbumMedia } from '@/features/album/index.js';
+import { useInfiniteTrash } from '@/features/trash/index.js';
 import { createQueryClient } from '@/services/queryClient.js';
 
 import {
@@ -33,6 +35,28 @@ afterEach(() => {
   clients.forEach((client) => client.clear());
   clients.length = 0;
   vi.unstubAllGlobals();
+});
+
+it.each([
+  ['media', () => useInfiniteMedia()],
+  ['album', () => useInfiniteAlbumMedia('album')],
+  ['trash', () => useInfiniteTrash()],
+])('releases inactive %s gallery pages after one minute', async (_name, useGallery) => {
+  vi.stubGlobal('fetch', async () =>
+    respond({ items: [{ id: 'm' }], hasMore: false, nextCursor: null }),
+  );
+  const { client, wrapper } = setup();
+  const hook = renderHook(useGallery, { wrapper });
+  await waitFor(() => expect(hook.result.current.isSuccess).toBe(true));
+  vi.useFakeTimers();
+  try {
+    hook.unmount();
+    expect(client.getQueryCache().getAll()).toHaveLength(1);
+    await vi.advanceTimersByTimeAsync(60_001);
+    expect(client.getQueryCache().getAll()).toHaveLength(0);
+  } finally {
+    vi.useRealTimers();
+  }
 });
 
 it('uses opaque cursors and starts fresh when collection filters change', async () => {

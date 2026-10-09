@@ -1,5 +1,7 @@
 import { MutationEditor } from '@/components/common/MutationEditor.jsx';
 
+import { CategoryParentPicker } from './CategoryParentPicker.jsx';
+
 export function CategoryForm({ editor, parentOptions }) {
   return (
     <MutationEditor
@@ -35,22 +37,11 @@ export function CategoryForm({ editor, parentOptions }) {
               </label>
             </p>
             <p>Leave the slug blank to generate it on creation or preserve it on update.</p>
-            <p>
-              <label>
-                Parent category{' '}
-                <select
-                  value={editor.draft.parentId}
-                  onChange={(event) => editor.setField('parentId', event.target.value)}
-                >
-                  <option value="">None (root category)</option>
-                  {parentOptions.map((option) => (
-                    <option key={option.id} value={option.id}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </p>
+            <CategoryParentPicker
+              options={parentOptions}
+              value={editor.draft.parentId}
+              onChange={(value) => editor.setField('parentId', value)}
+            />
           </>
         )
       }

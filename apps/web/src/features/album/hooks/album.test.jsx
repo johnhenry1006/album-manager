@@ -331,3 +331,24 @@ it('resets picker search to the first page and exposes list failures', async () 
   expect(requests.at(-1)).toEqual({ page: '1', limit: '50', q: 'cats & dogs' });
   expect(screen.getByRole('alert')).toHaveTextContent('Albums unavailable');
 });
+
+it('debounces rapid album picker searches', async () => {
+  const requests = [];
+  vi.stubGlobal('fetch', async (url) => {
+    requests.push(new URL(url, 'http://localhost').searchParams.get('q'));
+    return respond({ items: [], pagination: { page: 1, limit: 50, total: 0, totalPages: 0 } });
+  });
+  render(<album.AlbumPicker />, setup());
+  await screen.findByText('No albums found.');
+  vi.useFakeTimers();
+  try {
+    fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'c' } });
+    fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'ca' } });
+    fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'cats' } });
+    expect(requests).toEqual([null]);
+    await act(() => vi.advanceTimersByTimeAsync(300));
+    expect(requests).toEqual([null, 'cats']);
+  } finally {
+    vi.useRealTimers();
+  }
+});

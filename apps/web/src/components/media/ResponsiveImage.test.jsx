@@ -168,3 +168,13 @@ it('keeps a loaded image visible when equivalent descriptors are recreated', () 
   expect(container.querySelector('[data-image-placeholder]')).not.toBeInTheDocument();
   expect(screen.getByRole('img', { name: 'Updated description' })).toHaveStyle({ opacity: 1 });
 });
+
+it('updates sizes after resize without remounting the loaded image', () => {
+  const { container, rerender } = render(<ResponsiveImage variants={variants} sizes="200px" />);
+  const image = container.querySelector('img');
+  fireEvent.load(image);
+  rerender(<ResponsiveImage variants={variants} sizes="300px" />);
+  expect(container.querySelector('img')).toBe(image);
+  expect(image).toHaveAttribute('sizes', '300px');
+  expect(container.querySelector('[data-image-placeholder]')).not.toBeInTheDocument();
+});

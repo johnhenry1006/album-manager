@@ -52,7 +52,10 @@ partial operations retain failed IDs for retry. A second instance of the same
 grid provides an on-demand library picker for adding existing media. Uploads
 remain a placeholder on album details; that page does not implement file uploads.
 `/categories` composes `CategoryListPage` and `useCategoryListPage` with the category
-feature's public tree and mutation hooks. Nested lists display the complete hierarchy;
+feature's public tree and mutation hooks. Nested lists paginate the hierarchy at 50
+categories per page; the complete tree remains cached for parent validation.
+The parent picker searches locally and displays at most 50 matches plus its current
+selection. Paginated branches retain actual child flags to protect non-leaf deletion;
 creation and editing support name, slug, and parent selection, excluding the edited
 category and its descendants from parent choices. Only leaf categories can be deleted.
 `/tags` composes `TagListPage` and `useTagListPage` with public tag hooks and paginated
@@ -134,7 +137,9 @@ byte progress, processing polling across session pages, retry checkpoints,
 cancellation, duplicate decisions, and the final media ID. Processing is displayed
 separately from transfer progress. `UploadDropzone` accepts multiple files through
 drag/drop and a file picker. `UploadQueue`/`UploadQueueItem` render progress,
-processing, duplicate decisions, retry/cancel controls, and completed media links.
+processing, duplicate decisions, retry/cancel controls, and completed media links
+in pages of at most 50 queue rows. Upload option searches and the reusable album
+picker debounce requests by 300 ms, while page navigation remains immediate.
 `useUploadQueue` schedules three independent lifecycles at a time, each with its
 own session and retry checkpoints. `useUploadOptions` supplies searchable,
 paginated album/category/tag lists and preserves selections across option pages.
@@ -208,7 +213,10 @@ original AbortError and is not normalized as an API failure.
 
 `services/queryClient.js` exports `createQueryClient`; `QueryProvider` uses it once
 per mount. Queries use a **30-second stale time** and retain inactive cache entries
-for **5 minutes**. Queries and mutations have **no automatic retries**, and window
+for **5 minutes**. Media, album-media, and trash infinite queries override inactive
+retention to **1 minute**. Active cursor pages remain intact for scrolling backward;
+the API supplies only forward cursors, so automatic page eviction would lose earlier
+results. Queries and mutations have **no automatic retries**, and window
 focus does not trigger refetches. Stale queries retain TanStack Query's default
 refetch-on-mount and refetch-on-reconnect behavior. Feature hooks may override
 these defaults deliberately; the HTTP client itself never retries.

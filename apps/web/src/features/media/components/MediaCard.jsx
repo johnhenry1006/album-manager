@@ -17,8 +17,10 @@ export const MediaCard = memo(function MediaCard({
   const content = (
     <>
       <ResponsiveImage
-        thumbnails={media.thumbnails}
-        variants={media.variants}
+        thumbnails={media.thumbnails?.filter(
+          (variant) => !variant.type || variant.type === 'THUMBNAIL',
+        )}
+        variants={media.variants?.filter((variant) => variant.type === 'THUMBNAIL')}
         width={media.width}
         height={media.height}
         aspectRatio={aspectRatio}

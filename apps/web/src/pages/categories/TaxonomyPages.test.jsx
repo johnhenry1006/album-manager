@@ -30,6 +30,44 @@ function setup(Page) {
     </QueryClientProvider>,
   );
 }
+
+it('bounds category rows across a large hierarchy and keeps child deletion protected', async () => {
+  const children = Array.from({ length: 100 }, (_, i) =>
+    item(`child-${i}`, `Child ${i}`, { children: [] }),
+  );
+  vi.stubGlobal('fetch', async () => respond({ items: [item('root', 'Root', { children })] }));
+  setup(CategoriesPage);
+  await screen.findByText('Root');
+  expect(screen.getAllByRole('button', { name: /^Edit / })).toHaveLength(50);
+  expect(screen.getByRole('button', { name: 'Delete Root' })).toBeDisabled();
+  fireEvent.click(screen.getByRole('button', { name: 'Next page' }));
+  expect(screen.getByText('Child 49')).toBeInTheDocument();
+  expect(screen.queryByText('Root')).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Next page' }));
+  expect(screen.getAllByRole('button', { name: /^Edit / })).toHaveLength(1);
+  expect(screen.getByText('Child 99')).toBeInTheDocument();
+});
+
+it('bounds parent options and preserves selection when browsing or searching parents', async () => {
+  const items = Array.from({ length: 101 }, (_, i) =>
+    item(`parent-${i}`, `Parent ${i}`, { children: [] }),
+  );
+  vi.stubGlobal('fetch', async () => respond({ items }));
+  setup(CategoriesPage);
+  await screen.findByText('Parent 0');
+  fireEvent.click(screen.getByRole('button', { name: 'Create category' }));
+  const select = screen.getByLabelText('Parent category');
+  expect(within(select).getAllByRole('option')).toHaveLength(51);
+  fireEvent.change(select, { target: { value: 'parent-0' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Next parents' }));
+  expect(select).toHaveValue('parent-0');
+  expect(within(select).getAllByRole('option')).toHaveLength(52);
+  fireEvent.change(screen.getByLabelText('Search parent categories'), {
+    target: { value: 'Parent 100' },
+  });
+  expect(await within(select).findByRole('option', { name: 'Parent 100' })).toBeInTheDocument();
+  expect(select).toHaveValue('parent-0');
+});
 afterEach(() => {
   clients.forEach((client) => client.clear());
   clients.length = 0;

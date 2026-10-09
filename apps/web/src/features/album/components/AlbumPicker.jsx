@@ -1,5 +1,7 @@
 import { useId, useState } from 'react';
 
+import { useDebounce } from '@/hooks/useDebounce.js';
+
 import { useAlbum } from '../hooks/useAlbum.js';
 import { useAlbums } from '../hooks/useAlbums.js';
 
@@ -15,7 +17,13 @@ export function AlbumPicker({
   const id = useId();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
-  const albums = useAlbums({ page, limit, q: search.trim() || undefined }, { enabled: !disabled });
+  const cleanSearch = search.trim();
+  const debouncedSearch = useDebounce(cleanSearch);
+  const searchPending = cleanSearch !== debouncedSearch;
+  const albums = useAlbums(
+    { page, limit, q: debouncedSearch || undefined },
+    { enabled: !disabled && !searchPending },
+  );
   const options = albums.data?.items ?? [];
   const onPage = options.some((album) => album.id === value);
   const selected = useAlbum(value, { enabled: !disabled && Boolean(value) && !onPage });
@@ -56,14 +64,20 @@ export function AlbumPicker({
       {albums.isSuccess && options.length === 0 && <p>No albums found.</p>}
       <button
         type="button"
-        disabled={disabled || albums.isFetching || page <= 1}
+        disabled={disabled || searchPending || albums.isFetching || page <= 1}
         onClick={() => setPage((current) => current - 1)}
       >
         Previous albums
       </button>
       <button
         type="button"
-        disabled={disabled || albums.isFetching || !pagination || page >= pagination.totalPages}
+        disabled={
+          disabled ||
+          searchPending ||
+          albums.isFetching ||
+          !pagination ||
+          page >= pagination.totalPages
+        }
         onClick={() => setPage((current) => current + 1)}
       >
         Next albums

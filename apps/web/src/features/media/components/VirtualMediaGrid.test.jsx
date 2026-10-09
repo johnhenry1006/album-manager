@@ -76,6 +76,14 @@ it('exposes controlled selection independently of activation and disables it dur
   expect(screen.getByRole('checkbox')).not.toBeChecked();
 });
 
+it('never offers preview or original sources in grid images', async () => {
+  const items = mediaItems(1);
+  items[0].variants.push({ type: 'PREVIEW', width: 1600, url: '/preview.jpg' });
+  const { container } = render(<VirtualMediaGrid items={items} />);
+  await waitFor(() => expect(container.querySelector('img')).toBeInTheDocument());
+  expect(container.querySelector('img').getAttribute('srcset')).toBe('/thumb-0.webp 200w');
+});
+
 it('mounts a bounded number of cards for 10000 items and maps scroll offsets to later rows', async () => {
   const { container } = render(
     <VirtualMediaGrid

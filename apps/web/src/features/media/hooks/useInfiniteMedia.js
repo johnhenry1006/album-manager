@@ -1,6 +1,8 @@
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 
+import { INFINITE_GALLERY_GC_TIME } from '@/services/queryClient.js';
+
 import { mediaApi } from '../api/mediaApi.js';
 import { mediaQueryKeys } from '../api/mediaQueryKeys.js';
 import { DEFAULT_MEDIA_PAGE_SIZE } from '../constants/mediaConstants.js';
@@ -14,6 +16,7 @@ export function useInfiniteMedia(filters = {}, { enabled = true } = {}) {
   );
   params.limit ??= DEFAULT_MEDIA_PAGE_SIZE;
   const query = useInfiniteQuery({
+    gcTime: INFINITE_GALLERY_GC_TIME,
     queryKey: mediaQueryKeys.infinite('media', params),
     initialPageParam: undefined,
     queryFn: ({ pageParam, signal }) => {

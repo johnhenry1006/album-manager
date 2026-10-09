@@ -17,8 +17,8 @@ export function CategoryTree({ categories, onEdit, onDelete, disabled }) {
             <button
               type="button"
               aria-label={`Delete ${category.name}`}
-              title={category.children?.length ? 'Delete or reparent children first.' : undefined}
-              disabled={disabled || Boolean(category.children?.length)}
+              title={category.hasChildren ? 'Delete or reparent children first.' : undefined}
+              disabled={disabled || category.hasChildren}
               onClick={() => onDelete(category)}
             >
               Delete

@@ -2,6 +2,7 @@ import { useInfiniteQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 
 import { flattenMediaPages } from '@/features/media/index.js';
+import { INFINITE_GALLERY_GC_TIME } from '@/services/queryClient.js';
 
 import { albumApi } from '../api/albumApi.js';
 import { albumQueryKeys } from '../api/albumQueryKeys.js';
@@ -11,6 +12,7 @@ import { albumMediaParams } from '../utils/albumMediaParams.js';
 export function useInfiniteAlbumMedia(albumId, filters = {}, { enabled = true } = {}) {
   const params = albumMediaParams(filters);
   const query = useInfiniteQuery({
+    gcTime: INFINITE_GALLERY_GC_TIME,
     queryKey: albumQueryKeys.infiniteMedia(albumId, params),
     initialPageParam: undefined,
     queryFn: ({ pageParam, signal }) =>

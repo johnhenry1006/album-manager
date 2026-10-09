@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useAlbums } from '@/features/album/index.js';
 import { useCategories } from '@/features/category/index.js';
 import { useTags } from '@/features/tag/index.js';
+import { useDebounce } from '@/hooks/useDebounce.js';
 
 export function useUploadOptions() {
   const [selection, setSelection] = useState({
@@ -16,16 +17,29 @@ export function useUploadOptions() {
     categories: { page: 1, q: '' },
     tags: { page: 1, q: '' },
   });
-  const albums = useAlbums({ ...filters.albums, limit: 25 });
-  const categories = useCategories({ ...filters.categories, limit: 25 });
-  const tags = useTags({ ...filters.tags, limit: 25 });
+  const albumSearch = useDebounce(filters.albums.q.trim());
+  const categorySearch = useDebounce(filters.categories.q.trim());
+  const tagSearch = useDebounce(filters.tags.q.trim());
+  const albums = useAlbums(
+    { ...filters.albums, q: albumSearch, limit: 25 },
+    { enabled: albumSearch === filters.albums.q.trim() },
+  );
+  const categories = useCategories(
+    { ...filters.categories, q: categorySearch, limit: 25 },
+    { enabled: categorySearch === filters.categories.q.trim() },
+  );
+  const tags = useTags(
+    { ...filters.tags, q: tagSearch, limit: 25 },
+    { enabled: tagSearch === filters.tags.q.trim() },
+  );
+  const searches = { albums: albumSearch, categories: categorySearch, tags: tagSearch };
   const list = (name, query) => ({
     items: query.data?.items ?? [],
     page: filters[name].page,
     totalPages: query.data?.pagination?.totalPages ?? 1,
     search: filters[name].q,
     isLoading: query.isPending,
-    isFetching: query.isFetching,
+    isFetching: query.isFetching || searches[name] !== filters[name].q.trim(),
     error: query.error,
     retry: query.refetch,
     setPage: (page) =>

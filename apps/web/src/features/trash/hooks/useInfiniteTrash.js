@@ -2,6 +2,7 @@ import { useInfiniteQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 
 import { flattenMediaPages } from '@/features/media/index.js';
+import { INFINITE_GALLERY_GC_TIME } from '@/services/queryClient.js';
 
 import { trashApi } from '../api/trashApi.js';
 import { trashQueryKeys } from '../api/trashQueryKeys.js';
@@ -13,6 +14,7 @@ export function useInfiniteTrash(filters = {}, { enabled = true } = {}) {
   }
   const params = { limit: filters.limit ?? 50 };
   const query = useInfiniteQuery({
+    gcTime: INFINITE_GALLERY_GC_TIME,
     queryKey: trashQueryKeys.infinite(params),
     initialPageParam: undefined,
     queryFn: ({ pageParam, signal }) => trashApi.list({ ...params, cursor: pageParam }, { signal }),
