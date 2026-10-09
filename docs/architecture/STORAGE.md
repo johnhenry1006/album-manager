@@ -31,16 +31,17 @@ imports from controllers. Vendor code stays inside `storage/s3`.
 Operations accept an options object and return promises, except synchronous `close()`.
 Object keys are relative to the configured bucket, without a bucket name or leading slash.
 
-| Method                       | Input                                                   | Result                                                                                         |
-| ---------------------------- | ------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| `upload`                     | `{ key, body, contentType, contentLength?, metadata? }` | `{ key, etag }`                                                                                |
-| `delete`                     | `{ key }`                                               | Resolves without a value; missing-object delete is idempotent on S3                            |
-| `exists`                     | `{ key }`                                               | Boolean; permission/network/bucket errors still throw                                          |
-| `getObjectMetadata`          | `{ key }`                                               | `{ key, fileSize, contentType, etag, lastModified, metadata }`, or `null` for a missing object |
-| `createPresignedUploadUrl`   | `{ key, contentType, expiresIn? }`                      | `{ url, method: 'PUT', headers, expiresIn }`                                                   |
-| `createPresignedDownloadUrl` | `{ key, expiresIn?, method? }`                          | `{ url, method: 'GET' or 'HEAD', headers, expiresIn }`                                         |
-| `copyObject`                 | `{ sourceKey, destinationKey, sourceEtag? }`            | `{ key, etag }` for the destination                                                            |
-| `close`                      | None                                                    | Destroys owned clients once; subsequent operations reject                                      |
+| Method                       | Input                                                   | Result                                                                                           |
+| ---------------------------- | ------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `upload`                     | `{ key, body, contentType, contentLength?, metadata? }` | `{ key, etag }`                                                                                  |
+| `delete`                     | `{ key }`                                               | Resolves without a value; missing-object delete is idempotent on S3                              |
+| `exists`                     | `{ key }`                                               | Boolean; permission/network/bucket errors still throw                                            |
+| `getObjectMetadata`          | `{ key }`                                               | `{ key, fileSize, contentType, etag, lastModified, metadata }`, or `null` for a missing object   |
+| `createPresignedUploadUrl`   | `{ key, contentType, expiresIn? }`                      | `{ url, method: 'PUT', headers, expiresIn }`                                                     |
+| `createPresignedDownloadUrl` | `{ key, expiresIn?, method? }`                          | `{ url, method: 'GET' or 'HEAD', headers, expiresIn }`                                           |
+| `copyObject`                 | `{ sourceKey, destinationKey, sourceEtag? }`            | `{ key, etag }` for the destination                                                              |
+| `getProviderMetadata`        | None                                                    | Safe `{ providerType, endpointHost, bucketName }`; unavailable fields are `null`; no network I/O |
+| `close`                      | None                                                    | Destroys owned clients once; subsequent operations reject                                        |
 
 Upload bodies can be strings, Uint8Array/Buffer, or Node Readable streams. Streams
 require a known `contentLength`. This foundation uses single-object PUT, not multipart

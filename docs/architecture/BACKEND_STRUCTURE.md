@@ -61,6 +61,9 @@ and shutdown. Cache adapters remain unimplemented. A dedicated BullMQ media work
 uses an injected Sharp adapter and validated settings from the focused settings domain.
 The settings module registers GET/PATCH image optimization settings when a database is supplied;
 see [Image optimization settings](../api/IMAGE_OPTIMIZATION_SETTINGS.md).
+It also registers GET storage statistics behind a dedicated service/repository,
+using persisted variant aggregates and safe provider metadata;
+see [Storage statistics](../api/STORAGE_SETTINGS.md).
 See [Image processing](IMAGE_PROCESSING.md) for contracts, defaults, and rendition persistence. See [Media-processing worker](MEDIA_PROCESSING.md) for startup and retry behavior.
 The shared media domain and upload module own their documented business responsibilities.
 See [Database conventions](../database/DATABASE_RULES.md) for client injection and migrations.

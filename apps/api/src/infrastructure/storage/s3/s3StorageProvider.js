@@ -10,6 +10,7 @@ import {
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 import { StorageError, StorageProvider } from '../storageProvider.js';
+import { mapStorageProviderMetadata, safeEndpointHost } from '../storageProviderMetadata.js';
 import { validateContentType, validateExpiry, validateKey } from '../storageValidation.js';
 import { createS3Clients } from './s3Client.js';
 
@@ -18,6 +19,7 @@ export class S3StorageProvider extends StorageProvider {
     #signingClient;
     #sign;
     #bucket;
+    #metadata;
     #closed = false;
 
     constructor(config, dependencies) {
@@ -27,6 +29,14 @@ export class S3StorageProvider extends StorageProvider {
         this.#signingClient = signingClient;
         this.#sign = sign;
         this.#bucket = config.bucket;
+        this.#metadata = mapStorageProviderMetadata({
+            providerType: 's3',
+            endpointHost: safeEndpointHost(config.publicEndpoint ?? config.endpoint),
+            bucketName: config.bucket,
+        });
+    }
+    getProviderMetadata() {
+        return { ...this.#metadata };
     }
     #ensureOpen() {
         if (this.#closed) throw new Error('Storage provider is closed');

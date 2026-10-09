@@ -12,7 +12,7 @@ import {
     createMediaListModule,
     createMediaTrashModule,
 } from '#modules/media/index.js';
-import { createSettingsModule } from '#modules/settings/index.js';
+import { createSettingsModule, createStorageStatisticsModule } from '#modules/settings/index.js';
 import { createTaxonomyModule } from '#modules/taxonomy/index.js';
 import { createUploadModule } from '#modules/uploads/index.js';
 
@@ -29,6 +29,7 @@ export function buildApp({
     albumService,
     dashboardService,
     imageOptimizationSettingsService,
+    storageStatisticsService,
     taxonomyService,
     mediaListService,
     mediaListConfig = validateMediaListEnvironment({}),
@@ -91,7 +92,11 @@ export function buildApp({
     const imageOptimizationSettings =
         imageOptimizationSettingsService ??
         (database?.client ? createSettingsModule(database.client).imageOptimizationSettingsService : undefined);
+    const storageStatistics =
+        storageStatisticsService ??
+        (database?.client ? createStorageStatisticsModule({ client: database.client, storage }).service : undefined);
     registerPlugins(app, config, {
+        storageStatisticsService: storageStatistics,
         imageOptimizationSettingsService: imageOptimizationSettings,
         dashboardService: dashboard,
         taxonomyService: taxonomy,

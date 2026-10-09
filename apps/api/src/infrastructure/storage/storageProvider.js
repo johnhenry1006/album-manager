@@ -1,5 +1,8 @@
 // Vendor-neutral contract. Operations accept objects; see STORAGE.md for shapes.
 export class StorageProvider {
+    getProviderMetadata() {
+        return { providerType: null, endpointHost: null, bucketName: null };
+    }
     async read(_options) {
         throw new Error('Storage reading is not implemented');
     }
