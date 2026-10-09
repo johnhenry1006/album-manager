@@ -4,12 +4,103 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import { createIsolatedTestDatabase } from '#infrastructure/database/isolatedDatabase.testUtils.js';
 
-import { createMediaDetailModule } from '../index.js';
+import {
+    createMediaDetailModule,
+    createMediaFavoriteModule,
+    createMediaListModule,
+    createMediaTrashModule,
+} from '../index.js';
 
 describe.skipIf(process.env.DATABASE_TESTS !== '1')('media detail with PostgreSQL', () => {
     const database = createIsolatedTestDatabase();
     beforeAll(() => database.open());
     afterAll(() => database.close());
+
+    it('keeps video metadata, albums, taxonomy, favorites and search intact across trash and restore', async () => {
+        await database.rollback(async (tx) => {
+            const actor = { id: '00000000-0000-4000-8000-000000000001' };
+            const media = await tx.media.create({
+                data: {
+                    type: 'VIDEO',
+                    originalFilename: 'holiday.mp4',
+                    mimeType: 'video/mp4',
+                    extension: 'mp4',
+                    fileSize: 100n,
+                    status: 'READY',
+                    metadata: {
+                        create: { duration: 1.5, videoCodec: 'h264', audioCodec: null, frameRate: 25, bitrate: 10000 },
+                    },
+                    variants: {
+                        create: [
+                            { type: 'ORIGINAL', format: 'mp4', storageKey: 'video/source.mp4', fileSize: 100n },
+                            {
+                                type: 'OPTIMIZED',
+                                name: 'playback',
+                                format: 'mp4',
+                                storageKey: 'video/playback.mp4',
+                                fileSize: 50n,
+                            },
+                            {
+                                type: 'THUMBNAIL',
+                                name: 'thumbnail-200',
+                                format: 'webp',
+                                storageKey: 'video/thumb.webp',
+                                fileSize: 10n,
+                            },
+                        ],
+                    },
+                },
+            });
+            const album = await tx.album.create({
+                data: {
+                    name: 'Holiday',
+                    slug: 'video-holiday',
+                    coverMediaId: media.id,
+                    media: { create: { mediaId: media.id } },
+                },
+            });
+            const tag = await tx.tag.create({
+                data: { name: 'Beach', slug: 'video-beach', media: { create: { mediaId: media.id } } },
+            });
+            const category = await tx.category.create({
+                data: { name: 'Travel', slug: 'video-travel', media: { create: { mediaId: media.id } } },
+            });
+            const storage = {
+                createPresignedDownloadUrl: vi.fn(async ({ key }) => ({ url: `https://assets.example/${key}` })),
+            };
+            const detail = createMediaDetailModule({
+                client: tx,
+                storage,
+                config: { displayUrlExpirySeconds: 900 },
+            }).service;
+            const list = createMediaListModule({
+                client: tx,
+                storage,
+                config: { maxLimit: 200, urlExpirySeconds: 900 },
+            }).service;
+            const trash = createMediaTrashModule({ client: tx, storage }).service;
+            await createMediaFavoriteModule({ client: tx }).service.add(media.id, undefined, undefined, actor);
+            const filters = { type: 'VIDEO', q: 'holiday', tag: tag.id, category: category.id, favorite: 'true' };
+            expect((await list.list(filters, actor)).items).toMatchObject([
+                { id: media.id, thumbnails: [{ format: 'webp' }] },
+            ]);
+            await trash.softDelete(media.id);
+            expect((await list.list(filters, actor)).items).toEqual([]);
+            await expect(detail.detail(media.id, undefined, actor)).rejects.toMatchObject({ code: 'MEDIA_NOT_FOUND' });
+            await trash.restore(media.id);
+            expect(await detail.detail(media.id, undefined, actor)).toMatchObject({
+                type: 'VIDEO',
+                favorite: true,
+                albums: [{ id: album.id }],
+                tags: [{ id: tag.id }],
+                categories: [{ id: category.id }],
+                metadata: { duration: 1.5, videoCodec: 'h264', audioCodec: null },
+            });
+            expect((await list.list(filters, actor)).items).toHaveLength(1);
+            expect((await tx.album.findUnique({ where: { id: album.id } })).coverMediaId).toBe(media.id);
+            expect(await tx.mediaVariant.count({ where: { mediaId: media.id } })).toBe(3);
+        });
+    });
 
     async function fixture(run) {
         await database.rollback(async (tx) => {

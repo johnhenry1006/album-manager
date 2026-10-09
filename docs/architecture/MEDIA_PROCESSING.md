@@ -18,7 +18,7 @@ Queue `media-processing`, job `process-media`, input:
 
 IDs must be UUIDs; unknown keys and non-boolean duplicate policies are rejected.
 The upload must reference this Media and must not be cancelled. A READY retry
-repairs the upload state without reading or generating images again.
+repairs the upload state without reading or generating derivatives again.
 
 The job composition consumes public media/settings modules. The thin BullMQ worker
 owns transport/lifecycle; the media processing service owns orchestration; the
@@ -37,13 +37,42 @@ durable processingAcceptedAt checkpoint in that same transaction. Retries retain
 that admission if another upload later explicitly accepts identical bytes, while
 still invoking the reusable detector. If another active identity exists and
 allowDuplicate is false, mark UploadFile DUPLICATE_PENDING with duplicateOfMediaId,
-leave Media PENDING, and return without image inspection or generation.
+leave Media PENDING, and return without image/video inspection or generation.
 
 Otherwise inspect dimensions/MIME and extract supported optional EXIF. Read one
 optimization settings snapshot and let the processor generate orientation-normalized
 OPTIMIZED, PREVIEW, THUMBNAIL-800/400/200 (or configured thumbnail sizes) and optional
-BLUR_PLACEHOLDER. The processor never changes original bytes. Unsupported videos,
-malformed, oversized, animated or multi-page input fails explicitly.
+BLUR_PLACEHOLDER. The processor never changes original bytes. Malformed, oversized,
+animated or multi-page images fail explicitly.
+
+VIDEO selects the injected FFmpeg adapter in the same worker. FFprobe validates
+the decoded container against the registered MP4, QuickTime or WebM format and
+requires a usable video stream with positive duration. Display dimensions account
+for rotation and sample aspect ratio. The shared MediaMetadata row stores nullable
+`duration` (seconds), `videoCodec`, `audioCodec`, `frameRate` (fps), `bitrate` (bits/s)
+and raw probe metadata. Existing image metadata remains valid.
+
+FFmpeg creates a poster; Sharp generates the existing PREVIEW, THUMBNAIL and optional
+BLUR_PLACEHOLDER variants using the same image settings. A video-specific OPTIMIZED
+variant named `playback` contains H.264/AAC MP4 with fast-start metadata, square pixels,
+even dimensions, and a maximum dimension of 1920. Video derivatives use the same
+content-addressed keys, variant repository and storage abstraction as images. No
+video queue, domain tables, album infrastructure or routes are introduced.
+
+Install FFmpeg 6+ and FFprobe with libx264/AAC on the worker host. Apply
+`20261009210000_video_metadata` using `npm run db:deploy` and regenerate the client
+with `npm run db:generate` before starting the updated worker/API. FFmpeg runs with
+argument arrays, local file input protocols and a restricted container whitelist.
+Inspection/poster extraction time out after 30 seconds and playback encoding after
+five minutes. Adapter-private temporary files are removed on success and failure.
+Longer or expensive inputs can fail these limits and retain their original bytes.
+
+The detail API signs playback as a normal display variant. Native video controls use
+the PREVIEW poster and `preload="none"`; image selection excludes video formats.
+Playback failures allow refreshing the signed URL. Existing originals remain available
+through the explicit download action. Album relations, tags, categories, favorites,
+trash/restore/deletion and lexical search all operate on the same Media identity.
+Optional semantic indexing remains image-only.
 
 Upload derivative objects and register named variant rows. Upsert extracted metadata,
 update checksum/dimensions/aspect ratio/MIME and commit Media READY plus UploadFile
@@ -73,7 +102,7 @@ No duplicate-resolution HTTP endpoint is added by this worker task.
 
 ## Verification
 
-Unit tests mock storage, image processing, duplicate detection and settings to
+Unit tests mock storage, image/video processing, duplicate detection and settings to
 exercise orchestration, partial writes, failures and retries. Lifecycle/repository
 contract tests cover readiness, cleanup and transactional state guards.
 
@@ -85,5 +114,7 @@ DATABASE_TESTS=1 npm test --workspace @album-manager/api -- src/modules/media/re
 QUEUE_TESTS=1 npm test --workspace @album-manager/api -- src/infrastructure/queue/queue.integration.test.js
 ```
 
-Database integration tests apply both migrations in isolated schemas. Queue tests
+Real video tests use small FFmpeg-generated MP4, MOV and WebM files (VP9/Opus
+encoders are required for WebM fixtures), inspect metadata and decode generated
+posters/playback. Database integration tests apply all migrations in isolated schemas. Queue tests
 use unique Redis prefixes and clean up only their own queues.

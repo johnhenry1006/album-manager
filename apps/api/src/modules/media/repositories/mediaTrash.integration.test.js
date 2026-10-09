@@ -110,39 +110,62 @@ describe.skipIf(process.env.DATABASE_TESTS !== '1')('trash lifecycle with Postgr
         });
     });
 
-    it('removes every variant object before hard deletion and cleans dependent rows and album covers', async () => {
-        await fixture(async ({ client, objects, removed, request }) => {
-            const types = ['ORIGINAL', 'OPTIMIZED', 'PREVIEW', 'THUMBNAIL', 'BLUR_PLACEHOLDER'];
-            await client.media.create({
-                data: {
-                    id: ids[0],
-                    ...mediaData,
-                    deletedAt: new Date(),
-                    favorites: { create: { userId: '00000000-0000-4000-8000-000000000001' } },
-                    metadata: { create: {} },
-                },
-            });
-            await client.album.create({
-                data: { name: 'Album', slug: 'album', coverMediaId: ids[0], media: { create: { mediaId: ids[0] } } },
-            });
-            for (const type of types) {
-                const storageKey = objectKey(`${type}.jpg`);
-                objects.add(storageKey);
-                await client.mediaVariant.create({
-                    data: { mediaId: ids[0], type, format: 'jpg', storageKey, fileSize: 10n },
+    it.each(['IMAGE', 'VIDEO'])(
+        'removes every %s variant before hard deletion and cleans dependent rows and album covers',
+        async (mediaType) => {
+            await fixture(async ({ client, objects, removed, request }) => {
+                const types = ['ORIGINAL', 'OPTIMIZED', 'PREVIEW', 'THUMBNAIL', 'BLUR_PLACEHOLDER'];
+                await client.media.create({
+                    data: {
+                        id: ids[0],
+                        ...mediaData,
+                        type: mediaType,
+                        ...(mediaType === 'VIDEO'
+                            ? { originalFilename: 'video.mp4', mimeType: 'video/mp4', extension: 'mp4' }
+                            : {}),
+                        deletedAt: new Date(),
+                        favorites: { create: { userId: '00000000-0000-4000-8000-000000000001' } },
+                        metadata: { create: {} },
+                    },
                 });
-            }
-            expect((await request('DELETE', `/api/trash/${ids[0]}/permanent`, { confirm: true })).statusCode).toBe(204);
-            expect(objects.size).toBe(0);
-            expect(removed.sort()).toEqual(types.map((type) => objectKey(`${type}.jpg`)).sort());
-            expect(await client.media.count()).toBe(0);
-            expect(await client.mediaVariant.count()).toBe(0);
-            expect(await client.favorite.count()).toBe(0);
-            expect(await client.mediaMetadata.count()).toBe(0);
-            expect(await client.albumMedia.count()).toBe(0);
-            expect((await client.album.findFirst()).coverMediaId).toBeNull();
-        });
-    });
+                await client.album.create({
+                    data: {
+                        name: 'Album',
+                        slug: 'album',
+                        coverMediaId: ids[0],
+                        media: { create: { mediaId: ids[0] } },
+                    },
+                });
+                for (const type of types) {
+                    const format = mediaType === 'VIDEO' && ['ORIGINAL', 'OPTIMIZED'].includes(type) ? 'mp4' : 'jpg';
+                    const storageKey = objectKey(`${type}.${format}`);
+                    objects.add(storageKey);
+                    await client.mediaVariant.create({
+                        data: { mediaId: ids[0], type, format, storageKey, fileSize: 10n },
+                    });
+                }
+                expect((await request('DELETE', `/api/trash/${ids[0]}/permanent`, { confirm: true })).statusCode).toBe(
+                    204,
+                );
+                expect(objects.size).toBe(0);
+                expect(removed.sort()).toEqual(
+                    types
+                        .map((type) =>
+                            objectKey(
+                                `${type}.${mediaType === 'VIDEO' && ['ORIGINAL', 'OPTIMIZED'].includes(type) ? 'mp4' : 'jpg'}`,
+                            ),
+                        )
+                        .sort(),
+                );
+                expect(await client.media.count()).toBe(0);
+                expect(await client.mediaVariant.count()).toBe(0);
+                expect(await client.favorite.count()).toBe(0);
+                expect(await client.mediaMetadata.count()).toBe(0);
+                expect(await client.albumMedia.count()).toBe(0);
+                expect((await client.album.findFirst()).coverMediaId).toBeNull();
+            });
+        },
+    );
 
     it('commits the purge marker before storage calls, blocks restore after partial failure, and retries after restart', async () => {
         await fixture(async ({ client, scoped, storage, objects, request }) => {

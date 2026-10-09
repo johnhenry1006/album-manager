@@ -75,9 +75,12 @@ Declared MIME and extensions do not prove file contents. The dedicated worker
 uses Sharp inspection and compares decoded MIME/format with the registered image
 before metadata extraction, rendition generation and READY publication. Invalid,
 unsupported, mismatched (including HEIC presented as AVIF), multi-page/animated or over-100-million-pixel images fail
-with sanitized errors; originals stay immutable. Video metadata registration is
-supported by the existing contract, but video decoding/processing is not implemented
-and fails explicitly. No video content verification or malware scanner is claimed.
+with sanitized errors; originals stay immutable. Video uploads are inspected with
+FFprobe and compared against their registered container before derivative generation.
+The adapter requires a usable video stream and duration, restricts input protocols
+to local files and demuxers to supported containers, invokes binaries without a shell,
+and bounds process execution and captured output. Temporary files are removed after
+processing. This content validation does not perform malware scanning.
 
 Original GET URLs force Content-Disposition attachment so retained or failed
 originals are downloaded rather than rendered as documents on the storage origin.

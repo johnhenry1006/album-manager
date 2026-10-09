@@ -2,14 +2,15 @@
 
 A JavaScript application for managing a private media library with local accounts. It includes
 albums and memberships, categories/tags, favorites, metadata search, direct uploads,
-background image processing, trash/restore/permanent deletion, dashboard summaries,
+background image/video processing, trash/restore/permanent deletion, dashboard summaries,
 and image-optimization/storage settings.
 
 The media library, search, favorites, trash and album galleries share a virtualized
 thumbnail grid. Media details display derived previews and offer an explicit original
 download action. `/settings` is currently a placeholder; its storage and image-optimization
-subpages are implemented. Video metadata can be registered, but the worker currently
-processes images only. Unsupported/animated images and videos fail processing explicitly.
+subpages are implemented. MP4, MOV and WebM videos share the Media upload and lifecycle
+pipeline, with duration/codec metadata, poster previews, thumbnails and MP4 playback.
+Unsupported/animated images and invalid video content fail processing explicitly.
 
 Email/password login and HttpOnly cookie sessions protect the API and application shell.
 Favorites belong to each user. Authenticated accounts share and can modify the library;
@@ -26,7 +27,7 @@ compiler or configuration.
 ```text
 Browser: page → page hook → feature index.js → feature hook/action → private API adapter → HTTP client
 Backend: route → controller → service → repository / injected infrastructure provider
-Worker:  validated queue job → service → repository / storage provider / image processor
+Worker:  validated queue job → service → repository / storage provider / image or video processor
 ```
 
 TanStack Query owns server state. Pages and controllers stay thin; services own domain
@@ -64,6 +65,8 @@ The manifests and root `package-lock.json` are the dependency/version source of 
 ## Prerequisites
 
 - Node.js **22.14 or later** and npm **10 or later**.
+- FFmpeg **6 or later** (`ffmpeg` and `ffprobe` on PATH), with `libx264` and AAC encoding
+  support, on the media worker host. Real video tests also require VP9/Opus encoding.
 - Docker Engine/Desktop with Docker Compose **v2**, available to your user.
 - Free local ports `3000`, `5173`, `5434`, `6380`, and `9445`, or matching custom configuration.
 
@@ -350,7 +353,7 @@ npm run worker:cleanup --workspace @album-manager/api
 ```
 
 - **Media worker:** consumes `process-media` jobs on `media-processing`; validates
-  payloads, detects duplicates, processes images and persists derivatives. Default
+  payloads, detects duplicates, processes images/videos and persists derivatives. Default
   concurrency is one. Increase file-size/concurrency limits only after memory measurement.
 - **Cleanup worker:** consumes `cleanup-media` on `media-cleanup` and registers the
   stable `trash-retention-cleanup` scheduler, hourly at minute zero in UTC. It purges
@@ -552,26 +555,26 @@ five-item dashboard recents do not need virtualization. See
 
 ## Troubleshooting
 
-| Symptom                                               | Checks / resolution                                                                                                                                                                         |
-| ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Environment generator exits with “already exists”     | Existing `.env` is preserved. Edit it; do not regenerate over local credentials.                                                                                                            |
-| Compose refuses missing credentials                   | Fill/generated root `.env` values for PostgreSQL, Redis and S3; use `docker compose config --quiet`.                                                                                        |
-| Port already in use / unhealthy service               | Inspect `docker compose ps` and service logs. Change published port and corresponding API endpoint values together. S3 Ninja may need the full startup wait.                                |
-| API startup fails                                     | Check root config, PostgreSQL and Redis availability; run migrations and generate the client. Exported process variables override `.env`. Startup intentionally prints a sanitized message. |
-| Prisma table/client errors                            | Run `npm run db:deploy` and `npm run db:generate`; ensure `DATABASE_URL` points to the intended local database.                                                                             |
-| PostgreSQL password stopped working after `.env` edit | Initialization settings do not rotate an existing volume's role credentials. Rotate the role password or restore matching local configuration.                                              |
-| Browser API requests hit Vite / return HTML           | Vite has no `/api` proxy. Set `VITE_API_BASE_URL=http://localhost:3000/api` and restart/rebuild. Root `PUBLIC_API_BASE_URL` is unused.                                                      |
-| Browser request returns 403 / CORS error              | Match the exact `FRONTEND_ORIGIN`, including hostname and port. Restart API and recreate `s3-public` after root env changes. Preview and a changed Vite port have different origins.        |
-| Upload reports missing bucket or storage error        | Create the private bucket via Ninja UI, check provider credentials/endpoints, and inspect emulator/proxy logs. API startup does not create buckets.                                         |
-| Presigned URL fails / thumbnail expires               | Verify browser-reachable signing endpoint, exact signed method/headers, expiry and matching credentials. Never rewrite a signed URL; refetch for a fresh URL.                               |
-| Upload stays PROCESSING                               | Start the media worker; verify shared Redis DB/prefix and inspect worker errors/failed jobs. Transfer completion is not processing completion.                                              |
-| Duplicate waits for a decision                        | Choose skip/use existing/keep both in the queue; the worker deliberately pauses duplicate admission.                                                                                        |
-| Video/animated image fails                            | Current worker supports validated single-image decoding, not video or multi-page processing.                                                                                                |
-| Trash item cannot restore after failed purge          | Purge has already started. Retry permanent deletion after correcting storage availability/key issues; do not bypass its durable marker or key checks.                                       |
-| API returns 429                                       | Respect `Retry-After`; quotas are per socket IP/API instance. Configure appropriate local limits rather than disabling validation.                                                          |
-| SPA deep link returns host 404                        | Configure frontend hosting to fall back to `dist/index.html` for application routes.                                                                                                        |
-| Integration tests are skipped                         | Enable the relevant `DATABASE_TESTS`, `QUEUE_TESTS` or `STORAGE_TESTS` flag and supply isolated local services.                                                                             |
-| Worker memory spikes                                  | Originals/derivatives are buffered. Keep conservative upload/concurrency limits and profile before increasing them.                                                                         |
+| Symptom                                               | Checks / resolution                                                                                                                                                                                |
+| ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Environment generator exits with “already exists”     | Existing `.env` is preserved. Edit it; do not regenerate over local credentials.                                                                                                                   |
+| Compose refuses missing credentials                   | Fill/generated root `.env` values for PostgreSQL, Redis and S3; use `docker compose config --quiet`.                                                                                               |
+| Port already in use / unhealthy service               | Inspect `docker compose ps` and service logs. Change published port and corresponding API endpoint values together. S3 Ninja may need the full startup wait.                                       |
+| API startup fails                                     | Check root config, PostgreSQL and Redis availability; run migrations and generate the client. Exported process variables override `.env`. Startup intentionally prints a sanitized message.        |
+| Prisma table/client errors                            | Run `npm run db:deploy` and `npm run db:generate`; ensure `DATABASE_URL` points to the intended local database.                                                                                    |
+| PostgreSQL password stopped working after `.env` edit | Initialization settings do not rotate an existing volume's role credentials. Rotate the role password or restore matching local configuration.                                                     |
+| Browser API requests hit Vite / return HTML           | Vite has no `/api` proxy. Set `VITE_API_BASE_URL=http://localhost:3000/api` and restart/rebuild. Root `PUBLIC_API_BASE_URL` is unused.                                                             |
+| Browser request returns 403 / CORS error              | Match the exact `FRONTEND_ORIGIN`, including hostname and port. Restart API and recreate `s3-public` after root env changes. Preview and a changed Vite port have different origins.               |
+| Upload reports missing bucket or storage error        | Create the private bucket via Ninja UI, check provider credentials/endpoints, and inspect emulator/proxy logs. API startup does not create buckets.                                                |
+| Presigned URL fails / thumbnail expires               | Verify browser-reachable signing endpoint, exact signed method/headers, expiry and matching credentials. Never rewrite a signed URL; refetch for a fresh URL.                                      |
+| Upload stays PROCESSING                               | Start the media worker; verify shared Redis DB/prefix and inspect worker errors/failed jobs. Transfer completion is not processing completion.                                                     |
+| Duplicate waits for a decision                        | Choose skip/use existing/keep both in the queue; the worker deliberately pauses duplicate admission.                                                                                               |
+| Video/animated image fails                            | Verify FFmpeg/FFprobe and libx264/AAC on the worker host; inspect failed jobs for invalid containers, missing video streams or processing timeouts. Animated/multi-page images remain unsupported. |
+| Trash item cannot restore after failed purge          | Purge has already started. Retry permanent deletion after correcting storage availability/key issues; do not bypass its durable marker or key checks.                                              |
+| API returns 429                                       | Respect `Retry-After`; quotas are per socket IP/API instance. Configure appropriate local limits rather than disabling validation.                                                                 |
+| SPA deep link returns host 404                        | Configure frontend hosting to fall back to `dist/index.html` for application routes.                                                                                                               |
+| Integration tests are skipped                         | Enable the relevant `DATABASE_TESTS`, `QUEUE_TESTS` or `STORAGE_TESTS` flag and supply isolated local services.                                                                                    |
+| Worker memory spikes                                  | Originals/derivatives are buffered. Keep conservative upload/concurrency limits and profile before increasing them.                                                                                |
 
 For implementation work, follow [DEVELOPMENT.md](docs/DEVELOPMENT.md). Known scaling and
 verification limits are recorded in [performance](docs/architecture/PERFORMANCE.md),

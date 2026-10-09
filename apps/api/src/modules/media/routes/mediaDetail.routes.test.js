@@ -85,6 +85,44 @@ describe('media detail and original URL HTTP contracts', () => {
         return { findUnique, storage };
     }
 
+    it('exposes video metadata and playback through Media while preserving shared relations', async () => {
+        setup({
+            ...row,
+            type: 'VIDEO',
+            mimeType: 'video/mp4',
+            metadata: {
+                ...row.metadata,
+                duration: 12.5,
+                videoCodec: 'h264',
+                audioCodec: 'aac',
+                frameRate: 30,
+                bitrate: 1250000,
+            },
+            variants: [
+                variant,
+                {
+                    ...variant,
+                    type: 'OPTIMIZED',
+                    name: 'playback',
+                    format: 'mp4',
+                    storageKey: `media/${id}/playback.mp4`,
+                },
+            ],
+        });
+        const response = await app.inject(`/api/media/${id}`);
+        expect(response.statusCode).toBe(200);
+        expect(response.json()).toMatchObject({
+            type: 'VIDEO',
+            favorite: true,
+            albums: [{ id }],
+            categories: [{ id }],
+            tags: [{ id }],
+            metadata: { duration: 12.5, videoCodec: 'h264', audioCodec: 'aac', frameRate: 30, bitrate: 1250000 },
+            variants: [{ type: 'PREVIEW' }, { type: 'OPTIMIZED', format: 'mp4', name: 'playback' }],
+        });
+        expect(JSON.stringify(response.json())).not.toContain('storageKey');
+    });
+
     it('returns core fields, relations, EXIF and signed display variants without original URLs or private fields', async () => {
         const { findUnique, storage } = setup();
         const response = await app.inject(`/api/media/${id}`);

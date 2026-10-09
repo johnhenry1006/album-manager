@@ -56,6 +56,17 @@ browser codec support still varies. The repository filters these variants before
 fetching keys; the service also checks before signing.
 
 Original descriptors and original URLs are never included in the detail response.
+
+Videos use the same Media identity and relationships. Their `metadata` includes
+nullable `duration` (seconds), `videoCodec`, `audioCodec` (null for silent videos),
+`frameRate` (fps), and `bitrate` (bits/s), alongside sanitized raw probe metadata.
+Display dimensions account for rotation and sample aspect ratio. Video processing
+generates an `OPTIMIZED`/`mp4` variant named `playback` with H.264 video and optional
+AAC audio, plus image `PREVIEW`, `THUMBNAIL` and optional `BLUR_PLACEHOLDER` variants.
+Use the image preview as a poster and the MP4 variant for video controls; refetch
+detail to renew an expired playback URL. Album membership/covers, taxonomy,
+favorites, search and trash continue through the existing Media APIs.
+
 This endpoint does not accept `includeOriginal`; explicitly request an original
 through the dedicated endpoint below. Gallery clients should continue using
 the [lightweight list endpoint](MEDIA.md) rather than loading detail/EXIF per tile.

@@ -98,6 +98,63 @@ it('shows the preview, metadata and memberships without requesting originals', a
   expect(requests).toEqual([{ url: '/api/media/photo', method: 'GET' }]);
 });
 
+it('plays a video variant with poster and typed metadata through the existing detail page', async () => {
+  let refreshed = false;
+  serve(() =>
+    respond({
+      ...detail,
+      type: 'VIDEO',
+      metadata: {
+        duration: 12.5,
+        videoCodec: 'h264',
+        audioCodec: 'aac',
+        frameRate: 30,
+        bitrate: 1250000,
+      },
+      variants: [
+        { type: 'PREVIEW', format: 'webp', url: '/poster.webp' },
+        {
+          type: 'OPTIMIZED',
+          name: 'playback',
+          format: 'mp4',
+          url: refreshed ? '/refreshed-playback.mp4' : '/playback.mp4',
+        },
+      ],
+    }),
+  );
+  const { container } = setup();
+  await screen.findByText('h264');
+  const video = container.querySelector('video');
+  expect(video).toHaveAttribute('src', '/playback.mp4');
+  expect(video).toHaveAttribute('poster', '/poster.webp');
+  expect(video).toHaveAttribute('preload', 'none');
+  expect(video).toHaveAttribute('controls');
+  expect(screen.getByText('12.5 seconds')).toBeVisible();
+  expect(screen.getByRole('link', { name: 'Holiday' })).toBeVisible();
+  expect(requests.some(({ url }) => url.endsWith('/original-url'))).toBe(false);
+  fireEvent.error(video);
+  expect(screen.getByRole('alert')).toHaveTextContent('Could not load video');
+  refreshed = true;
+  fireEvent.click(within(screen.getByRole('alert')).getByRole('button', { name: 'Try again' }));
+  await waitFor(() =>
+    expect(container.querySelector('video')).toHaveAttribute('src', '/refreshed-playback.mp4'),
+  );
+});
+
+it('never renders a video playback variant as an image when its poster is missing', async () => {
+  serve(() =>
+    respond({
+      ...detail,
+      type: 'VIDEO',
+      variants: [{ type: 'OPTIMIZED', format: 'mp4', name: 'playback', url: '/playback.mp4' }],
+    }),
+  );
+  const { container } = setup();
+  await screen.findByText('VIDEO');
+  expect(container.querySelector('video')).toHaveAttribute('src', '/playback.mp4');
+  expect(container.querySelector('img')).toBeNull();
+});
+
 it('requests an original link only after an explicit action and resets it for another media', async () => {
   serve((url) =>
     url.endsWith('/original-url')

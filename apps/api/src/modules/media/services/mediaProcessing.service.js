@@ -12,6 +12,7 @@ export function createMediaProcessingService({
     mediaVariantService,
     storage,
     imageProcessor,
+    videoProcessor,
     settingsService,
     withChecksumLock,
 }) {
@@ -36,7 +37,9 @@ export function createMediaProcessingService({
             try {
                 const original = await repository.findOriginal(mediaId);
                 if (!original) throw notFound('Original variant');
-                if (media.type !== 'IMAGE') throw invalid('Only image processing is supported');
+                const processor =
+                    media.type === 'IMAGE' ? imageProcessor : media.type === 'VIDEO' ? videoProcessor : null;
+                if (!processor) throw invalid('Media processor is unavailable');
                 if ((await repository.start(mediaId, uploadFileId)) === false) {
                     await repository.repairReadyUpload(mediaId, uploadFileId);
                     return { status: 'READY', mediaId };
@@ -48,20 +51,20 @@ export function createMediaProcessingService({
                     await repository.markDuplicate(mediaId, uploadFileId, duplicate.existingMediaId);
                     return { status: 'DUPLICATE_PENDING', mediaId, duplicateOfMediaId: duplicate.existingMediaId };
                 }
-                const inspected = await imageProcessor.inspect(bytes);
+                const inspected = await processor.inspect(bytes);
                 const mimeType =
                     inspected.mimeType ??
                     Object.entries(MEDIA_FORMATS).find(([, value]) => value.format === inspected.format)?.[0];
                 if (
                     !mimeType ||
-                    MEDIA_FORMATS[mimeType]?.type !== 'IMAGE' ||
+                    MEDIA_FORMATS[mimeType]?.type !== media.type ||
                     MEDIA_FORMATS[mimeType]?.format !== (original.format === 'jpg' ? 'jpeg' : original.format) ||
                     (media.mimeType && mimeType !== media.mimeType)
                 )
-                    throw invalid('Decoded image type does not match the registered upload');
-                const metadata = await imageProcessor.extractMetadata(bytes);
+                    throw invalid('Decoded media type does not match the registered upload');
+                const metadata = await processor.extractMetadata(bytes);
                 const settings = await settingsService.getSettings();
-                const { variants } = await imageProcessor.process(bytes, settings);
+                const { variants } = await processor.process(bytes, settings);
                 await renditions.persist(media, original, variants);
                 await repository.finish(
                     mediaId,

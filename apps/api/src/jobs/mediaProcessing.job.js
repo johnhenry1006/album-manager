@@ -5,7 +5,7 @@ import {
 } from '#modules/media/index.js';
 import { createSettingsModule } from '#modules/settings/index.js';
 
-export function createMediaProcessingJob({ client, storage, imageProcessor }) {
+export function createMediaProcessingJob({ client, storage, imageProcessor, videoProcessor }) {
     const repository = createMediaProcessingRepository(client);
     const { mediaService, mediaVariantService } = createMediaModule(client);
     const { imageOptimizationSettingsService } = createSettingsModule(client);
@@ -15,6 +15,7 @@ export function createMediaProcessingJob({ client, storage, imageProcessor }) {
         mediaVariantService,
         storage,
         imageProcessor,
+        videoProcessor,
         settingsService: imageOptimizationSettingsService,
         withChecksumLock: (checksum, run) =>
             repository.withChecksumLock(checksum, (transaction) => {

@@ -272,6 +272,11 @@ model MediaMetadata {
   shutterSpeed String?  @map("shutter_speed")
   latitude     Float?
   longitude    Float?
+  duration     Float?
+  videoCodec   String?  @map("video_codec")
+  audioCodec   String?  @map("audio_codec")
+  frameRate    Float?   @map("frame_rate")
+  bitrate      Float?
   rawMetadata  Json?    @map("raw_metadata") @db.JsonB
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)

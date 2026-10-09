@@ -15,7 +15,8 @@
   border-radius: 0.75rem;
 }
 
-.preview img {
+.preview img,
+.preview video {
   display: block;
   width: 100%;
   height: auto;

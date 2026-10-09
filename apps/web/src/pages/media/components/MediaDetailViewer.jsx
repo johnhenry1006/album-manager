@@ -32,10 +32,48 @@ function PreviewImage({ preview, filename, onRefresh }) {
   );
 }
 
-export function MediaDetailViewer({ media, preview, original, onRefresh }) {
+function VideoPreview({ playback, preview, filename, onRefresh }) {
+  const [failed, setFailed] = useState(false);
+  return failed ? (
+    <ErrorState
+      title="Could not load video"
+      description="Refresh the playback link and try again."
+      onRetry={() => {
+        setFailed(false);
+        onRefresh();
+      }}
+    />
+  ) : (
+    <div className={styles.preview}>
+      <video
+        aria-label={filename}
+        src={playback.url}
+        poster={preview?.url}
+        width={playback.width}
+        height={playback.height}
+        controls
+        playsInline
+        preload="none"
+        onError={() => setFailed(true)}
+      >
+        Your browser does not support video playback.
+      </video>
+    </div>
+  );
+}
+
+export function MediaDetailViewer({ media, preview, playback, original, onRefresh }) {
   return (
     <section aria-label="Media viewer" className={styles.viewer}>
-      {preview?.url ? (
+      {media.type === 'VIDEO' && playback?.url ? (
+        <VideoPreview
+          key={playback.url}
+          playback={playback}
+          preview={preview}
+          filename={media.originalFilename}
+          onRefresh={onRefresh}
+        />
+      ) : preview?.url ? (
         <PreviewImage
           key={preview.url}
           preview={preview}

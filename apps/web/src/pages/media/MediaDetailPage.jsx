@@ -34,6 +34,7 @@ export function MediaDetailPage() {
                 key={page.mediaId}
                 media={page.media}
                 preview={page.preview}
+                playback={page.playback}
                 original={page.actions.original}
                 onRefresh={page.refresh}
               />

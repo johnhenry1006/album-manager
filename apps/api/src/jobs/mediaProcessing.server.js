@@ -1,6 +1,7 @@
 import { pathToFileURL } from 'node:url';
 
 import { SharpImageProcessor } from '#infrastructure/image-processing/index.js';
+import { FfmpegVideoProcessor } from '#infrastructure/video-processing/ffmpegVideoProcessor.js';
 
 import { createMediaProcessingJob } from './mediaProcessing.job.js';
 import { createMediaProcessingWorker } from './mediaProcessing.worker.js';
@@ -9,8 +10,14 @@ import { startMediaWorker } from './mediaWorker.server.js';
 export function startMediaProcessingWorker(options = {}) {
     return startMediaWorker({
         ...options,
-        createJob: (dependencies) =>
-            createMediaProcessingJob({ ...dependencies, imageProcessor: new SharpImageProcessor() }),
+        createJob: (dependencies) => {
+            const imageProcessor = new SharpImageProcessor();
+            return createMediaProcessingJob({
+                ...dependencies,
+                imageProcessor,
+                videoProcessor: new FfmpegVideoProcessor({ imageProcessor }),
+            });
+        },
         createWorker: createMediaProcessingWorker,
     });
 }

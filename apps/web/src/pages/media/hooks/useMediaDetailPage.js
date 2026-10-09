@@ -17,6 +17,7 @@ export function useMediaDetailPage() {
     error: query.error,
     refresh: query.refetch,
     preview: variants.preview,
+    playback: variants.playback,
     actions,
   };
 }

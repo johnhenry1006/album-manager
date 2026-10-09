@@ -10,8 +10,8 @@
         {
             "files": "apps/web/**/*",
             "options": {
-                "tabWidth": 2,
-                "printWidth": 100
+                "tabWidth": 4,
+                "printWidth": 120
             }
         }
     ]

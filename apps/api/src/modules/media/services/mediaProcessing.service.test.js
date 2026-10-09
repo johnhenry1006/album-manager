@@ -141,6 +141,84 @@ function setup(overrides = {}) {
 }
 
 describe('media processing orchestration', () => {
+    function videoSetup() {
+        const videoProcessor = {
+            inspect: vi.fn(async () => ({
+                width: 320,
+                height: 180,
+                aspectRatio: 320 / 180,
+                format: 'mp4',
+                mimeType: 'video/mp4',
+            })),
+            extractMetadata: vi.fn(async () => ({
+                duration: 2.5,
+                videoCodec: 'h264',
+                audioCodec: 'aac',
+                frameRate: 25,
+                bitrate: 100000,
+            })),
+            process: vi.fn(async () => ({
+                variants: [
+                    {
+                        type: 'OPTIMIZED',
+                        name: 'playback',
+                        format: 'mp4',
+                        contentType: 'video/mp4',
+                        data: Buffer.from('playback'),
+                        fileSize: 8,
+                        width: 320,
+                        height: 180,
+                    },
+                    {
+                        type: 'PREVIEW',
+                        name: 'preview',
+                        format: 'webp',
+                        contentType: 'image/webp',
+                        data: Buffer.from('poster'),
+                        fileSize: 6,
+                        width: 320,
+                        height: 180,
+                    },
+                ],
+            })),
+        };
+        const context = setup({ videoProcessor });
+        Object.assign(context.media, { type: 'VIDEO', mimeType: 'video/mp4' });
+        context.original.format = 'mp4';
+        return context;
+    }
+    it('processes videos through shared variants, metadata, admission and retry recovery', async () => {
+        const context = videoSetup();
+        context.repository.finish.mockRejectedValueOnce(new Error('Retry'));
+        await expect(context.run()).rejects.toThrow('Retry');
+        await context.run();
+        expect(context.media).toMatchObject({ type: 'VIDEO', status: 'READY', width: 320, height: 180, checksum });
+        expect(context.file.metadata).toMatchObject({ duration: 2.5, videoCodec: 'h264', audioCodec: 'aac' });
+        expect([...context.rows.keys()]).toEqual(['playback', 'preview']);
+        expect(context.objects.get(context.original.storageKey)).toEqual(bytes);
+        expect(context.objects.size).toBe(3);
+        expect(context.imageProcessor.process).not.toHaveBeenCalled();
+        await context.run();
+        expect(context.videoProcessor.process).toHaveBeenCalledTimes(2);
+    });
+    it('keeps video duplicates pending before invoking expensive decoding', async () => {
+        const context = videoSetup();
+        context.duplicateDetectionService.detectDuplicateByChecksum.mockResolvedValue({
+            type: 'DUPLICATE_FOUND',
+            existingMediaId: duplicateId,
+        });
+        await context.run();
+        expect(context.file.status).toBe('DUPLICATE_PENDING');
+        expect(context.videoProcessor.inspect).not.toHaveBeenCalled();
+    });
+    it('rejects a video container mismatch without publishing derivatives', async () => {
+        const context = videoSetup();
+        context.videoProcessor.inspect.mockResolvedValue({ format: 'webm', mimeType: 'video/webm' });
+        await expect(context.run()).rejects.toThrow('Decoded media type');
+        expect(context.file.status).toBe('FAILED');
+        expect(context.rows.size).toBe(0);
+        expect(context.videoProcessor.process).not.toHaveBeenCalled();
+    });
     it('persists all renditions, inspected MIME, EXIF and source checksum before READY', async () => {
         const context = setup();
         await context.run();
@@ -292,7 +370,7 @@ describe('media processing orchestration', () => {
         await expect(context.run()).rejects.toMatchObject({ code: 'INVALID_MEDIA_INPUT' });
         expect(context.repository.start).not.toHaveBeenCalled();
     });
-    it('marks missing originals and unsupported videos failed without generating variants', async () => {
+    it('marks missing originals and unavailable video processors failed without generating variants', async () => {
         const context = setup();
         context.repository.findOriginal.mockResolvedValueOnce(null);
         await expect(context.run()).rejects.toThrow();

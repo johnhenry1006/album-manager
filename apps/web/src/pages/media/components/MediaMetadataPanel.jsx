@@ -56,6 +56,30 @@ export function MediaMetadataPanel({ media, actions }) {
     ['Captured (UTC)', displayDate(media.takenAt)],
     ['Created (UTC)', displayDate(media.createdAt)],
     ['Updated (UTC)', displayDate(media.updatedAt)],
+    ...(media.type === 'VIDEO'
+      ? [
+          [
+            'Duration',
+            media.metadata?.duration === null || media.metadata?.duration === undefined
+              ? null
+              : `${media.metadata.duration} seconds`,
+          ],
+          ['Video codec', media.metadata?.videoCodec],
+          ['Audio codec', media.metadata?.audioCodec],
+          [
+            'Frame rate',
+            media.metadata?.frameRate === null || media.metadata?.frameRate === undefined
+              ? null
+              : `${media.metadata.frameRate} fps`,
+          ],
+          [
+            'Bitrate',
+            media.metadata?.bitrate === null || media.metadata?.bitrate === undefined
+              ? null
+              : `${media.metadata.bitrate} bits/s`,
+          ],
+        ]
+      : []),
     ...METADATA_FIELDS.map(([field, label]) => [label, media.metadata?.[field]]),
   ];
   return (
