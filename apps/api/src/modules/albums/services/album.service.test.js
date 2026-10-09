@@ -38,7 +38,7 @@ describe('album domain', () => {
             () => service.detail(albumId),
             () => service.update(albumId, { name: 'New' }),
             () => service.remove(albumId),
-            () => service.listMedia(albumId, {}),
+            () => service.listMedia(albumId, {}, { id: '00000000-0000-4000-8000-000000000001' }),
             () => service.addMedia(albumId, { mediaId }),
             () => service.removeMedia(albumId, mediaId),
         ])
@@ -57,7 +57,11 @@ describe('album domain', () => {
         });
         await service.addMedia(second.id, { mediaId });
         await service.removeMedia(albumId, mediaId);
-        expect((await service.listMedia(second.id, {})).items.map((row) => row.id)).toEqual([mediaId]);
+        expect(
+            (await service.listMedia(second.id, {}, { id: '00000000-0000-4000-8000-000000000001' })).items.map(
+                (row) => row.id,
+            ),
+        ).toEqual([mediaId]);
         expect(media.get(mediaId).deletedAt).toBeNull();
     });
 
@@ -86,7 +90,7 @@ describe('album domain', () => {
         const { service } = fixture();
         await service.addMedia(albumId, { mediaId, position: 3 });
         await service.addMedia(albumId, { mediaId: otherMediaId, position: 3 });
-        const first = await service.listMedia(albumId, { limit: '1' });
+        const first = await service.listMedia(albumId, { limit: '1' }, { id: '00000000-0000-4000-8000-000000000001' });
         expect(first.hasMore).toBe(true);
         expect(JSON.parse(Buffer.from(first.nextCursor, 'base64url').toString())).toEqual({
             v: 1,
@@ -95,7 +99,11 @@ describe('album domain', () => {
             id: first.items[0].membershipId,
         });
         await service.removeMedia(albumId, first.items[0].id);
-        const next = await service.listMedia(albumId, { limit: '1', cursor: first.nextCursor });
+        const next = await service.listMedia(
+            albumId,
+            { limit: '1', cursor: first.nextCursor },
+            { id: '00000000-0000-4000-8000-000000000001' },
+        );
         expect(next.items).toHaveLength(1);
         expect(next.items[0].id).not.toBe(first.items[0].id);
         expect(next).toMatchObject({ hasMore: false, nextCursor: null });
@@ -108,7 +116,7 @@ describe('album domain', () => {
             variants: [{ name: 'small', format: 'webp', width: 100, height: 75, storageKey: 'thumb.webp' }],
         });
         await service.addMedia(albumId, { mediaId });
-        const item = (await service.listMedia(albumId, {})).items[0];
+        const item = (await service.listMedia(albumId, {}, { id: '00000000-0000-4000-8000-000000000001' })).items[0];
         expect(item.thumbnails).toEqual([
             { name: 'small', format: 'webp', width: 100, height: 75, url: 'https://assets.example/thumb.webp' },
         ]);
@@ -157,7 +165,9 @@ describe('album domain', () => {
         Buffer.from(JSON.stringify({ v: 1, albumId, position: -1, id: mediaId })).toString('base64url'),
     ])('rejects malformed or foreign cursor %s before persistence', async (cursor) => {
         const { service, reads } = fixture();
-        await expect(service.listMedia(albumId, { cursor })).rejects.toMatchObject({ statusCode: 400 });
+        await expect(
+            service.listMedia(albumId, { cursor }, { id: '00000000-0000-4000-8000-000000000001' }),
+        ).rejects.toMatchObject({ statusCode: 400 });
         expect(reads()).toBe(0);
     });
 
@@ -172,7 +182,9 @@ describe('album domain', () => {
     it('caps album page sizes at 200 even when the media configuration permits more', async () => {
         const { service } = fixture({ maxLimit: 1000, urlExpirySeconds: 900 });
         await expect(service.list({ limit: '201' })).rejects.toMatchObject({ statusCode: 400 });
-        await expect(service.listMedia(albumId, { limit: '201' })).rejects.toMatchObject({ statusCode: 400 });
+        await expect(
+            service.listMedia(albumId, { limit: '201' }, { id: '00000000-0000-4000-8000-000000000001' }),
+        ).rejects.toMatchObject({ statusCode: 400 });
         expect((await service.list({ limit: '200' })).pagination.limit).toBe(200);
     });
 });

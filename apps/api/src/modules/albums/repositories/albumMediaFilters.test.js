@@ -10,7 +10,11 @@ it('validates search/type/favorite and combines filters with membership ordering
     const query = validateAlbumMediaQuery({ q: ' Photo_% ', type: 'IMAGE', favorite: 'false' }, id);
     expect(query).toMatchObject({ q: 'Photo_%', type: 'IMAGE', favorite: false });
     const findMany = vi.fn(async () => []);
-    await createAlbumMediaRepository({ albumMedia: { findMany } }).findMediaPage(id, query);
+    await createAlbumMediaRepository({ albumMedia: { findMany } }).findMediaPage(
+        id,
+        query,
+        '00000000-0000-4000-8000-000000000001',
+    );
     expect(findMany).toHaveBeenCalledWith(
         expect.objectContaining({
             where: {
@@ -18,7 +22,7 @@ it('validates search/type/favorite and combines filters with membership ordering
                 media: {
                     deletedAt: null,
                     type: 'IMAGE',
-                    favorite: { is: null },
+                    favorites: { none: { userId: '00000000-0000-4000-8000-000000000001' } },
                     originalFilename: { contains: 'Photo\\_\\%', mode: 'insensitive' },
                 },
             },

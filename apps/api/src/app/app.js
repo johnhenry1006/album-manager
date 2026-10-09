@@ -1,10 +1,12 @@
 import Fastify from 'fastify';
 
+import { validateAuthEnvironment } from '#config/auth.js';
 import { validateEnvironment } from '#config/environment.js';
 import { validateMediaDetailEnvironment } from '#config/mediaDetail.js';
 import { validateMediaListEnvironment } from '#config/mediaList.js';
 import { validateUploadEnvironment } from '#config/uploads.js';
 import { createAlbumModule } from '#modules/albums/index.js';
+import { createAuthModule } from '#modules/auth/index.js';
 import { createDashboardModule } from '#modules/dashboard/index.js';
 import {
     createMediaDetailModule,
@@ -21,6 +23,8 @@ import { registerPlugins } from './registerPlugins.js';
 export function buildApp({
     config = validateEnvironment({}),
     logger,
+    authService,
+    authConfig = validateAuthEnvironment({ NODE_ENV: config.nodeEnv }),
     database,
     storage,
     queue,
@@ -38,6 +42,25 @@ export function buildApp({
     mediaTrashService,
     mediaDetailConfig = validateMediaDetailEnvironment({}),
 } = {}) {
+    const authentication =
+        authService ??
+        (database?.client ? createAuthModule({ client: database.client, config: authConfig }).service : undefined);
+    if (
+        !authentication &&
+        [
+            uploadService,
+            albumService,
+            dashboardService,
+            imageOptimizationSettingsService,
+            storageStatisticsService,
+            taxonomyService,
+            mediaListService,
+            mediaDetailService,
+            mediaFavoriteService,
+            mediaTrashService,
+        ].some(Boolean)
+    )
+        throw new Error('Authentication is required for business routes');
     const app = Fastify({
         bodyLimit: 64 * 1024,
         requestTimeout: 30000,
@@ -106,6 +129,8 @@ export function buildApp({
         storageStatisticsService ??
         (database?.client ? createStorageStatisticsModule({ client: database.client, storage }).service : undefined);
     registerPlugins(app, config, {
+        authService: authentication,
+        authConfig,
         storageStatisticsService: storageStatistics,
         imageOptimizationSettingsService: imageOptimizationSettings,
         dashboardService: dashboard,

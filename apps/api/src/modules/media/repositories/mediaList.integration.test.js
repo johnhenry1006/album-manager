@@ -36,7 +36,7 @@ describe.skipIf(process.env.DATABASE_TESTS !== '1')('media list with PostgreSQL'
                     },
                 });
             }
-            await tx.favorite.create({ data: { mediaId: ids[0] } });
+            await tx.favorite.create({ data: { userId: '00000000-0000-4000-8000-000000000001', mediaId: ids[0] } });
             await tx.category.create({
                 data: { id: category, name: 'Travel', slug: 'travel', media: { create: { mediaId: ids[0] } } },
             });
@@ -76,7 +76,10 @@ describe.skipIf(process.env.DATABASE_TESTS !== '1')('media list with PostgreSQL'
                 const seen = [];
                 let cursor;
                 for (let count = 0; count < 6; count++) {
-                    const page = await service.list({ sort, order, limit, ...(cursor ? { cursor } : {}) });
+                    const page = await service.list(
+                        { sort, order, limit, ...(cursor ? { cursor } : {}) },
+                        { id: '00000000-0000-4000-8000-000000000001' },
+                    );
                     seen.push(...page.items.map((item) => item.id));
                     if (!page.hasMore) {
                         expect(page.nextCursor).toBeNull();
@@ -113,14 +116,17 @@ describe.skipIf(process.env.DATABASE_TESTS !== '1')('media list with PostgreSQL'
         [{ q: 'Beach', tag, category }, []],
     ])('applies filter %j', async (filter, expected) => {
         await fixture(async (_tx, service) => {
-            const page = await service.list({ ...filter, sort: 'createdAt', order: 'asc' });
+            const page = await service.list(
+                { ...filter, sort: 'createdAt', order: 'asc' },
+                { id: '00000000-0000-4000-8000-000000000001' },
+            );
             expect(page.items.map((item) => item.id)).toEqual(expected.map((n) => ids[n - 1]));
         });
     });
 
     it('continues from encoded values after deleting the anchor, ignoring newer insertions', async () => {
         await fixture(async (tx, service) => {
-            const first = await service.list({ limit: '1' });
+            const first = await service.list({ limit: '1' }, { id: '00000000-0000-4000-8000-000000000001' });
             expect(first.items[0].id).toBe(ids[4]);
             await tx.media.delete({ where: { id: ids[4] } });
             await tx.media.create({
@@ -132,7 +138,10 @@ describe.skipIf(process.env.DATABASE_TESTS !== '1')('media list with PostgreSQL'
                     fileSize: 10n,
                 },
             });
-            const next = await service.list({ cursor: first.nextCursor });
+            const next = await service.list(
+                { cursor: first.nextCursor },
+                { id: '00000000-0000-4000-8000-000000000001' },
+            );
             expect(next.items.map((item) => item.id)).toEqual([ids[3], ids[2], ids[1], ids[0]]);
         });
     });
@@ -141,9 +150,13 @@ describe.skipIf(process.env.DATABASE_TESTS !== '1')('media list with PostgreSQL'
         await fixture(async (tx, service) => {
             await tx.media.update({ where: { id: ids[0] }, data: { deletedAt: new Date() } });
             await tx.album.update({ where: { id: album }, data: { deletedAt: new Date() } });
-            expect((await service.list({})).items.map((item) => item.id)).not.toContain(ids[0]);
-            expect((await service.list({ album })).items).toEqual([]);
-            expect((await service.list({ q: 'Summer' })).items).toEqual([]);
+            expect(
+                (await service.list({}, { id: '00000000-0000-4000-8000-000000000001' })).items.map((item) => item.id),
+            ).not.toContain(ids[0]);
+            expect((await service.list({ album }, { id: '00000000-0000-4000-8000-000000000001' })).items).toEqual([]);
+            expect((await service.list({ q: 'Summer' }, { id: '00000000-0000-4000-8000-000000000001' })).items).toEqual(
+                [],
+            );
         });
     });
 
@@ -163,7 +176,7 @@ describe.skipIf(process.env.DATABASE_TESTS !== '1')('media list with PostgreSQL'
                     },
                 });
             }
-            const page = await service.list({ favorite: 'true' });
+            const page = await service.list({ favorite: 'true' }, { id: '00000000-0000-4000-8000-000000000001' });
             expect(page.items).toEqual([
                 {
                     id: ids[0],
@@ -185,7 +198,9 @@ describe.skipIf(process.env.DATABASE_TESTS !== '1')('media list with PostgreSQL'
                     ],
                 },
             ]);
-            expect((await service.list({ status: 'FAILED' })).items[0]).toMatchObject({
+            expect(
+                (await service.list({ status: 'FAILED' }, { id: '00000000-0000-4000-8000-000000000001' })).items[0],
+            ).toMatchObject({
                 favorite: false,
                 takenAt: null,
                 thumbnails: [],

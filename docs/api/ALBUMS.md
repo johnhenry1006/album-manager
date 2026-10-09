@@ -1,6 +1,9 @@
 # Albums
 
-The single-user album module manages collections of existing media. Album
+All routes require a session; mutations also require X-CSRF-Token. Favorite flags
+and filters belong to the caller; library data remains shared. See [Auth API](AUTH.md).
+
+The authenticated shared-library album module manages collections of existing media. Album
 membership is many-to-many; adding/removing membership never modifies the
 original media or its stored files. All external input is validated; unknown
 fields, invalid UUIDs, malformed bodies/queries and incompatible cursors return

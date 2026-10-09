@@ -3,7 +3,7 @@ import fastifyPlugin from 'fastify-plugin';
 import { validateSecurityEnvironment } from '#config/security.js';
 
 const METHODS = ['GET', 'HEAD', 'POST', 'PATCH', 'DELETE', 'OPTIONS'];
-const HEADERS = ['content-type', 'accept'];
+const HEADERS = ['content-type', 'accept', 'x-csrf-token', 'x-auth-request'];
 function reject(statusCode) {
     throw Object.assign(new Error('Request rejected'), { statusCode });
 }
@@ -44,6 +44,7 @@ async function security(app, { policy = validateSecurityEnvironment({}) }) {
         if (origin !== undefined) {
             if (typeof origin !== 'string' || !policy.allowedOrigins.includes(origin)) reject(403);
             reply.header('Access-Control-Allow-Origin', origin);
+            reply.header('Access-Control-Allow-Credentials', 'true');
         }
         if (request.method === 'OPTIONS') {
             const method = request.headers['access-control-request-method'];

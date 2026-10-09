@@ -1,6 +1,6 @@
 import { afterEach, expect, it } from 'vitest';
 
-import { buildApp } from '../../../app/app.js';
+import { buildApp } from '../../../app/authenticatedApp.testUtils.js';
 import { ImageOptimizationSettingsService } from '../index.js';
 
 let app;

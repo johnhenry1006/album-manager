@@ -163,9 +163,11 @@ per-endpoint response formats. Error responses must not expose stack traces,
 credentials, or private adapter details. Backend secrets stay in backend config
 and must never enter browser builds, shared packages, or API payloads.
 
-The MVP is single-user. Do not add implicit `currentUser`, ownership filters,
-authentication middleware, or invented user identifiers. Authentication and its
-data model require a deliberate later design.
+Authentication now lives in `modules/auth`, with credential/session/provisioning
+services and repositories. Application composition installs its scoped hook once
+for all business routes; health and login are public. Controllers receive a trusted
+request.actor and pass it explicitly for personal favorite reads/mutations, including
+album/trash galleries. Workers remain identity-independent. See [Auth API](../api/AUTH.md).
 
 ## Media and collection constraints
 

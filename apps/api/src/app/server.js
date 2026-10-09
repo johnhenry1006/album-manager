@@ -1,5 +1,6 @@
 import { pathToFileURL } from 'node:url';
 
+import { validateAuthEnvironment } from '#config/auth.js';
 import { validateDatabaseEnvironment } from '#config/database.js';
 import { loadConfig, loadEnvironment } from '#config/loadConfig.js';
 import { validateMediaDetailEnvironment } from '#config/mediaDetail.js';
@@ -17,6 +18,7 @@ import { registerShutdown } from './registerShutdown.js';
 export async function startServer() {
     const environment = loadEnvironment();
     const config = loadConfig({ environment });
+    const authConfig = validateAuthEnvironment(environment);
     const databaseConfig = validateDatabaseEnvironment(environment);
     const storageConfig = validateStorageEnvironment(environment);
     const queueConfig = validateQueueEnvironment(environment);
@@ -26,7 +28,16 @@ export async function startServer() {
     const database = createDatabase(databaseConfig);
     const storage = createStorageProvider(storageConfig);
     const queue = createQueueInfrastructure(queueConfig);
-    const app = buildApp({ config, database, storage, queue, uploadConfig, mediaListConfig, mediaDetailConfig });
+    const app = buildApp({
+        config,
+        authConfig,
+        database,
+        storage,
+        queue,
+        uploadConfig,
+        mediaListConfig,
+        mediaDetailConfig,
+    });
     const cleanup = registerShutdown(app, { timeoutMs: config.shutdownTimeoutMs });
     try {
         await app.listen({ host: config.host, port: config.port });

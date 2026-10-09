@@ -1,6 +1,6 @@
 export function createMediaTrashController(service) {
     return {
-        list: (request) => service.list(request.query),
+        list: (request) => service.list(request.query, request.actor),
         async softDelete(request, reply) {
             await service.softDelete(request.params.mediaId, request.query, request.body);
             return reply.code(204).send();

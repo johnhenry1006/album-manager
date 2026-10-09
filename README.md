@@ -1,6 +1,6 @@
 # Album Manager
 
-A JavaScript application for managing a private, single-user media library. It includes
+A JavaScript application for managing a private media library with local accounts. It includes
 albums and memberships, categories/tags, favorites, metadata search, direct uploads,
 background image processing, trash/restore/permanent deletion, dashboard summaries,
 and image-optimization/storage settings.
@@ -11,8 +11,10 @@ download action. `/settings` is currently a placeholder; its storage and image-o
 subpages are implemented. Video metadata can be registered, but the worker currently
 processes images only. Unsupported/animated images and videos fail processing explicitly.
 
-There is no authentication or authorization. Anyone able to reach the API can read or
-modify the library; album visibility is metadata, not an access-control boundary.
+Email/password login and HttpOnly cookie sessions protect the API and application shell.
+Favorites belong to each user. Authenticated accounts share and can modify the library;
+album visibility remains metadata. See [authentication setup](docs/api/AUTH.md) for
+migrations and local account provisioning before first sign-in.
 See [security boundaries](docs/architecture/SECURITY.md) before deployment.
 
 ## Architecture overview

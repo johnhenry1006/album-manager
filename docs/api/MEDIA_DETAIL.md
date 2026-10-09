@@ -1,6 +1,9 @@
 # Media detail and original URLs
 
-The single-user API exposes two read-only endpoints. Both require a media UUID,
+All routes require a session; mutations also require X-CSRF-Token. Favorite flags
+and filters belong to the caller; library data remains shared. See [Auth API](AUTH.md).
+
+The authenticated API exposes two read-only endpoints. Both require a media UUID,
 reject query parameters, exclude soft-deleted media, and use centralized errors:
 400 for invalid input, 404 for missing/deleted media, and sanitized 500 responses
 for storage/database failures. Both endpoints send `Cache-Control: no-store`,
@@ -14,7 +17,7 @@ Returns an individual media detail object:
 | Field        | Content                                                                                                                                                                              |
 | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Core fields  | `id`, `type`, `originalFilename`, `mimeType`, `extension`, `fileSize`, `width`, `height`, `aspectRatio`, `checksum`, `status`, `takenAt`, `createdAt`, `updatedAt`.                  |
-| `favorite`   | Boolean representing the global favorite relation.                                                                                                                                   |
+| `favorite`   | Boolean representing the authenticated user’s favorite relation.                                                                                                                     |
 | `albums`     | Active album memberships with `id`, `name`, `slug`, `description`, `visibility`, `position`, and `addedAt`. Deleted albums are excluded.                                             |
 | `categories` | Objects with `id`, `name`, `slug`, and `parentId`.                                                                                                                                   |
 | `tags`       | Objects with `id`, `name`, and `slug`.                                                                                                                                               |

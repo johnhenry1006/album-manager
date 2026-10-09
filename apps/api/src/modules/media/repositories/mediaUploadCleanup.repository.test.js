@@ -56,7 +56,7 @@ it('locks the media before checking cleanup eligibility and excludes every share
             coverForAlbums: { none: {} },
             categories: { none: {} },
             tags: { none: {} },
-            favorite: { is: null },
+            favorites: { none: {} },
             metadata: { is: null },
             duplicateFiles: { none: {} },
             uploadFiles: { none: { id: { not: uploadFileId } } },

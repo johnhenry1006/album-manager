@@ -1,3 +1,5 @@
+import { requireActorId } from '#shared/validation/actor.js';
+
 import { mapMediaTrashItem } from '../mappers/mediaTrash.mapper.js';
 import { encodeMediaListCursor } from '../validators/mediaListCursor.js';
 import {
@@ -58,9 +60,9 @@ export function createMediaTrashService({ repository, storageDeletion, storage, 
                 if (record.deletedAt) await tx.update(mediaId, { deletedAt: null });
             });
         },
-        async list(input) {
+        async list(input, actor) {
             const query = validateTrashQuery(input, config);
-            const rows = await repository.findPage(query);
+            const rows = await repository.findPage(query, requireActorId(actor));
             const hasMore = rows.length > query.limit;
             const page = rows.slice(0, query.limit);
             const items = await Promise.all(

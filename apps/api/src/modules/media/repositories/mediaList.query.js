@@ -13,13 +13,13 @@ function afterCursor({ sort, order, cursor }) {
     };
 }
 
-function filters(query) {
+function filters(query, userId) {
     const where = { deletedAt: null };
     const and = [];
     for (const field of ['type', 'status', 'mimeType']) {
         if (query[field] !== undefined) where[field] = query[field];
     }
-    if (query.favorite !== undefined) where.favorite = query.favorite ? { isNot: null } : { is: null };
+    if (query.favorite !== undefined) where.favorites = query.favorite ? { some: { userId } } : { none: { userId } };
     if (query.category !== undefined) where.categories = { some: { categoryId: query.category } };
     if (query.tag !== undefined) where.tags = { some: { tagId: query.tag } };
     if (query.album !== undefined) where.albums = { some: { albumId: query.album, album: { deletedAt: null } } };
@@ -49,10 +49,10 @@ function filters(query) {
 }
 
 // Consumes the validated list query; owns filtering, keyset ordering and gallery projection.
-export function buildMediaListQuery(query) {
+export function buildMediaListQuery(query, userId) {
     const field = query.sort === 'filename' ? 'originalFilename' : query.sort;
     return {
-        where: filters(query),
+        where: filters(query, userId),
         orderBy: [
             { [field]: query.sort === 'takenAt' ? { sort: query.order, nulls: 'last' } : query.order },
             { id: query.order },
@@ -67,7 +67,7 @@ export function buildMediaListQuery(query) {
             aspectRatio: true,
             takenAt: true,
             ...(query.sort === 'createdAt' ? { createdAt: true } : {}),
-            favorite: { select: { id: true } },
+            favorites: { where: { userId }, take: 1, select: { id: true } },
             variants: mediaThumbnailQuery,
         },
     };

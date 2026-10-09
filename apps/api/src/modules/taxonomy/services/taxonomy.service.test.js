@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 
 import { describe, expect, it } from 'vitest';
 
-import { buildApp } from '../../../app/app.js';
+import { buildApp } from '../../../app/authenticatedApp.testUtils.js';
 import { createTaxonomyService } from './taxonomy.service.js';
 
 export const mediaIds = [1, 2, 3].map((n) => `b0000000-0000-4000-8000-${String(n).padStart(12, '0')}`);

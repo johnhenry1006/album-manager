@@ -36,14 +36,25 @@ export function createHttpClient({
   fetchImpl = (...args) => globalThis.fetch(...args),
 } = {}) {
   const resolvedBaseUrl = resolveApiBaseUrl(baseUrl);
+  let context;
+  function configureRequestContext(value) {
+    context = value;
+    return () => {
+      if (context === value) context = undefined;
+    };
+  }
 
   async function request(path, { method = 'GET', body, headers, signal } = {}) {
     signal?.throwIfAborted();
     const url = endpointUrl(resolvedBaseUrl, path);
-    const requestHeaders = new Headers(headers);
+    const captured = context;
+    const version = captured?.getVersion?.();
+    const requestHeaders = new Headers(captured?.getHeaders?.());
+    new Headers(headers).forEach((value, key) => requestHeaders.set(key, value));
     if (!requestHeaders.has('Accept')) requestHeaders.set('Accept', 'application/json');
     if (body !== undefined) requestHeaders.set('Content-Type', 'application/json');
     const options = {
+      credentials: 'include',
       method: method.toUpperCase(),
       headers: requestHeaders,
       body: body === undefined ? undefined : JSON.stringify(body),
@@ -53,6 +64,10 @@ export function createHttpClient({
     let response;
     try {
       response = await fetchImpl(url, options);
+      signal?.throwIfAborted();
+      if (response.ok && captured && (captured !== context || captured.getVersion?.() !== version)) {
+        throw new ApiError('The request is no longer current.', { code: 'REQUEST_SUPERSEDED' });
+      }
       if (response.ok && (options.method === 'HEAD' || [204, 205].includes(response.status))) {
         return null;
       }
@@ -73,6 +88,9 @@ export function createHttpClient({
         }
       }
 
+      signal?.throwIfAborted();
+      if (response.status === 401 && captured === context && captured?.getVersion?.() === version)
+        captured?.onUnauthorized?.({ path });
       if (!response.ok) throw normalizeApiError(null, { status: response.status, payload });
       if (text && !isJsonResponse(response)) {
         throw new ApiError('The API returned an unexpected response format.', {
@@ -88,7 +106,7 @@ export function createHttpClient({
     }
   }
 
-  return { request };
+  return { request, configureRequestContext };
 }
 
 export const httpClient = createHttpClient();

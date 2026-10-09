@@ -151,3 +151,13 @@ See [Local infrastructure](../../README.md#local-development-infrastructure) for
 
 Report skipped integrations separately from passing tests. A green default suite
 does not establish database, storage, or queue integration compatibility.
+
+## Authentication tests
+
+Business HTTP tests use the explicit authenticatedApp.testUtils fixture to supply an
+actor while retaining the real scoped guard and CSRF checks. Auth protection tests
+use the real application with deliberately missing/expired sessions. Auth integration
+tests use isolated PostgreSQL schemas for migration preservation, session revocation,
+provisioning concurrency and personal favorite media/album/trash projections. Frontend
+tests retain real query/router/auth providers with fake fetch for login, cache clearing,
+expiry and response races. No production auth-disable switch exists.

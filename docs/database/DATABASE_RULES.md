@@ -2,8 +2,9 @@
 
 The API uses PostgreSQL and Prisma. All handwritten runtime, configuration, and seed
 code is JavaScript ES modules. The initial single-user schema is documented in
-[Schema](SCHEMA.md). Authentication is deferred: do not introduce a User/current-user
-dependency. Favorite is global until an explicitly designed authentication migration.
+[Schema](SCHEMA.md). Authentication is isolated in the auth module with explicit actor context at
+user-specific service boundaries. Favorites are personal; core library data and
+background jobs remain shared/identity-independent. See [Auth API](../api/AUTH.md).
 
 ## Configuration and client ownership
 

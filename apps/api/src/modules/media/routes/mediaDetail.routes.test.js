@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { buildApp } from '../../../app/app.js';
+import { buildApp } from '../../../app/authenticatedApp.testUtils.js';
 
 const id = 'a0000000-0000-4000-8000-000000000001';
 const time = new Date('2026-10-01T12:00:00.000Z');
@@ -31,7 +31,7 @@ const row = {
     takenAt: time,
     createdAt: time,
     updatedAt: time,
-    favorite: { id },
+    favorites: [{ id }],
     albums: [
         {
             position: 2,
@@ -175,7 +175,7 @@ describe('media detail and original URL HTTP contracts', () => {
     it('handles absent favorite, relations, metadata, dimensions and taken date', async () => {
         setup({
             ...row,
-            favorite: null,
+            favorites: [],
             albums: [],
             categories: [],
             tags: [],

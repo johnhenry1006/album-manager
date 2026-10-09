@@ -1,6 +1,9 @@
 # Media trash
 
-The single-user media module owns trash behavior. Controllers call lifecycle
+All routes require a session; mutations also require X-CSRF-Token. Favorite flags
+and filters belong to the caller; library data remains shared. See [Auth API](AUTH.md).
+
+The authenticated shared-library media module owns trash behavior. Controllers call lifecycle
 services; repositories own database operations. Object removal is isolated in
 `mediaStorageDeletion.service.js` and uses the injected storage provider.
 

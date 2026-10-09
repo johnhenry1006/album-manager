@@ -2,7 +2,7 @@ import { afterEach, expect, it } from 'vitest';
 
 import { createStorageProvider } from '#infrastructure/storage/index.js';
 
-import { buildApp } from './app.js';
+import { buildApp } from './authenticatedApp.testUtils.js';
 
 let app;
 afterEach(async () => app?.close());

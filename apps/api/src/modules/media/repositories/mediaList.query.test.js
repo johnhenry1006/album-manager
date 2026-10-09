@@ -7,31 +7,34 @@ const date = new Date('2026-01-01T00:00:00Z');
 
 describe('media list query specification', () => {
     it('intersects text search and cursor alternatives with every scalar, relation and date filter', () => {
-        const query = buildMediaListQuery({
-            limit: 1,
-            sort: 'createdAt',
-            order: 'desc',
-            q: 'Beach_%',
-            type: 'IMAGE',
-            mimeType: 'image/jpeg',
-            status: 'READY',
-            favorite: true,
-            album: id,
-            category: id,
-            tag: id,
-            takenAtFrom: date,
-            takenAtTo: date,
-            createdAtFrom: date,
-            createdAtTo: date,
-            cursor: { value: date, id },
-        });
+        const query = buildMediaListQuery(
+            {
+                limit: 1,
+                sort: 'createdAt',
+                order: 'desc',
+                q: 'Beach_%',
+                type: 'IMAGE',
+                mimeType: 'image/jpeg',
+                status: 'READY',
+                favorite: true,
+                album: id,
+                category: id,
+                tag: id,
+                takenAtFrom: date,
+                takenAtTo: date,
+                createdAtFrom: date,
+                createdAtTo: date,
+                cursor: { value: date, id },
+            },
+            '00000000-0000-4000-8000-000000000001',
+        );
         const text = { contains: 'Beach\\_\\%', mode: 'insensitive' };
         expect(query.where).toEqual({
             deletedAt: null,
             type: 'IMAGE',
             mimeType: 'image/jpeg',
             status: 'READY',
-            favorite: { isNot: null },
+            favorites: { some: { userId: '00000000-0000-4000-8000-000000000001' } },
             albums: { some: { albumId: id, album: { deletedAt: null } } },
             categories: { some: { categoryId: id } },
             tags: { some: { tagId: id } },
@@ -60,17 +63,20 @@ describe('media list query specification', () => {
     });
 
     it.each(['asc', 'desc'])('keeps null taken dates last in %s order and continues null ties by id', (order) => {
-        const query = buildMediaListQuery({
-            limit: 2,
-            sort: 'takenAt',
-            order,
-            favorite: false,
-            cursor: { value: null, id },
-        });
+        const query = buildMediaListQuery(
+            {
+                limit: 2,
+                sort: 'takenAt',
+                order,
+                favorite: false,
+                cursor: { value: null, id },
+            },
+            '00000000-0000-4000-8000-000000000001',
+        );
         expect(query.orderBy).toEqual([{ takenAt: { sort: order, nulls: 'last' } }, { id: order }]);
         expect(query.where).toEqual({
             deletedAt: null,
-            favorite: { is: null },
+            favorites: { none: { userId: '00000000-0000-4000-8000-000000000001' } },
             AND: [{ takenAt: null, id: { [order === 'asc' ? 'gt' : 'lt']: id } }],
         });
     });

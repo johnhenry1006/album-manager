@@ -13,8 +13,8 @@ Read the following before changing application behavior:
 
 Use JavaScript ES modules only: `.jsx` for React components and `.js` for hooks,
 services and helpers. Reuse the existing module structure, dependencies and test runners.
-Keep changes focused; split by responsibility rather than file length alone. Authentication
-and actor/ownership rules require a deliberate future design; the current library is single-user.
+Keep changes focused; split by responsibility rather than file length alone. Authentication lives in its own backend module/frontend feature; personal favorites receive
+trusted actor context. Shared-library ownership changes require a separate design.
 
 ## Choose the owning layer
 
@@ -183,7 +183,9 @@ apps/api/src/modules/<feature>/
 7. Document API contracts in `docs/api`, schema/migrations in `docs/database`, and any
    deliberate architecture exception before introducing it.
 
-No implicit current user, ownership filters or authentication middleware should be invented.
+Business routes inherit one auth hook from application composition. Pass trusted
+request.actor explicitly only to user-specific service/repository calls; never derive
+identity from caller data. Frontend pages consume the auth public provider/hooks/guard.
 Credentials stay in server configuration. Business modules import other modules only through
 public `#modules/<feature>/index.js` interfaces; shared/infrastructure code stays below them.
 

@@ -37,7 +37,7 @@ export function fixture(config = { maxLimit: 200, urlExpirySeconds: 900 }) {
                 height: null,
                 aspectRatio: null,
                 takenAt: null,
-                favorite: null,
+                favorites: [],
                 variants: [],
             },
         ]),

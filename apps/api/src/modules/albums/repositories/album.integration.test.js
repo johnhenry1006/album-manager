@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { createIsolatedTestDatabase } from '#infrastructure/database/isolatedDatabase.testUtils.js';
 
-import { buildApp } from '../../../app/app.js';
+import { buildApp } from '../../../app/authenticatedApp.testUtils.js';
 import { createAlbumModule } from '../index.js';
 
 const mediaIds = [1, 2, 3, 4].map((n) => `b0000000-0000-4000-8000-${String(n).padStart(12, '0')}`);
@@ -82,7 +82,11 @@ describe.skipIf(process.env.DATABASE_TESTS !== '1')('albums with PostgreSQL', ()
                 expect((await app.inject(`/api/albums/${album.id}`)).statusCode).toBe(404);
                 expect(await tx.media.count()).toBe(4);
                 expect(await tx.albumMedia.count({ where: { albumId: album.id } })).toBe(1);
-                expect((await service.listMedia(second.id, {})).items.map((row) => row.id)).toEqual([mediaIds[0]]);
+                expect(
+                    (await service.listMedia(second.id, {}, { id: '00000000-0000-4000-8000-000000000001' })).items.map(
+                        (row) => row.id,
+                    ),
+                ).toEqual([mediaIds[0]]);
             } finally {
                 await app.close();
             }
@@ -93,19 +97,33 @@ describe.skipIf(process.env.DATABASE_TESTS !== '1')('albums with PostgreSQL', ()
         await fixture(async (_tx, service) => {
             const album = await service.create({ name: 'Ordered' });
             for (const mediaId of mediaIds.slice(0, 3)) await service.addMedia(album.id, { mediaId, position: 5 });
-            const all = (await service.listMedia(album.id, {})).items;
+            const all = (await service.listMedia(album.id, {}, { id: '00000000-0000-4000-8000-000000000001' })).items;
             let cursor;
             const seen = [];
             do {
-                const page = await service.listMedia(album.id, { limit: '1', ...(cursor ? { cursor } : {}) });
+                const page = await service.listMedia(
+                    album.id,
+                    { limit: '1', ...(cursor ? { cursor } : {}) },
+                    { id: '00000000-0000-4000-8000-000000000001' },
+                );
                 seen.push(...page.items.map((row) => row.id));
                 cursor = page.nextCursor;
             } while (cursor);
             expect(seen).toEqual(all.map((row) => row.id));
-            const first = await service.listMedia(album.id, { limit: '1' });
+            const first = await service.listMedia(
+                album.id,
+                { limit: '1' },
+                { id: '00000000-0000-4000-8000-000000000001' },
+            );
             await service.removeMedia(album.id, first.items[0].id);
             expect(
-                (await service.listMedia(album.id, { cursor: first.nextCursor })).items.map((row) => row.id),
+                (
+                    await service.listMedia(
+                        album.id,
+                        { cursor: first.nextCursor },
+                        { id: '00000000-0000-4000-8000-000000000001' },
+                    )
+                ).items.map((row) => row.id),
             ).toEqual(all.slice(1).map((row) => row.id));
         });
     });
@@ -117,10 +135,11 @@ describe.skipIf(process.env.DATABASE_TESTS !== '1')('albums with PostgreSQL', ()
             expect(await service.addMedia(album.id, { mediaId: mediaIds[0] })).toEqual(member);
             expect(await service.addMedia(album.id, { mediaId: mediaIds[1] })).toMatchObject({ position: 13 });
             await service.addMedia(album.id, { mediaId: mediaIds[1], position: 1 });
-            expect((await service.listMedia(album.id, {})).items.map((row) => row.id)).toEqual([
-                mediaIds[1],
-                mediaIds[0],
-            ]);
+            expect(
+                (await service.listMedia(album.id, {}, { id: '00000000-0000-4000-8000-000000000001' })).items.map(
+                    (row) => row.id,
+                ),
+            ).toEqual([mediaIds[1], mediaIds[0]]);
             expect(await tx.albumMedia.count()).toBe(2);
         });
     });
@@ -144,7 +163,11 @@ describe.skipIf(process.env.DATABASE_TESTS !== '1')('albums with PostgreSQL', ()
                 coverMediaId: null,
                 counts: { media: 1, images: 0, videos: 1 },
             });
-            expect((await service.listMedia(album.id, {})).items.map((row) => row.id)).toEqual([mediaIds[1]]);
+            expect(
+                (await service.listMedia(album.id, {}, { id: '00000000-0000-4000-8000-000000000001' })).items.map(
+                    (row) => row.id,
+                ),
+            ).toEqual([mediaIds[1]]);
             await expect(service.update(album.id, { coverMediaId: mediaIds[0] })).rejects.toMatchObject({
                 statusCode: 400,
             });
@@ -215,25 +238,47 @@ describe.skipIf(process.env.DATABASE_TESTS !== '1')('albums with PostgreSQL', ()
             const album = await service.create({ name: 'Filtered gallery' });
             await tx.media.update({ where: { id: mediaIds[0] }, data: { originalFilename: 'Beach_% one.jpg' } });
             await tx.media.update({ where: { id: mediaIds[2] }, data: { originalFilename: 'Beach_% two.jpg' } });
-            await tx.favorite.create({ data: { mediaId: mediaIds[0] } });
+            await tx.favorite.create({
+                data: { userId: '00000000-0000-4000-8000-000000000001', mediaId: mediaIds[0] },
+            });
             for (const id of mediaIds.slice(0, 3)) await service.addMedia(album.id, { mediaId: id, position: 5 });
             const filters = { q: 'beach_%', type: 'IMAGE', limit: '1' };
-            const first = await service.listMedia(album.id, filters);
+            const first = await service.listMedia(album.id, filters, { id: '00000000-0000-4000-8000-000000000001' });
             expect(first.items).toHaveLength(1);
             expect(first.hasMore).toBe(true);
-            const second = await service.listMedia(album.id, { ...filters, cursor: first.nextCursor });
+            const second = await service.listMedia(
+                album.id,
+                { ...filters, cursor: first.nextCursor },
+                { id: '00000000-0000-4000-8000-000000000001' },
+            );
             expect(second.hasMore).toBe(false);
             expect(new Set([...first.items, ...second.items].map((row) => row.id))).toEqual(
                 new Set([mediaIds[0], mediaIds[2]]),
             );
             expect(
-                (await service.listMedia(album.id, { ...filters, favorite: 'true' })).items.map((row) => row.id),
+                (
+                    await service.listMedia(
+                        album.id,
+                        { ...filters, favorite: 'true' },
+                        { id: '00000000-0000-4000-8000-000000000001' },
+                    )
+                ).items.map((row) => row.id),
             ).toEqual([mediaIds[0]]);
             expect(
-                (await service.listMedia(album.id, { ...filters, favorite: 'false' })).items.map((row) => row.id),
+                (
+                    await service.listMedia(
+                        album.id,
+                        { ...filters, favorite: 'false' },
+                        { id: '00000000-0000-4000-8000-000000000001' },
+                    )
+                ).items.map((row) => row.id),
             ).toEqual([mediaIds[2]]);
             await expect(
-                service.listMedia(album.id, { ...filters, q: 'changed', cursor: first.nextCursor }),
+                service.listMedia(
+                    album.id,
+                    { ...filters, q: 'changed', cursor: first.nextCursor },
+                    { id: '00000000-0000-4000-8000-000000000001' },
+                ),
             ).rejects.toMatchObject({ statusCode: 400 });
         });
     });
@@ -269,7 +314,8 @@ describe.skipIf(process.env.DATABASE_TESTS !== '1')('albums with PostgreSQL', ()
                     },
                 });
             await tx.mediaMetadata.create({ data: { mediaId: mediaIds[0], rawMetadata: { private: true } } });
-            const item = (await service.listMedia(album.id, {})).items[0];
+            const item = (await service.listMedia(album.id, {}, { id: '00000000-0000-4000-8000-000000000001' }))
+                .items[0];
             expect(item.thumbnails).toEqual([
                 {
                     name: 'small',
@@ -309,7 +355,7 @@ describe.skipIf(process.env.DATABASE_TESTS !== '1')('albums with PostgreSQL', ()
                         },
                     });
                 await Promise.all(mediaIds.slice(0, 3).map((mediaId) => service.addMedia(album.id, { mediaId })));
-                const page = await service.listMedia(album.id, {});
+                const page = await service.listMedia(album.id, {}, { id: '00000000-0000-4000-8000-000000000001' });
                 expect(page.items.map((row) => row.position)).toEqual([0, 1, 2]);
                 expect(new Set(page.items.map((row) => row.id)).size).toBe(3);
                 const repeated = await Promise.all([

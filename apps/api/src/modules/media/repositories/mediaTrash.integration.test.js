@@ -4,7 +4,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { createIsolatedTestDatabase } from '#infrastructure/database/isolatedDatabase.testUtils.js';
 
-import { buildApp } from '../../../app/app.js';
+import { buildApp } from '../../../app/authenticatedApp.testUtils.js';
 import * as mediaModule from '../index.js';
 
 const ids = [1, 2, 3, 4].map((n) => `c0000000-0000-4000-8000-${String(n).padStart(12, '0')}`);
@@ -71,7 +71,7 @@ describe.skipIf(process.env.DATABASE_TESTS !== '1')('trash lifecycle with Postgr
                 data: {
                     id: ids[0],
                     ...mediaData,
-                    favorite: { create: {} },
+                    favorites: { create: { userId: '00000000-0000-4000-8000-000000000001' } },
                     variants: { create: { type: 'ORIGINAL', format: 'jpg', storageKey: 'source.jpg', fileSize: 10n } },
                 },
             });
@@ -118,7 +118,7 @@ describe.skipIf(process.env.DATABASE_TESTS !== '1')('trash lifecycle with Postgr
                     id: ids[0],
                     ...mediaData,
                     deletedAt: new Date(),
-                    favorite: { create: {} },
+                    favorites: { create: { userId: '00000000-0000-4000-8000-000000000001' } },
                     metadata: { create: {} },
                 },
             });

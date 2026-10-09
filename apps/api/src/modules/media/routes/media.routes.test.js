@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { buildApp } from '../../../app/app.js';
+import { buildApp } from '../../../app/authenticatedApp.testUtils.js';
 
 const id = 'a0000000-0000-4000-8000-000000000001';
 const nextId = 'a0000000-0000-4000-8000-000000000002';
@@ -12,7 +12,7 @@ const row = {
     width: 4000,
     height: 3000,
     aspectRatio: 4 / 3,
-    favorite: { id },
+    favorites: [{ id }],
     takenAt: timestamp,
     createdAt: timestamp,
     variants: [
@@ -122,7 +122,7 @@ describe('GET /api/media', () => {
                 'width',
                 'height',
                 'aspectRatio',
-                'favorite',
+                'favorites',
                 'takenAt',
                 'createdAt',
                 'variants',
@@ -156,7 +156,7 @@ describe('GET /api/media', () => {
             deletedAt: null,
             type: 'VIDEO',
             status: 'READY',
-            favorite: { is: null },
+            favorites: { none: { userId: '00000000-0000-4000-8000-000000000001' } },
             categories: { some: { categoryId: id } },
             tags: { some: { tagId: id } },
             albums: { some: { albumId: id, album: { deletedAt: null } } },
@@ -170,7 +170,7 @@ describe('GET /api/media', () => {
         const { findMany } = setup();
         expect((await app.inject('/api/media?q=Beach&favorite=true')).statusCode).toBe(200);
         const where = findMany.mock.calls[0][0].where;
-        expect(where.favorite).toEqual({ isNot: null });
+        expect(where.favorites).toEqual({ some: { userId: '00000000-0000-4000-8000-000000000001' } });
         expect(where.AND[0].OR).toContainEqual({ originalFilename: { contains: 'Beach', mode: 'insensitive' } });
         expect(where.AND[0].OR).toContainEqual({
             tags: { some: { tag: { name: { contains: 'Beach', mode: 'insensitive' } } } },

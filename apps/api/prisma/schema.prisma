@@ -104,7 +104,7 @@ model Media {
   variants         MediaVariant[]
   categories       MediaCategory[]
   tags             MediaTag[]
-  favorite         Favorite?
+  favorites        Favorite[]
   metadata         MediaMetadata?
   uploadFiles      UploadFile[]    @relation("UploadFileMedia")
   duplicateFiles   UploadFile[]    @relation("UploadFileDuplicate")
@@ -209,11 +209,15 @@ model MediaTag {
 
 model Favorite {
   id        String   @id @default(uuid()) @db.Uuid
-  mediaId   String   @unique @map("media_id") @db.Uuid
+  mediaId   String   @map("media_id") @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   media     Media    @relation(fields: [mediaId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
-  @@index([createdAt, id])
+  @@unique([userId, mediaId])
+  @@index([userId, createdAt, id])
+  @@index([mediaId])
   @@map("favorites")
 }
 
@@ -282,4 +286,27 @@ model ApplicationSetting {
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   @@map("application_settings")
+}
+
+model User {
+  id String @id @default(uuid()) @db.Uuid
+  email String @unique @db.VarChar(254)
+  passwordHash String? @map("password_hash")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  favorites Favorite[]
+  sessions AuthSession[]
+  @@map("users")
+}
+model AuthSession {
+  id String @id @default(uuid()) @db.Uuid
+  userId String @map("user_id") @db.Uuid
+  tokenHash String @unique @map("token_hash") @db.VarChar(64)
+  csrfToken String @map("csrf_token") @db.VarChar(43)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  expiresAt DateTime @map("expires_at") @db.Timestamptz(3)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  @@index([userId])
+  @@index([expiresAt, id])
+  @@map("auth_sessions")
 }

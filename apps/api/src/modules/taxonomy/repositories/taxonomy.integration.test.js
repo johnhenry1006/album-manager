@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { createIsolatedTestDatabase } from '#infrastructure/database/isolatedDatabase.testUtils.js';
 
-import { buildApp } from '../../../app/app.js';
+import { buildApp } from '../../../app/authenticatedApp.testUtils.js';
 import { createTaxonomyModule } from '../index.js';
 
 const mediaIds = [1, 2, 3].map((n) => `b0000000-0000-4000-8000-${String(n).padStart(12, '0')}`);

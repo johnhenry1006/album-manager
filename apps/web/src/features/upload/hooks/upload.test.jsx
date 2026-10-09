@@ -313,7 +313,7 @@ it('allows batch registration before transfer through the public session hook', 
   await act(async () => {
     await result.current.registerFile.mutateAsync({ file });
   });
-  expect(result.current.sessionId).toBe('s');
+  await waitFor(() => expect(result.current.sessionId).toBe('s'));
   expect(requests.filter(({ path }) => path.endsWith('/files'))).toHaveLength(1);
   expect(transfers).toEqual([]);
 });

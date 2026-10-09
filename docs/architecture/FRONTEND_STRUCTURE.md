@@ -34,6 +34,13 @@ the base router. `QueryProvider` owns one stable TanStack Query client per mount
 metadata stays in `app/router` rather than shared components. Styling uses CSS
 modules with global foundations in `styles/global.css`.
 
+AuthProvider is composed under QueryProvider, and RequireAuth guards the existing
+AppLayout subtree. `/login` is a thin page with a page hook consuming the public
+auth feature. Session reads, focus refresh, CSRF request context, expiry and cache
+clearing belong to auth hooks/providers. Business pages do not add auth checks.
+The generic HTTP client accepts injected request-context callbacks and includes
+credentials without importing auth. See [Auth API](../api/AUTH.md).
+
 Routes cover dashboard, albums/details, media/details, upload, categories, tags,
 favorites, search, trash, settings, storage, and image optimization. `/` redirects
 to `/dashboard`; unmatched URLs show a not-found page. `/media` renders the media

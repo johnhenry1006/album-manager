@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { validateEnvironment } from '#config/environment.js';
 
-import { buildApp } from './app.js';
+import { buildApp } from './authenticatedApp.testUtils.js';
 
 const apps = [];
 it('closes an injected storage provider with the application', async () => {

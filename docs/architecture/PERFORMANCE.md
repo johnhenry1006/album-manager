@@ -117,7 +117,7 @@ already create indexes; do not add duplicates for primary keys or unique lookups
 | Ordered album memberships       | `(albumId, position, id)`; unique `(albumId, mediaId)`; reverse `(mediaId, albumId)` for media membership reads.                                                                                                                            |
 | Tag/category memberships        | Unique `(mediaId, tagId/categoryId)` plus reverse `(tagId/categoryId, mediaId)` for taxonomy-filtered reads.                                                                                                                                |
 | Thumbnail/variant reads         | Unique `(mediaId, type, format, name)` has the relevant leading media/type prefix. Width/ID ordering may sort the small rendition set.                                                                                                      |
-| Favorites                       | Unique `mediaId` for presence/absence and idempotent mutations; `(createdAt, id)` is also present.                                                                                                                                          |
+| Favorites                       | Unique `(userId, mediaId)` for personal presence/absence and mutations; `(userId, createdAt, id)` and media lookup indexes are present.                                                                                                     |
 | Checksum duplicate lookup       | `(checksum, createdAt, id)` seeks the digest and chooses the oldest UUID-tied match. `deletedAt` and excluded ID are residual predicates.                                                                                                   |
 | Taxonomy                        | `(parentId, name, id)` for children; `(createdAt, id)` for lists; primary/unique indexes for ID/slug.                                                                                                                                       |
 | Upload files                    | `(uploadSessionId, status, createdAt, id)` supports session/status grouping and counts; status/history and media/duplicate-reference indexes also exist. Session pagination has no exact matching `(uploadSessionId, createdAt, id)` index. |
@@ -156,7 +156,7 @@ remain separate identities; no unique checksum constraint is added.
 The checksum helper accepts streams, but the current image worker supplies a
 fully buffered original because Sharp also needs it. Original hashing still
 consumes CPU proportional to file size. Favorite filters use indexed relation
-existence/absence; global favorite identity is one row per media. Mutations lock
+existence/absence; personal favorite identity is one row per user/media pair. Mutations lock
 live media and use idempotent insertion/deletion without scanning all favorites.
 
 ## Dashboard, storage aggregates and caching

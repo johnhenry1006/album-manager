@@ -11,11 +11,11 @@ export function createMediaFavoriteRepository(client, { inTransaction = typeof c
                 await client.$queryRaw`SELECT id FROM media WHERE id = ${id}::uuid AND deleted_at IS NULL FOR UPDATE`;
             return rows[0] ?? null;
         },
-        add(mediaId) {
-            return client.favorite.createMany({ data: { mediaId }, skipDuplicates: true });
+        add(mediaId, userId) {
+            return client.favorite.createMany({ data: { mediaId, userId }, skipDuplicates: true });
         },
-        remove(mediaId) {
-            return client.favorite.deleteMany({ where: { mediaId } });
+        remove(mediaId, userId) {
+            return client.favorite.deleteMany({ where: { mediaId, userId } });
         },
     };
     return Object.freeze(repository);

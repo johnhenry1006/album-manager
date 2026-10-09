@@ -1,12 +1,15 @@
 # Media list
 
+All routes require a session; mutations also require X-CSRF-Token. Favorite flags
+and filters belong to the caller; library data remains shared. See [Auth API](AUTH.md).
+
 See [Media detail and original URLs](MEDIA_DETAIL.md) for individual media,
 EXIF, display renditions, and explicitly requested original access.
 See [Favorite mutations](MEDIA_FAVORITES.md) for adding and removing favorites.
 See [Media trash](TRASH.md) for soft deletion, restore and permanent deletion.
 
 `GET /api/media` returns a compact, cursor-paginated gallery list. The MVP is
-single-user. Soft-deleted media is always excluded. No EXIF, original object
+shared among authenticated users, with favorite filters/flags scoped to the caller. Soft-deleted media is always excluded. No EXIF, original object
 URLs, storage keys, or preview URLs are returned.
 
 This is the canonical searchable media collection. Search is expressed through
@@ -64,7 +67,7 @@ filters, sort and order when following a cursor.
 | `q`                            | Case-insensitive literal substring in filename, tag/category names, or active album name/description; trimmed, 1–255 characters. `%` and `_` are literal characters. |
 | `type`                         | `IMAGE` or `VIDEO`.                                                                                                                                                  |
 | `status`                       | `PENDING`, `PROCESSING`, `READY`, or `FAILED`. No status is assumed when omitted.                                                                                    |
-| `favorite`                     | `true` or `false`, matching presence/absence of the favorite relation.                                                                                               |
+| `favorite`                     | `true` or `false`, matching presence/absence of the authenticated user’s favorite relation.                                                                          |
 | `category`                     | Category UUID.                                                                                                                                                       |
 | `tag`                          | Tag UUID.                                                                                                                                                            |
 | `album`                        | Active album UUID; deleted albums never match.                                                                                                                       |

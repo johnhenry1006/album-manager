@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 
 import { validateEnvironment } from '#config/environment.js';
 
-import { buildApp } from '../../app/app.js';
+import { buildApp } from '../../app/authenticatedApp.testUtils.js';
 
 const apps = [];
 afterEach(async () => {

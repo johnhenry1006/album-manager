@@ -7,7 +7,6 @@ const TRASH_SELECT = {
     height: true,
     aspectRatio: true,
     takenAt: true,
-    favorite: { select: { id: true } },
     variants: {
         where: { type: 'THUMBNAIL' },
         orderBy: [{ width: 'asc' }, { id: 'asc' }],
@@ -42,7 +41,7 @@ export function createMediaTrashRepository(client, { inTransaction = typeof clie
             await client.mediaVariant.deleteMany({ where: { mediaId: id } });
             await client.media.delete({ where: { id } });
         },
-        findPage({ limit, cursor }) {
+        findPage({ limit, cursor }, userId) {
             return client.media.findMany({
                 where: {
                     deletedAt: { not: null },
@@ -55,7 +54,7 @@ export function createMediaTrashRepository(client, { inTransaction = typeof clie
                           }
                         : {}),
                 },
-                select: TRASH_SELECT,
+                select: { ...TRASH_SELECT, favorites: { where: { userId }, take: 1, select: { id: true } } },
                 orderBy: [{ deletedAt: 'desc' }, { id: 'desc' }],
                 take: limit + 1,
             });

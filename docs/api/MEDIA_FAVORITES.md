@@ -1,7 +1,7 @@
 # Favorite media mutations
 
-Favorites are global in the single-user MVP. There is no user identifier or
-ownership filter.
+Favorites belong to the authenticated user. Requests require a session and matching
+X-CSRF-Token; callers never supply a user identifier. See [Auth API](AUTH.md).
 
 | Route                                 | Result                              |
 | ------------------------------------- | ----------------------------------- |
@@ -24,8 +24,7 @@ the favorite flag. There is no `GET /api/favorites` collection endpoint.
 The service validates input and requires live media inside a transaction. The
 repository locks the media row to serialize mutations with each other and media
 soft deletion. Insertion uses conflict-safe persistence backed by the existing
-unique `Favorite.mediaId` constraint; deletion accepts zero matching rows. No
-schema migration is required. These routes require only a database dependency;
+unique `(Favorite.userId, Favorite.mediaId)` constraint; deletion accepts zero matching rows. The authentication migration adds required user ownership and compound uniqueness. These routes require only a database dependency;
 storage and queue providers are unnecessary.
 
 Tests:

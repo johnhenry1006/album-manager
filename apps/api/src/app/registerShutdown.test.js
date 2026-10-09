@@ -2,7 +2,7 @@ import { EventEmitter } from 'node:events';
 
 import { expect, it } from 'vitest';
 
-import { buildApp } from './app.js';
+import { buildApp } from './authenticatedApp.testUtils.js';
 import { registerShutdown } from './registerShutdown.js';
 
 it.each(['SIGINT', 'SIGTERM'])('closes the app once on %s and removes signal handlers', async (signal) => {

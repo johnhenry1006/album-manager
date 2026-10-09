@@ -1,4 +1,5 @@
 import { createMediaGalleryItem } from '#modules/media/index.js';
+import { requireActorId } from '#shared/validation/actor.js';
 
 import { mapAlbumMembership } from '../mappers/album.mapper.js';
 import { validateAlbumId } from '../validators/album.validator.js';
@@ -9,13 +10,14 @@ import { requireAlbum } from './albumAccess.service.js';
 
 export function createAlbumMediaService({ repository, storage, config }) {
     return {
-        async listMedia(id, input) {
+        async listMedia(id, input, actor) {
+            const userId = requireActorId(actor);
             const albumId = validateAlbumId(id);
             const query = validateAlbumMediaQuery(input, albumId, config);
             const rows = await repository.transaction(
                 async (tx) => {
                     await requireAlbum(tx, albumId);
-                    return tx.findMediaPage(albumId, query);
+                    return tx.findMediaPage(albumId, query, userId);
                 },
                 { readOnly: true },
             );

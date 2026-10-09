@@ -1,12 +1,14 @@
+import { requireActorId } from '#shared/validation/actor.js';
+
 import { validateMediaListQuery } from '../validators/mediaList.validator.js';
 import { encodeMediaListCursor } from '../validators/mediaListCursor.js';
 import { createMediaGalleryItem } from './mediaGallery.service.js';
 
 export function createMediaListService({ repository, storage, config }) {
     return Object.freeze({
-        async list(input) {
+        async list(input, actor) {
             const query = validateMediaListQuery(input, config);
-            const rows = await repository.findPage(query);
+            const rows = await repository.findPage(query, requireActorId(actor));
             const hasMore = rows.length > query.limit;
             const records = rows.slice(0, query.limit);
             const items = await Promise.all(

@@ -208,3 +208,15 @@ it.each([
   await expect(client.request(path)).rejects.toThrow(TypeError);
   expect(fetchImpl).not.toHaveBeenCalled();
 });
+
+it('rejects late successful responses when the request context changes identity', async () => {
+  let finish;
+  let version = 1;
+  const client = createHttpClient({ baseUrl: '/api', fetchImpl: () => new Promise((resolve) => { finish = resolve; }) });
+  client.configureRequestContext({ getVersion: () => version, getHeaders: () => ({ 'X-CSRF-Token': 'a' }) });
+  const pending = client.request('media/id/favorite', { method: 'POST' });
+  const rejected = expect(pending).rejects.toMatchObject({ code: 'REQUEST_SUPERSEDED' });
+  version = 2;
+  finish(new Response(null, { status: 204 }));
+  await rejected;
+});

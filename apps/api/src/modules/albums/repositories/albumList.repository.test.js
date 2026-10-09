@@ -1,6 +1,6 @@
 import { expect, it, vi } from 'vitest';
 
-import { buildApp } from '../../../app/app.js';
+import { buildApp } from '../../../app/authenticatedApp.testUtils.js';
 import { createAlbumService } from '../services/album.service.js';
 import { createAlbumRepository } from './album.repository.js';
 

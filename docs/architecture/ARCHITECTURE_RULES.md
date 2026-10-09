@@ -46,7 +46,7 @@ only; these documents define how future application code must be organized.
 37. Shared/common frontend modules must not import from features or pages.
 38. Cross-feature imports must use the target feature public `index.js` unless explicitly documented.
 39. Cursor pagination must use deterministic ordering with a stable tie-breaker such as `(sortField, id)`.
-40. The MVP is single-user until authentication is deliberately introduced; do not invent implicit current-user behavior.
+40. Authentication belongs to its own module/feature; use the scoped API hook and frontend provider/route guard. Pass trusted actor context explicitly for personal favorites; shared-library ownership is unchanged.
 
 ## Recommended file size guidance
 
@@ -122,4 +122,4 @@ See [Code quality foundations](CODE_QUALITY.md) for commands, aliases, and tooli
 Do not pre-create business modules, storage implementations, schemas, endpoints,
 authentication, or speculative abstractions during the foundation phase.
 
-See [Security boundaries](SECURITY.md) for the single-user trust model and implemented protections.
+See [Security boundaries](SECURITY.md) for the authenticated shared-library trust model and implemented protections.

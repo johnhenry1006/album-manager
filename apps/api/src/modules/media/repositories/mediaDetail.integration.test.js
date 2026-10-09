@@ -49,7 +49,7 @@ describe.skipIf(process.env.DATABASE_TESTS !== '1')('media detail with PostgreSQ
             const tag = await tx.tag.create({
                 data: { name: 'Beach', slug: 'beach', media: { create: { mediaId: id } } },
             });
-            await tx.favorite.create({ data: { mediaId: id } });
+            await tx.favorite.create({ data: { userId: '00000000-0000-4000-8000-000000000001', mediaId: id } });
             await tx.mediaMetadata.create({
                 data: { mediaId: id, cameraMake: 'Test camera', rawMetadata: { exif: { ISO: 100 } } },
             });
@@ -76,7 +76,7 @@ describe.skipIf(process.env.DATABASE_TESTS !== '1')('media detail with PostgreSQ
                     storageKey: `${id}/thumb-200.webp`,
                 },
             });
-            const detail = await service.detail(id);
+            const detail = await service.detail(id, undefined, { id: '00000000-0000-4000-8000-000000000001' });
             expect(detail).toMatchObject({
                 id,
                 favorite: true,
@@ -98,7 +98,7 @@ describe.skipIf(process.env.DATABASE_TESTS !== '1')('media detail with PostgreSQ
 
     it('handles absent optional data and finds an original only through the dedicated service', async () => {
         await fixture(async (tx, id, service, storage) => {
-            expect(await service.detail(id)).toMatchObject({
+            expect(await service.detail(id, undefined, { id: '00000000-0000-4000-8000-000000000001' })).toMatchObject({
                 favorite: false,
                 albums: [],
                 categories: [],
@@ -128,7 +128,9 @@ describe.skipIf(process.env.DATABASE_TESTS !== '1')('media detail with PostgreSQ
                 expiresIn: 120,
             });
             expect(Date.parse(original.expiresAt)).toBeGreaterThan(Date.now());
-            expect((await service.detail(id)).variants).toEqual([]);
+            expect(
+                (await service.detail(id, undefined, { id: '00000000-0000-4000-8000-000000000001' })).variants,
+            ).toEqual([]);
             expect(storage.createPresignedDownloadUrl).toHaveBeenCalledOnce();
         });
     });
@@ -146,7 +148,9 @@ describe.skipIf(process.env.DATABASE_TESTS !== '1')('media detail with PostgreSQ
             });
             await tx.media.update({ where: { id }, data: { deletedAt: new Date() } });
             for (const mediaId of [id, randomUUID()]) {
-                await expect(service.detail(mediaId)).rejects.toMatchObject({ statusCode: 404 });
+                await expect(
+                    service.detail(mediaId, undefined, { id: '00000000-0000-4000-8000-000000000001' }),
+                ).rejects.toMatchObject({ statusCode: 404 });
                 await expect(service.originalUrl(mediaId)).rejects.toMatchObject({ statusCode: 404 });
             }
             expect(storage.createPresignedDownloadUrl).not.toHaveBeenCalled();

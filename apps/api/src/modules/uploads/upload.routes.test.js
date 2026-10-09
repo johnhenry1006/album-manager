@@ -1,6 +1,6 @@
 import { afterEach, expect, it, vi } from 'vitest';
 
-import { buildApp } from '../../app/app.js';
+import { buildApp } from '../../app/authenticatedApp.testUtils.js';
 
 const sessionId = 'a0000000-0000-4000-8000-000000000001';
 const uploadFileId = 'a0000000-0000-4000-8000-000000000002';

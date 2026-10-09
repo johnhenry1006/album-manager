@@ -1,3 +1,5 @@
+import { requireActorId } from '#shared/validation/actor.js';
+
 import { mapMediaDetail, mapMediaDisplayVariant } from '../mappers/mediaDetail.mapper.js';
 import { isSafeDisplayVariant, validateMediaDetailRequest } from '../validators/mediaDetail.validator.js';
 import { notFound } from './media.errors.js';
@@ -15,8 +17,8 @@ export function createMediaDetailService({ repository, storage, config }) {
         return { url, method: 'GET', expiresIn, expiresAt: new Date(issuedAt + expiresIn * 1000).toISOString() };
     }
     return Object.freeze({
-        async detail(id, query) {
-            const record = await repository.findDetail(validateMediaDetailRequest(id, query));
+        async detail(id, query, actor) {
+            const record = await repository.findDetail(validateMediaDetailRequest(id, query), requireActorId(actor));
             if (!record) throw notFound();
             const variants = await Promise.all(
                 record.variants

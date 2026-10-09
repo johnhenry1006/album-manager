@@ -6,7 +6,6 @@ const MEDIA_SELECT = {
     height: true,
     aspectRatio: true,
     takenAt: true,
-    favorite: { select: { id: true } },
     variants: {
         where: { type: 'THUMBNAIL' },
         orderBy: [{ width: 'asc' }, { id: 'asc' }],
@@ -38,14 +37,16 @@ export function createAlbumMediaRepository(client) {
         removeMembership(albumId, mediaId) {
             return client.albumMedia.delete({ where: { albumId_mediaId: { albumId, mediaId } } });
         },
-        findMediaPage(albumId, { limit, cursor, q, type, favorite }) {
+        findMediaPage(albumId, { limit, cursor, q, type, favorite }, userId) {
             return client.albumMedia.findMany({
                 where: {
                     albumId,
                     media: {
                         deletedAt: null,
                         ...(type ? { type } : {}),
-                        ...(favorite === undefined ? {} : { favorite: favorite ? { isNot: null } : { is: null } }),
+                        ...(favorite === undefined
+                            ? {}
+                            : { favorites: favorite ? { some: { userId } } : { none: { userId } } }),
                         ...(q === undefined
                             ? {}
                             : { originalFilename: { contains: q.replace(/[\\%_]/g, '\\$&'), mode: 'insensitive' } }),
@@ -61,7 +62,13 @@ export function createAlbumMediaRepository(client) {
                 },
                 orderBy: [{ position: 'asc' }, { id: 'asc' }],
                 take: limit + 1,
-                select: { id: true, position: true, media: { select: MEDIA_SELECT } },
+                select: {
+                    id: true,
+                    position: true,
+                    media: {
+                        select: { ...MEDIA_SELECT, favorites: { where: { userId }, take: 1, select: { id: true } } },
+                    },
+                },
             });
         },
     };

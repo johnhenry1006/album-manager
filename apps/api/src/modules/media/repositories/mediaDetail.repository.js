@@ -2,7 +2,7 @@ import { DISPLAY_VARIANT_FORMATS, DISPLAY_VARIANT_TYPES } from '../validators/me
 
 export function createMediaDetailRepository(client) {
     return Object.freeze({
-        findDetail(id) {
+        findDetail(id, userId) {
             return client.media.findUnique({
                 where: { id, deletedAt: null },
                 select: {
@@ -20,7 +20,7 @@ export function createMediaDetailRepository(client) {
                     takenAt: true,
                     createdAt: true,
                     updatedAt: true,
-                    favorite: { select: { id: true } },
+                    favorites: { where: { userId }, take: 1, select: { id: true } },
                     albums: {
                         where: { album: { deletedAt: null } },
                         orderBy: { albumId: 'asc' },

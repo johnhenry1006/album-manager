@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { buildApp } from '../../../app/app.js';
+import { buildApp, TEST_ACTOR } from '../../../app/authenticatedApp.testUtils.js';
 import { fixture } from '../services/album.testUtils.js';
 
 const albumId = 'a0000000-0000-4000-8000-000000000001';
@@ -31,7 +31,7 @@ describe('album HTTP routes', () => {
         app = buildApp({ logger: false, albumService: service });
         const response = await app.inject({ method, url: `/api${url}`, payload });
         expect(response.statusCode).toBe(status);
-        expect(service[action]).toHaveBeenCalledWith(...args);
+        expect(service[action]).toHaveBeenCalledWith(...args, ...(action === 'listMedia' ? [TEST_ACTOR] : []));
         if (status === 204) expect(response.body).toBe('');
         else expect(response.json()).toEqual({ ok: true });
     });

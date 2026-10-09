@@ -20,7 +20,8 @@
         "test:database": "DATABASE_TESTS=1 vitest run src/infrastructure/database/schema.test.js",
         "test:storage": "STORAGE_TESTS=1 vitest run src/infrastructure/storage/s3/s3Storage.integration.test.js",
         "worker:media": "node src/jobs/mediaProcessing.server.js",
-        "worker:cleanup": "node src/jobs/mediaCleanup.server.js"
+        "worker:cleanup": "node src/jobs/mediaCleanup.server.js",
+        "auth:create-user": "node src/modules/auth/commands/createUser.js"
     },
     "imports": {
         "#modules/*": "./src/modules/*",
@@ -31,6 +32,7 @@
     "dependencies": {
         "@aws-sdk/client-s3": "^3.1147.0",
         "@aws-sdk/s3-request-presigner": "^3.1147.0",
+        "@fastify/cookie": "^11.1.3",
         "@prisma/adapter-pg": "^7.10.0",
         "@prisma/client": "^7.10.0",
         "bullmq": "^6.3.11",

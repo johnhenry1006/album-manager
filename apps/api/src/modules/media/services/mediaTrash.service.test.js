@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { buildApp } from '../../../app/app.js';
+import { buildApp } from '../../../app/authenticatedApp.testUtils.js';
 import { createMediaStorageDeletionService } from './mediaStorageDeletion.service.js';
 import { createMediaTrashService } from './mediaTrash.service.js';
 

@@ -8,7 +8,7 @@ export function createAlbumController(service) {
             await service.remove(request.params.albumId);
             return reply.code(204).send();
         },
-        listMedia: (request) => service.listMedia(request.params.albumId, request.query),
+        listMedia: (request) => service.listMedia(request.params.albumId, request.query, request.actor),
         addMedia: (request) => service.addMedia(request.params.albumId, request.body),
         removeMedia: async (request, reply) => {
             await service.removeMedia(request.params.albumId, request.params.mediaId);

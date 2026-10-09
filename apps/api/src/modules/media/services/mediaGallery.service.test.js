@@ -9,7 +9,7 @@ const record = {
     width: null,
     height: null,
     aspectRatio: null,
-    favorite: null,
+    favorites: [],
     takenAt: null,
     variants: [{ name: 'small', format: 'webp', width: 100, height: 75, storageKey: 'thumb.webp' }],
     metadata: { private: true },

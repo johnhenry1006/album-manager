@@ -2,7 +2,7 @@ import { afterEach, expect, it, vi } from 'vitest';
 
 import { validateEnvironment } from '#config/environment.js';
 
-import { buildApp } from './app.js';
+import { buildApp } from './authenticatedApp.testUtils.js';
 
 const apps = [];
 afterEach(async () => Promise.all(apps.splice(0).map((app) => app.close())));
@@ -35,7 +35,7 @@ it('allows configured origins and valid preflight without cookies', async () => 
     });
     expect(response.statusCode).toBe(204);
     expect(response.headers['access-control-allow-origin']).toBe('https://album.example');
-    expect(response.headers['access-control-allow-credentials']).toBeUndefined();
+    expect(response.headers['access-control-allow-credentials']).toBe('true');
     expect(response.headers.vary).toContain('Origin');
 });
 it.each(['https://evil.example', 'null', 'https://album.example.evil.test'])(

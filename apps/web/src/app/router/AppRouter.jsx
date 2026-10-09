@@ -1,7 +1,9 @@
 import { Navigate, Route, Routes } from 'react-router';
 
+import { RequireAuth } from '@/features/auth/index.js';
 import { AlbumDetailPage } from '@/pages/albums/AlbumDetailPage.jsx';
 import { AlbumListPage } from '@/pages/albums/AlbumListPage.jsx';
+import { LoginPage } from '@/pages/auth/LoginPage.jsx';
 import { CategoryListPage } from '@/pages/categories/CategoryListPage.jsx';
 import { DashboardPage } from '@/pages/dashboard/DashboardPage.jsx';
 import { FavoritesPage } from '@/pages/favorites/FavoritesPage.jsx';
@@ -21,23 +23,26 @@ import { AppLayout } from '../layouts/AppLayout.jsx';
 export function AppRouter() {
   return (
     <Routes>
-      <Route element={<AppLayout />}>
-        <Route index element={<Navigate to="/dashboard" replace />} />
-        <Route path="dashboard" element={<DashboardPage />} />
-        <Route path="albums" element={<AlbumListPage />} />
-        <Route path="albums/:albumId" element={<AlbumDetailPage />} />
-        <Route path="media" element={<MediaLibraryPage />} />
-        <Route path="media/:mediaId" element={<MediaDetailPage />} />
-        <Route path="upload" element={<UploadPage />} />
-        <Route path="categories" element={<CategoryListPage />} />
-        <Route path="tags" element={<TagListPage />} />
-        <Route path="favorites" element={<FavoritesPage />} />
-        <Route path="search" element={<SearchPage />} />
-        <Route path="trash" element={<TrashPage />} />
-        <Route path="settings" element={<SettingsPage />} />
-        <Route path="settings/storage" element={<StorageSettingsPage />} />
-        <Route path="settings/image-optimization" element={<ImageOptimizationSettingsPage />} />
-        <Route path="*" element={<NotFoundPage />} />
+      <Route path="login" element={<LoginPage />} />
+      <Route element={<RequireAuth />}>
+        <Route element={<AppLayout />}>
+          <Route index element={<Navigate to="/dashboard" replace />} />
+          <Route path="dashboard" element={<DashboardPage />} />
+          <Route path="albums" element={<AlbumListPage />} />
+          <Route path="albums/:albumId" element={<AlbumDetailPage />} />
+          <Route path="media" element={<MediaLibraryPage />} />
+          <Route path="media/:mediaId" element={<MediaDetailPage />} />
+          <Route path="upload" element={<UploadPage />} />
+          <Route path="categories" element={<CategoryListPage />} />
+          <Route path="tags" element={<TagListPage />} />
+          <Route path="favorites" element={<FavoritesPage />} />
+          <Route path="search" element={<SearchPage />} />
+          <Route path="trash" element={<TrashPage />} />
+          <Route path="settings" element={<SettingsPage />} />
+          <Route path="settings/storage" element={<StorageSettingsPage />} />
+          <Route path="settings/image-optimization" element={<ImageOptimizationSettingsPage />} />
+          <Route path="*" element={<NotFoundPage />} />
+        </Route>
       </Route>
     </Routes>
   );

@@ -1,22 +1,34 @@
 # Security boundaries and review
 
-Reviewed 2026-10-09 against all architecture documents and database rules. Runtime
-code remains JavaScript and follows existing controller/service/repository,
-feature-hook and provider boundaries. This review adds no authentication, users,
-or implicit ownership model. The application remains a single-user private library.
+Updated 2026-10-09 after local authentication was deliberately introduced. JavaScript,
+feature/provider boundaries and controller/service/repository layering are preserved.
 
 ## Trust and deployment scope
 
-Anyone who can reach the API directly can read or modify the library. UUIDs,
-confirmations, CORS and rate limits are not authorization. Keep API, database,
-Redis and storage administration on trusted networks; use a protected deployment
-boundary before exposing the library to an untrusted network.
+All business APIs require a valid persisted session. Health and login are public.
+One scoped Fastify auth hook owns cookie validation, trusted actor context and CSRF
+checks; auth services/repositories own credentials and persisted sessions. See
+[Auth API](../api/AUTH.md) for contracts, account provisioning and migration order.
 
-Future authentication can be registered as a scoped API hook in application
-composition, before controllers call services. Design authorization, actor context,
-CSRF/session policy and any schema ownership changes together at that time. Do not
-infer a current user from headers or UUIDs. Jobs continue to enter services through
-their validated job boundaries.
+Favorites are user-scoped. All authenticated accounts can read and modify the shared
+library, including settings/trash. Albums/media have no owner or role restrictions;
+PUBLIC album visibility does not bypass authentication. Operators provision accounts
+locally, with no public registration. Existing favorites survive under the first
+provisioned owner account. No default login credential is created.
+
+Use HTTPS in production and same-site browser/API deployment. Session cookies are
+HttpOnly, host-only, SameSite=Lax, Path=/api, and Secure in production. Absolute
+expiry is eight hours by default; login rotates the token and logout revokes it.
+Only token digests are persisted, and passwords use salted asynchronous scrypt.
+CSRF tokens stay in memory and are required on authenticated mutations. Login's
+JSON/custom-header boundary and exact origin allowlist prevent simple browser
+cross-site login requests. Database-free composition cannot expose business routes
+without an injected auth service. Background jobs retain validated service entry points.
+
+Keep database, Redis and storage administration on trusted networks. CORS, UUIDs,
+confirmations and rate limits remain separate from authentication. Instance-local
+login limits supplement existing API limits; proxy/replica limits belong at the edge.
+Previously signed storage URLs remain valid until expiry after logout.
 
 ## Request validation
 
@@ -115,8 +127,8 @@ the local storage proxy's single-origin contract.
 
 Origin-bearing requests from unlisted origins return 403 before business handlers.
 The allowlist does not rely on a caller-controlled Host header. Valid preflight
-allows GET/HEAD/POST/PATCH/DELETE/OPTIONS and Content-Type/Accept only, without
-credentialed CORS. Non-browser clients can omit or forge Origin; CORS is not access
+allows GET/HEAD/POST/PATCH/DELETE/OPTIONS and Content-Type/Accept/X-CSRF-Token/X-Auth-Request, with credentialed CORS for the
+exact configured frontend origin. Non-browser clients can omit or forge Origin; CORS is not access
 control. Storage browser CORS is configured independently in infrastructure with
 its exact frontend origin and PUT/GET/HEAD permissions.
 

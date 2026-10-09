@@ -10,7 +10,7 @@ import { createPrismaClient } from '#infrastructure/database/client.js';
 import { createDatabase } from '#infrastructure/database/index.js';
 import { readTestMigrations } from '#infrastructure/database/isolatedDatabase.testUtils.js';
 
-import { buildApp } from '../../../app/app.js';
+import { buildApp } from '../../../app/authenticatedApp.testUtils.js';
 
 // Isolated schema, actual repositories/media domain/HTTP, transport doubles only.
 describe.skipIf(process.env.DATABASE_TESTS !== '1')('upload persistence and HTTP with PostgreSQL', () => {

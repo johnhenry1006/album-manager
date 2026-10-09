@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { createIsolatedTestDatabase } from '#infrastructure/database/isolatedDatabase.testUtils.js';
 
-import { buildApp } from '../../../app/app.js';
+import { buildApp } from '../../../app/authenticatedApp.testUtils.js';
 
 const mediaId = (n) => `a0000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
 const album = 'b0000000-0000-4000-8000-000000000001';
@@ -53,7 +53,7 @@ describe.skipIf(process.env.DATABASE_TESTS !== '1')('GET /api/media combined fil
                 { createdAt: new Date('2026-01-01T00:00:00.001Z') },
                 { type: 'VIDEO' },
                 { mimeType: 'image/png' },
-                { favorite: undefined },
+                { favorites: undefined },
                 { status: 'FAILED' },
                 { deletedAt: createdAt },
             ];
@@ -72,7 +72,7 @@ describe.skipIf(process.env.DATABASE_TESTS !== '1')('GET /api/media combined fil
                         albums: { create: { albumId: album } },
                         categories: { create: { categoryId: category } },
                         tags: { create: { tagId: tag } },
-                        favorite: { create: {} },
+                        favorites: { create: { userId: '00000000-0000-4000-8000-000000000001' } },
                         ...patch,
                     },
                 });

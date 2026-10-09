@@ -2,7 +2,7 @@ import { expect, it, vi } from 'vitest';
 
 import { createStorageProvider } from '#infrastructure/storage/index.js';
 
-import { buildApp } from './app.js';
+import { buildApp } from './authenticatedApp.testUtils.js';
 
 it('returns a real temporary S3 GET signature against the public endpoint without the secret', async () => {
     const id = 'a0000000-0000-4000-8000-000000000001';

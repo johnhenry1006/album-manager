@@ -25,7 +25,7 @@ export function mapMediaDetail(record, variants) {
         takenAt: record.takenAt?.toISOString() ?? null,
         createdAt: record.createdAt.toISOString(),
         updatedAt: record.updatedAt.toISOString(),
-        favorite: record.favorite !== null,
+        favorite: record.favorites.length > 0,
         albums: record.albums.map(({ album, position, createdAt }) => ({
             id: album.id,
             name: album.name,

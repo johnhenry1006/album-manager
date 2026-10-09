@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { buildApp } from '../../../app/app.js';
+import { buildApp } from '../../../app/authenticatedApp.testUtils.js';
 
 const id = 'a0000000-0000-4000-8000-000000000001';
 
@@ -28,7 +28,7 @@ describe('favorite media HTTP mutations', () => {
         return { favorites, tx, client };
     }
 
-    it('adds and removes a global favorite with empty 204 responses on repeated requests', async () => {
+    it('adds and removes a personal favorite with empty 204 responses on repeated requests', async () => {
         const { favorites } = setup();
         for (const method of ['POST', 'POST', 'DELETE', 'DELETE']) {
             const response = await app.inject({ method, url: `/api/media/${id}/favorite` });

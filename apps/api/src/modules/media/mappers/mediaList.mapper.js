@@ -6,7 +6,7 @@ export function mapMediaListItem(record, thumbnails) {
         width: record.width,
         height: record.height,
         aspectRatio: record.aspectRatio,
-        favorite: record.favorite !== null,
+        favorite: record.favorites.length > 0,
         takenAt: record.takenAt?.toISOString() ?? null,
         thumbnails,
     };
