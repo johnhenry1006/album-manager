@@ -2,11 +2,11 @@ import { useInfiniteQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 
 import { INFINITE_GALLERY_GC_TIME } from '@/services/queryClient.js';
+import { flattenPaginatedItems } from '@/utils/flattenPaginatedItems.js';
 
 import { mediaApi } from '../api/mediaApi.js';
 import { mediaQueryKeys } from '../api/mediaQueryKeys.js';
 import { DEFAULT_MEDIA_PAGE_SIZE } from '../constants/mediaConstants.js';
-import { flattenMediaPages } from '../utils/flattenMediaPages.js';
 
 /** Filters mirror GET /media; cursors are hook-owned. */
 export function useInfiniteMedia(filters = {}, { enabled = true } = {}) {
@@ -26,6 +26,6 @@ export function useInfiniteMedia(filters = {}, { enabled = true } = {}) {
     getNextPageParam: (page) => (page.hasMore ? (page.nextCursor ?? undefined) : undefined),
     enabled,
   });
-  const items = useMemo(() => flattenMediaPages(query.data?.pages), [query.data?.pages]);
+  const items = useMemo(() => flattenPaginatedItems(query.data?.pages), [query.data?.pages]);
   return { ...query, items, nextCursor: query.data?.pages.at(-1)?.nextCursor };
 }

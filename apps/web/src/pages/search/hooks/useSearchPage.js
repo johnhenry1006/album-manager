@@ -3,8 +3,9 @@ import { useNavigate } from 'react-router';
 
 import { useAlbums } from '@/features/album/index.js';
 import { useCategories } from '@/features/category/index.js';
-import { useInfiniteMedia, useMediaSelection } from '@/features/media/index.js';
+import { useInfiniteMedia } from '@/features/media/index.js';
 import { useTags } from '@/features/tag/index.js';
+import { useIdSelection } from '@/hooks/useIdSelection.js';
 
 import { useSearchFilters } from './useSearchFilters.js';
 
@@ -19,7 +20,7 @@ export function useSearchPage() {
   const media = useInfiniteMedia(state.apiFilters, {
     enabled: !state.dateError && !state.mimeError && !state.isSearchPending,
   });
-  const selection = useMediaSelection();
+  const selection = useIdSelection();
   const navigate = useNavigate();
   const openMedia = useCallback(
     (item) => navigate(`/media/${encodeURIComponent(item.id)}`),

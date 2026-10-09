@@ -17,6 +17,10 @@ adapter and query keys are private; no API client is exported.
   `retainSelection`. All operations take IDs or iterable ID collections, never
   page data. Selection persists across filters and loaded pages; page orchestration
   chooses when to clear it or retain only explicitly supplied IDs.
+  This export is a compatibility alias for the domain-independent
+  `@/hooks/useIdSelection.js`; new page orchestration imports the shared hook directly.
+  Cursor-page deduplication likewise lives in `@/utils/flattenPaginatedItems.js`,
+  with `flattenMediaPages` retained as a public compatibility alias.
 - `useMediaFilters(filterNames)` owns URL metadata filters and their API mapping,
   including debounced `q`/MIME values, local MIME validation, inclusive UTC
   taken-date bounds, and boolean favorites.

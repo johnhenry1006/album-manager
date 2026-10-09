@@ -2,8 +2,9 @@ import { useCallback, useState } from 'react';
 import { useNavigate } from 'react-router';
 
 import { useAlbum, useInfiniteAlbumMedia } from '@/features/album/index.js';
-import { useInfiniteMedia, useMediaSelection } from '@/features/media/index.js';
+import { useInfiniteMedia } from '@/features/media/index.js';
 import { useDebounce } from '@/hooks/useDebounce.js';
+import { useIdSelection } from '@/hooks/useIdSelection.js';
 
 import { useAlbumDetailActions } from './useAlbumDetailActions.js';
 import { useAlbumDetailFilters } from './useAlbumDetailFilters.js';
@@ -14,8 +15,8 @@ export function useAlbumDetailPage(albumId) {
   const media = useInfiniteAlbumMedia(albumId, state.apiFilters, {
     enabled: Boolean(album.data) && !state.isSearchPending,
   });
-  const selection = useMediaSelection();
-  const addSelection = useMediaSelection();
+  const selection = useIdSelection();
+  const addSelection = useIdSelection();
   const [isAdding, setAdding] = useState(false);
   const [addSearch, setAddSearch] = useState('');
   const cleanAddSearch = addSearch

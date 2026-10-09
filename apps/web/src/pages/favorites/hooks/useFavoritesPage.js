@@ -1,11 +1,12 @@
 import { useCallback, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 
-import { useFavoriteMedia, useInfiniteMedia, useMediaSelection } from '@/features/media/index.js';
+import { useFavoriteMedia, useInfiniteMedia } from '@/features/media/index.js';
+import { useIdSelection } from '@/hooks/useIdSelection.js';
 
 export function useFavoritesPage() {
   const media = useInfiniteMedia({ favorite: true });
-  const selection = useMediaSelection();
+  const selection = useIdSelection();
   const { unfavorite } = useFavoriteMedia();
   const navigate = useNavigate();
   const lock = useRef(false);

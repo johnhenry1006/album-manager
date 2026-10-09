@@ -1,11 +1,11 @@
-import { useMediaSelection } from '@/features/media/index.js';
 import { useInfiniteTrash } from '@/features/trash/index.js';
+import { useIdSelection } from '@/hooks/useIdSelection.js';
 
 import { useTrashActions } from './useTrashActions.js';
 
 export function useTrashPage() {
   const media = useInfiniteTrash();
-  const selection = useMediaSelection();
+  const selection = useIdSelection();
   const actions = useTrashActions(selection, media.items);
   return {
     loadedCount: media.items.length,

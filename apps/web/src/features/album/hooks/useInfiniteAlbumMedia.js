@@ -1,8 +1,8 @@
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 
-import { flattenMediaPages } from '@/features/media/index.js';
 import { INFINITE_GALLERY_GC_TIME } from '@/services/queryClient.js';
+import { flattenPaginatedItems } from '@/utils/flattenPaginatedItems.js';
 
 import { albumApi } from '../api/albumApi.js';
 import { albumQueryKeys } from '../api/albumQueryKeys.js';
@@ -20,6 +20,6 @@ export function useInfiniteAlbumMedia(albumId, filters = {}, { enabled = true } 
     getNextPageParam: (page) => (page.hasMore ? (page.nextCursor ?? undefined) : undefined),
     enabled: enabled && Boolean(albumId),
   });
-  const items = useMemo(() => flattenMediaPages(query.data?.pages), [query.data?.pages]);
+  const items = useMemo(() => flattenPaginatedItems(query.data?.pages), [query.data?.pages]);
   return { ...query, items, nextCursor: query.data?.pages.at(-1)?.nextCursor };
 }
