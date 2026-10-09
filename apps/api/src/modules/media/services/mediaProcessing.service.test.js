@@ -371,6 +371,20 @@ it('rejects decoded image MIME mismatches before generating or publishing varian
     expect(context.file.status).toBe('FAILED');
 });
 
+it.each(['inspect', 'extractMetadata', 'process'])(
+    'does not publish READY or derivatives when the processor %s fails',
+    async (method) => {
+        const context = setup();
+        context.imageProcessor[method].mockRejectedValueOnce(new Error('Processor unavailable'));
+        await expect(context.run()).rejects.toThrow('Processor unavailable');
+        expect(context.repository.finish).not.toHaveBeenCalled();
+        expect(context.storage.upload).not.toHaveBeenCalled();
+        expect(context.mediaVariantService.create).not.toHaveBeenCalled();
+        expect(context.file.status).toBe('FAILED');
+        if (method !== 'process') expect(context.imageProcessor.process).not.toHaveBeenCalled();
+    },
+);
+
 it('accepts a real AVIF source while validating its decoded container type', async () => {
     const input = await sharp({ create: { width: 16, height: 8, channels: 3, background: 'red' } })
         .avif()

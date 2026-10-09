@@ -86,3 +86,48 @@ it('owns a separate cleanup queue with the same retry defaults and rejects acces
     await owner.close();
     await expect(owner.getQueue()).rejects.toThrow();
 });
+
+it('rejects malformed jobs before connecting to Redis', async () => {
+    const createConnection = vi.fn();
+    const owner = createQueueInfrastructure({}, { createConnection });
+    await expect(owner.enqueueMediaProcessing({ mediaId: 'bad', uploadFileId: 'bad' })).rejects.toThrow(
+        'Invalid media-processing job',
+    );
+    expect(createConnection).not.toHaveBeenCalled();
+    await owner.close();
+});
+
+it('sanitizes dispatch failures and permits retry using the same job identity', async () => {
+    const connection = Object.assign(new EventEmitter(), { connect: vi.fn(), disconnect: vi.fn() });
+    const queue = Object.assign(new EventEmitter(), {
+        waitUntilReady: vi.fn(),
+        close: vi.fn(),
+        add: vi.fn().mockRejectedValueOnce(new Error('redis://private-password')).mockResolvedValue({ id: 'job' }),
+    });
+    const owner = createQueueInfrastructure({}, { createConnection: () => connection, createQueue: () => queue });
+    const data = {
+        mediaId: 'a0000000-0000-4000-8000-000000000001',
+        uploadFileId: 'a0000000-0000-4000-8000-000000000002',
+    };
+    try {
+        await expect(owner.enqueueMediaProcessing(data)).rejects.toThrow(/^Queue dispatch failed$/);
+        expect(await owner.enqueueMediaProcessing(data)).toEqual({ jobId: 'job' });
+        expect(connection.connect).toHaveBeenCalledOnce();
+        expect(queue.add).toHaveBeenCalledTimes(2);
+        for (const call of queue.add.mock.calls) expect(call).toEqual(['process-media', data, { jobId: data.mediaId }]);
+    } finally {
+        await owner.close();
+    }
+});
+
+it('disconnects Redis even when queue shutdown fails', async () => {
+    const connection = Object.assign(new EventEmitter(), { connect: vi.fn(), disconnect: vi.fn() });
+    const queue = Object.assign(new EventEmitter(), {
+        waitUntilReady: vi.fn(),
+        close: vi.fn().mockRejectedValue(new Error('private-password')),
+    });
+    const owner = createQueueInfrastructure({}, { createConnection: () => connection, createQueue: () => queue });
+    await owner.ready();
+    await expect(owner.close()).rejects.toThrow(/^Queue shutdown failed$/);
+    expect(connection.disconnect).toHaveBeenCalledOnce();
+});
