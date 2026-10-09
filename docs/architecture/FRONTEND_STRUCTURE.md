@@ -107,6 +107,13 @@ it retains edits during background refresh and after failed saves. Loading and
 retry states use the shared feedback components. The form explains the difference
 between visually high quality and mathematically lossless output, and the limits
 of lossless encoding after resizing/orientation/metadata transformations.
+`/settings/storage` composes `StorageSettingsPage`, `useStorageSettingsPage`, and
+`StorageUsageCard` with the settings feature's public `useStorageSettings` hook.
+The feature projects and validates safe metadata and decimal byte totals before
+caching. The page shows provider, bucket, usage, original/optimized/variant sizes,
+estimated savings and available object counts. Shared BigInt formatting preserves
+large totals, and loading/retry/manual refresh retain data after refresh failures.
+Usage includes trash; savings compare optimized files while originals remain stored.
 Other pages remain minimal placeholders. The library page composes a
 page hook consuming public media/category/tag hooks, with cursor pagination and
 TanStack Virtual rendering thumbnail cards. Its URL filters are `q`, `type`,

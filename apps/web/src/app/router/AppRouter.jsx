@@ -11,7 +11,7 @@ import { NotFoundPage } from '@/pages/NotFoundPage.jsx';
 import { SearchPage } from '@/pages/search/SearchPage.jsx';
 import { ImageOptimizationSettingsPage } from '@/pages/settings/ImageOptimizationSettingsPage.jsx';
 import { SettingsPage } from '@/pages/settings/SettingsPage.jsx';
-import { StoragePage } from '@/pages/settings/StoragePage.jsx';
+import { StorageSettingsPage } from '@/pages/settings/StorageSettingsPage.jsx';
 import { TagListPage } from '@/pages/tags/TagListPage.jsx';
 import { TrashPage } from '@/pages/trash/TrashPage.jsx';
 import { UploadPage } from '@/pages/upload/UploadPage.jsx';
@@ -35,7 +35,7 @@ export function AppRouter() {
         <Route path="search" element={<SearchPage />} />
         <Route path="trash" element={<TrashPage />} />
         <Route path="settings" element={<SettingsPage />} />
-        <Route path="settings/storage" element={<StoragePage />} />
+        <Route path="settings/storage" element={<StorageSettingsPage />} />
         <Route path="settings/image-optimization" element={<ImageOptimizationSettingsPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>

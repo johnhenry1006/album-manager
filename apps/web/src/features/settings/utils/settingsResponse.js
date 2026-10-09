@@ -49,10 +49,53 @@ export function readImageOptimizationSettings(value) {
   return { ...settings, thumbnailSizes: [...settings.thumbnailSizes] };
 }
 
-/** The pending storage endpoint may expose only these public descriptive fields. */
+const storageByteFields = [
+  'originalBytes',
+  'optimizedBytes',
+  'variantBytes',
+  'totalBytes',
+  'estimatedSavedBytes',
+];
+function isSafeHost(host) {
+  if (typeof host !== 'string') return false;
+  try {
+    const url = new URL(`https://${host}`);
+    return (
+      url.host === host &&
+      !url.username &&
+      !url.password &&
+      !url.search &&
+      !url.hash &&
+      url.pathname === '/'
+    );
+  } catch {
+    return false;
+  }
+}
+
+/** Only public metadata and decimal byte counts enter the settings cache. */
 export function readStorageSettings(value) {
-  const settings = projectFields(value, ['driver', 'bucket', 'region']);
-  if (Object.values(settings).some((field) => typeof field !== 'string' || !field.trim()))
-    throw invalidResponse();
+  const settings = projectFields(value, [
+    'providerType',
+    'bucketName',
+    'endpointHost',
+    'objectCount',
+    ...storageByteFields,
+  ]);
+  const validators = {
+    providerType: (field) => typeof field === 'string' && /^[a-z][a-z0-9-]{0,31}$/.test(field),
+    bucketName: (field) =>
+      typeof field === 'string' &&
+      /^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$/.test(field) &&
+      !field.includes('..') &&
+      !/^\d+\.\d+\.\d+\.\d+$/.test(field),
+    endpointHost: isSafeHost,
+    objectCount: (field) => Number.isSafeInteger(field) && field >= 0,
+  };
+  for (const [key, field] of Object.entries(settings)) {
+    if (storageByteFields.includes(key)) {
+      if (typeof field !== 'string' || !/^\d+$/.test(field)) throw invalidResponse();
+    } else if (field !== null && !validators[key](field)) throw invalidResponse();
+  }
   return settings;
 }

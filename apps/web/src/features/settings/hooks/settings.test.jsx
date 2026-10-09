@@ -78,9 +78,14 @@ it('PATCHes partial settings and refreshes only the optimization cache', async (
   vi.stubGlobal('fetch', fetch);
   const { client, wrapper } = setup();
   client.setQueryData(settingsQueryKeys.storage(), {
-    driver: 's3',
-    bucket: 'photos',
-    region: 'local',
+    providerType: 's3',
+    bucketName: 'photos',
+    originalBytes: '1024',
+    optimizedBytes: '512',
+    variantBytes: '768',
+    totalBytes: '1792',
+    estimatedSavedBytes: '512',
+    objectCount: 3,
   });
   const read = renderHook(() => useImageOptimizationSettings(), { wrapper });
   const update = renderHook(() => useUpdateImageOptimizationSettings(), { wrapper });
@@ -122,9 +127,14 @@ it('caches only public storage metadata and isolates storage from optimization q
     expect(url).toBe('/api/settings/storage');
     expect(options.signal).toBeInstanceOf(AbortSignal);
     return respond({
-      driver: 's3',
-      bucket: 'photos',
-      region: 'local',
+      providerType: 's3',
+      bucketName: 'photos',
+      originalBytes: '1024',
+      optimizedBytes: '512',
+      variantBytes: '768',
+      totalBytes: '1792',
+      estimatedSavedBytes: '512',
+      objectCount: 3,
       accessKey: 'private-access',
       secretAccessKey: 'private-secret',
       password: 'private-password',
@@ -135,11 +145,25 @@ it('caches only public storage metadata and isolates storage from optimization q
   const { client, wrapper } = setup();
   const hook = renderHook(() => useStorageSettings(), { wrapper });
   await waitFor(() => expect(hook.result.current.isSuccess).toBe(true));
-  expect(hook.result.current.data).toEqual({ driver: 's3', bucket: 'photos', region: 'local' });
+  expect(hook.result.current.data).toEqual({
+    providerType: 's3',
+    bucketName: 'photos',
+    originalBytes: '1024',
+    optimizedBytes: '512',
+    variantBytes: '768',
+    totalBytes: '1792',
+    estimatedSavedBytes: '512',
+    objectCount: 3,
+  });
   expect(client.getQueryData(settingsQueryKeys.storage())).toEqual({
-    driver: 's3',
-    bucket: 'photos',
-    region: 'local',
+    providerType: 's3',
+    bucketName: 'photos',
+    originalBytes: '1024',
+    optimizedBytes: '512',
+    variantBytes: '768',
+    totalBytes: '1792',
+    estimatedSavedBytes: '512',
+    objectCount: 3,
   });
   expect(client.getQueryData(settingsQueryKeys.imageOptimization())).toBeUndefined();
 });
@@ -193,17 +217,24 @@ it.each([
   },
 );
 
-it.each([null, [], { driver: { secret: 'hidden' } }, { bucket: ['hidden'] }, { region: 9 }])(
-  'rejects malformed public storage metadata: %j',
-  async (body) => {
-    vi.stubGlobal('fetch', async () => respond(body));
-    const { client, wrapper } = setup();
-    const hook = renderHook(() => useStorageSettings(), { wrapper });
-    await waitFor(() => expect(hook.result.current.isError).toBe(true));
-    expect(hook.result.current.error).toMatchObject({ code: 'INVALID_RESPONSE' });
-    expect(client.getQueryData(settingsQueryKeys.storage())).toBeUndefined();
-  },
-);
+it.each([
+  null,
+  [],
+  { providerType: { secret: 'hidden' } },
+  { bucketName: ['hidden'] },
+  { totalBytes: 9 },
+  { originalBytes: '-1' },
+  { optimizedBytes: 'signed-secret' },
+  { objectCount: 1.5 },
+  { endpointHost: 'user:secret@host' },
+])('rejects malformed public storage metadata: %j', async (body) => {
+  vi.stubGlobal('fetch', async () => respond(body));
+  const { client, wrapper } = setup();
+  const hook = renderHook(() => useStorageSettings(), { wrapper });
+  await waitFor(() => expect(hook.result.current.isError).toBe(true));
+  expect(hook.result.current.error).toMatchObject({ code: 'INVALID_RESPONSE' });
+  expect(client.getQueryData(settingsQueryKeys.storage())).toBeUndefined();
+});
 
 it('exports consumer hooks and query keys without exposing the private API adapter', async () => {
   const feature = await import('../index.js');
