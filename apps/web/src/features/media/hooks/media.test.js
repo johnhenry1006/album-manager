@@ -73,25 +73,6 @@ it('uses opaque cursors and starts fresh when collection filters change', async 
   expect(requests.at(-1).query.has('cursor')).toBe(false);
 });
 
-it('lists trash through its endpoint without media-only parameters', async () => {
-  let requested;
-  vi.stubGlobal('fetch', async (url) => {
-    requested = new URL(url, 'http://localhost');
-    return respond({
-      items: [{ id: 'trashed', canRestore: true }],
-      nextCursor: null,
-      hasMore: false,
-    });
-  });
-  const { result } = renderHook(
-    () => useInfiniteMedia({ limit: 10 }, { collection: 'trash' }),
-    setup(),
-  );
-  await waitFor(() => expect(result.current.isSuccess).toBe(true));
-  expect(requested.pathname).toBe('/api/trash');
-  expect([...requested.searchParams]).toEqual([['limit', '10']]);
-});
-
 it('disables missing detail IDs and shares detail data with variant selection', async () => {
   const fetch = vi.fn(async () =>
     respond({
@@ -137,8 +118,6 @@ it.each([
   ['favorite', '/api/media/m/favorite', 'POST'],
   ['unfavorite', '/api/media/m/favorite', 'DELETE'],
   ['trash', '/api/media/m', 'DELETE'],
-  ['restore', '/api/trash/m/restore', 'POST'],
-  ['permanentDelete', '/api/trash/m/permanent', 'DELETE'],
 ])(
   '%s refreshes cached lists and details after the matching HTTP action',
   async (action, path, method) => {
@@ -153,33 +132,14 @@ it.each([
     const { result } = renderHook(() => ({ ...useMediaActions(), ...useFavoriteMedia() }), {
       wrapper,
     });
-    await act(() =>
-      result.current[action].mutateAsync(
-        action === 'permanentDelete' ? { mediaId: 'm', confirm: true } : 'm',
-      ),
-    );
+    await act(() => result.current[action].mutateAsync('m'));
     expect(requests[0].url).toBe(path);
     expect(requests[0].method).toBe(method);
-    if (action === 'permanentDelete')
-      expect(JSON.parse(requests[0].body)).toEqual({ confirm: true });
     expect(client.getQueryState(['media', 'lists', 'media', {}]).isInvalidated).toBe(true);
-    if (['trash', 'permanentDelete'].includes(action))
-      expect(client.getQueryData(['media', 'detail', 'm'])).toBeUndefined();
+    if (action === 'trash') expect(client.getQueryData(['media', 'detail', 'm'])).toBeUndefined();
     else expect(client.getQueryState(['media', 'detail', 'm']).isInvalidated).toBe(true);
   },
 );
-
-it('does not issue a permanent delete without explicit confirmation', async () => {
-  const fetch = vi.fn();
-  vi.stubGlobal('fetch', fetch);
-  const { result } = renderHook(() => useMediaActions(), setup());
-  await act(async () => {
-    await expect(result.current.permanentDelete.mutateAsync({ mediaId: 'm' })).rejects.toThrow(
-      'confirmation',
-    );
-  });
-  expect(fetch).not.toHaveBeenCalled();
-});
 
 it('surfaces centralized API errors without changing cached data', async () => {
   vi.stubGlobal('fetch', async () =>
@@ -219,24 +179,6 @@ it('keeps cached favorites intact when a mutation fails', async () => {
   expect(client.getQueryState(['media', 'detail', 'm']).isInvalidated).toBe(false);
 });
 
-it('refreshes trash after a failed purge that may have changed restore eligibility', async () => {
-  vi.stubGlobal('fetch', async () =>
-    respond({ error: 'INTERNAL_ERROR', message: 'Storage unavailable' }, 500),
-  );
-  const { client, wrapper } = setup();
-  client.setQueryData(['media', 'lists', 'trash', { limit: 50 }], {
-    pages: [{ items: [{ id: 'm', canRestore: true }], hasMore: false, nextCursor: null }],
-    pageParams: [undefined],
-  });
-  const { result } = renderHook(() => useMediaActions(), { wrapper });
-  await act(async () => {
-    await expect(
-      result.current.permanentDelete.mutateAsync({ mediaId: 'm', confirm: true }),
-    ).rejects.toMatchObject({ status: 500 });
-  });
-  expect(client.getQueryState(['media', 'lists', 'trash', { limit: 50 }]).isInvalidated).toBe(true);
-});
-
 it('supports deselection and stable selection actions across rerenders', () => {
   const { result, rerender } = renderHook(() => useMediaSelection());
   const select = result.current.select;
@@ -259,7 +201,7 @@ it('uses lightweight gallery thumbnails when detail variants are unavailable', (
   expect(result.current.preview).toBeNull();
 });
 
-it.each(['trash', 'permanentDelete'])('%s clears detail from mounted consumers', async (action) => {
+it('trash clears detail from mounted consumers', async () => {
   let deleted = false;
   vi.stubGlobal('fetch', async (_url, options) => {
     if (options.method === 'DELETE') {
@@ -274,10 +216,6 @@ it.each(['trash', 'permanentDelete'])('%s clears detail from mounted consumers',
   const media = renderHook(() => useMedia('m'), { wrapper });
   const actions = renderHook(() => useMediaActions(), { wrapper });
   await waitFor(() => expect(media.result.current.isSuccess).toBe(true));
-  await act(() =>
-    actions.result.current[action].mutateAsync(
-      action === 'trash' ? 'm' : { mediaId: 'm', confirm: true },
-    ),
-  );
+  await act(() => actions.result.current.trash.mutateAsync('m'));
   await waitFor(() => expect(media.result.current.data?.id).toBeUndefined());
 });

@@ -14,3 +14,4 @@ export { useMediaSelection } from './hooks/useMediaSelection.js';
 export { useMediaVariants } from './hooks/useMediaVariants.js';
 export { useVirtualMediaGrid } from './hooks/useVirtualMediaGrid.js';
 export { flattenMediaPages } from './utils/flattenMediaPages.js';
+export { removeMediaDetail } from './utils/removeMediaDetail.js';

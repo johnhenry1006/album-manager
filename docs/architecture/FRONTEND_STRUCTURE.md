@@ -76,6 +76,18 @@ results reuse the virtual grid and ID selection, which persists across filters
 and loaded pages until explicitly cleared. Filter changes reset the grid's
 scroll position and cursor query; keyword and MIME requests are debounced by
 300 ms. Incomplete MIME values suspend media requests and show local feedback.
+`/trash` composes `TrashPage`, `useTrashPage`, and `useTrashActions` with the
+public trash feature hooks. `useInfiniteTrash` owns the dedicated cursor-paginated
+`GET /trash` collection. The page reuses the media virtual grid and ID selection;
+it does not open active-media detail routes for trashed items. Restore and permanent
+delete use trash feature mutations, retain failed selections for retry, and lock
+selection during writes. Permanent deletion requires a separate confirmation for
+captured selected IDs. Restore is disabled when selected media cannot be restored.
+Mutations refresh trash, media and album caches; failed purges also refresh restore
+eligibility. Loading, empty, initial error and cursor retry states reuse existing
+presentation components. Media soft deletion invalidates collections without
+importing consuming features; trash imports media and album only through public
+indexes, keeping dependencies acyclic.
 Other pages remain minimal placeholders. The library page composes a
 page hook consuming public media/category/tag hooks, with cursor pagination and
 TanStack Virtual rendering thumbnail cards. Its URL filters are `q`, `type`,

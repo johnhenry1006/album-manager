@@ -10,17 +10,8 @@ export const mediaApi = {
     httpClient.request(`media${mediaQueryString(params)}`, { signal }),
   detail: (mediaId, { signal } = {}) => httpClient.request(mediaPath(mediaId), { signal }),
   originalUrl: (mediaId) => httpClient.request(`${mediaPath(mediaId)}/original-url`),
-  listTrash: (params, { signal } = {}) =>
-    httpClient.request(`trash${mediaQueryString(params)}`, { signal }),
   favorite: (mediaId) => httpClient.request(`${mediaPath(mediaId)}/favorite`, { method: 'POST' }),
   unfavorite: (mediaId) =>
     httpClient.request(`${mediaPath(mediaId)}/favorite`, { method: 'DELETE' }),
   trash: (mediaId) => httpClient.request(mediaPath(mediaId), { method: 'DELETE' }),
-  restore: (mediaId) =>
-    httpClient.request(`trash/${encodeURIComponent(mediaId)}/restore`, { method: 'POST' }),
-  permanentDelete: (mediaId, confirm) =>
-    httpClient.request(`trash/${encodeURIComponent(mediaId)}/permanent`, {
-      method: 'DELETE',
-      body: { confirm },
-    }),
 };

@@ -8,10 +8,9 @@ adapter and query keys are private; no API client is exported.
   only after an explicit user action to sign an original link. It never runs on
   mount, refetch, or query invalidation; each invocation signs a fresh URL.
   Links must be absolute HTTP(S) URLs; malformed links use centralized API errors.
-- `useInfiniteMedia(filters, { collection = 'media', enabled })` returns the
+- `useInfiniteMedia(filters, { enabled })` returns the
   infinite query plus memoized flattened `items` and the latest `nextCursor`. Filters match `GET /media`, including
-  `album`, `favorite`, and `q`. Use `{ collection: 'trash' }` with only `limit`
-  for trash. Call `fetchNextPage` when `hasNextPage` is true. The hook owns the
+  `album`, `favorite`, and `q`. Call `fetchNextPage` when `hasNextPage` is true. The hook owns the
   opaque cursor; the backend owns deterministic ordering and its ID tie-breaker.
 - `useMediaSelection(initialIds)` exposes `selectedIds`, `selectedCount`,
   `isSelected`, `select`, `deselect`, `toggle`, `selectAll`, `clearSelection`, and
@@ -27,9 +26,12 @@ adapter and query keys are private; no API client is exported.
 - `useFavoriteMedia()` returns `favorite` and `unfavorite` mutation objects.
   Each accepts a media ID through `mutate` or `mutateAsync`. Favorites lists use
   `useInfiniteMedia({ favorite: true })`.
-- `useMediaActions()` returns `trash`, `restore`, and `permanentDelete` mutation
-  objects. Trash and restore accept IDs. Permanent deletion accepts
-  `{ mediaId, confirm: true }` and rejects missing confirmation.
+- `useMediaActions()` returns the `trash` mutation (accepting a media ID) and
+  `refresh` for media queries. Moving media to trash invalidates all collections
+  to update trash and album views without creating a reverse feature dependency.
+  Trash listing, restore, and permanent delete belong to `features/trash`.
+- `removeMediaDetail(queryClient, mediaId)` clears cached detail data, including
+  mounted observers. The trash feature reuses this for permanent deletion.
 - `useMediaVariants(media, { allowThumbnailFallback = true })` derives `variants`, `thumbnail`, `preview`, and
   `placeholder` from existing detail or lightweight gallery data. It makes no
   requests and excludes original variants. Detail viewers pass
@@ -38,8 +40,7 @@ adapter and query keys are private; no API client is exported.
   can refetch the owning query when a display URL expires.
 
 Queries forward cancellation signals. Mutations refresh media collections and
-cached details on success; deletion removes cached detail. Permanent deletion
-also refreshes on failure because a partial purge can prevent restoration.
+cached details on success; deletion removes cached detail.
 Errors come from the shared HTTP error layer. Mutation objects expose loading
 and error state; this feature does not impose notifications or page navigation.
 
