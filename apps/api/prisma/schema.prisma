@@ -105,6 +105,7 @@ model Media {
   categories       MediaCategory[]
   tags             MediaTag[]
   favorites        Favorite[]
+  semanticIndexes  SemanticIndex[]
   metadata         MediaMetadata?
   uploadFiles      UploadFile[]    @relation("UploadFileMedia")
   duplicateFiles   UploadFile[]    @relation("UploadFileDuplicate")
@@ -309,4 +310,25 @@ model AuthSession {
   @@index([userId])
   @@index([expiresAt, id])
   @@map("auth_sessions")
+}
+
+// Derived AI data only. No changes to storage, manual taxonomy or media lifecycle.
+model SemanticIndex {
+  mediaId        String   @map("media_id") @db.Uuid
+  space          String   @db.VarChar(128)
+  model          String   @db.VarChar(128)
+  dimensions     Int
+  sourceChecksum String   @map("source_checksum") @db.VarChar(64)
+  vector         Float[]
+  tags           Json     @default("[]")
+  tagRevision    String   @map("tag_revision") @db.VarChar(128)
+  status         String   @db.VarChar(16)
+  errorCode      String?  @map("error_code") @db.VarChar(64)
+  updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  media          Media    @relation(fields: [mediaId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@id([mediaId, space])
+  @@index([space, model, dimensions, status])
+  @@index([status, updatedAt])
+  @@map("semantic_indexes")
 }

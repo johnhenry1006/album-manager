@@ -39,6 +39,11 @@ Start with [architecture rules](docs/architecture/ARCHITECTURE_RULES.md),
 [backend structure](docs/architecture/BACKEND_STRUCTURE.md), and
 [the development guide](docs/DEVELOPMENT.md).
 
+Optional AI search has a separate provider-neutral module and indexing worker for image
+embeddings, text-to-image search, generated tags, and similarity search. It is disabled
+until a server-only provider adapter is configured. See [semantic search](docs/architecture/SEMANTIC_SEARCH.md)
+for setup, API contracts, and vector-index limits. Existing metadata search remains available.
+
 ## Tech stack
 
 | Area                 | Implementation                                                                         |

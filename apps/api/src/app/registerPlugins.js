@@ -5,6 +5,7 @@ import { authProtection, authRoutes } from '#modules/auth/index.js';
 import { dashboardRoutes } from '#modules/dashboard/index.js';
 import healthModule from '#modules/health/index.js';
 import { mediaDetailRoutes, mediaFavoriteRoutes, mediaRoutes, mediaTrashRoutes } from '#modules/media/index.js';
+import { semanticRoutes } from '#modules/semantic-search/index.js';
 import { imageOptimizationSettingsRoutes, storageSettingsRoutes } from '#modules/settings/index.js';
 import { taxonomyRoutes } from '#modules/taxonomy/index.js';
 import { uploadRoutes } from '#modules/uploads/index.js';
@@ -22,6 +23,7 @@ export function registerPlugins(
         imageOptimizationSettingsService,
         storageStatisticsService,
         taxonomyService,
+        semanticSearchService,
         uploadService,
         mediaListService,
         mediaDetailService,
@@ -49,6 +51,7 @@ export function registerPlugins(
                     protectedApi.register(storageSettingsRoutes, { service: storageStatisticsService });
                 if (dashboardService) protectedApi.register(dashboardRoutes, { service: dashboardService });
                 if (albumService) protectedApi.register(albumRoutes, { service: albumService });
+                if (semanticSearchService) protectedApi.register(semanticRoutes, { service: semanticSearchService });
                 if (taxonomyService) protectedApi.register(taxonomyRoutes, { service: taxonomyService });
                 if (uploadService) protectedApi.register(uploadRoutes, { service: uploadService });
                 if (mediaListService) protectedApi.register(mediaRoutes, { service: mediaListService });

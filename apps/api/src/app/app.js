@@ -14,6 +14,7 @@ import {
     createMediaListModule,
     createMediaTrashModule,
 } from '#modules/media/index.js';
+import { createSemanticSearchModule } from '#modules/semantic-search/index.js';
 import { createSettingsModule, createStorageStatisticsModule } from '#modules/settings/index.js';
 import { createTaxonomyModule } from '#modules/taxonomy/index.js';
 import { createUploadModule } from '#modules/uploads/index.js';
@@ -35,6 +36,8 @@ export function buildApp({
     imageOptimizationSettingsService,
     storageStatisticsService,
     taxonomyService,
+    semanticSearchService,
+    semanticProviders,
     mediaListService,
     mediaListConfig = validateMediaListEnvironment({}),
     mediaDetailService,
@@ -54,6 +57,8 @@ export function buildApp({
             imageOptimizationSettingsService,
             storageStatisticsService,
             taxonomyService,
+            semanticSearchService,
+            semanticProviders,
             mediaListService,
             mediaDetailService,
             mediaFavoriteService,
@@ -128,7 +133,14 @@ export function buildApp({
     const storageStatistics =
         storageStatisticsService ??
         (database?.client ? createStorageStatisticsModule({ client: database.client, storage }).service : undefined);
+    const semanticSearch =
+        semanticSearchService ??
+        (semanticProviders && database?.client
+            ? createSemanticSearchModule({ client: database.client, ...semanticProviders }).service
+            : undefined);
+    if (semanticProviders && !semanticSearch) throw new Error('Semantic search requires a database');
     registerPlugins(app, config, {
+        semanticSearchService: semanticSearch,
         authService: authentication,
         authConfig,
         storageStatisticsService: storageStatistics,

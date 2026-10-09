@@ -19,6 +19,7 @@
         "db:studio": "prisma studio --config prisma.config.js",
         "test:database": "DATABASE_TESTS=1 vitest run src/infrastructure/database/schema.test.js",
         "test:storage": "STORAGE_TESTS=1 vitest run src/infrastructure/storage/s3/s3Storage.integration.test.js",
+        "worker:semantic": "node src/jobs/semanticIndexing.server.js",
         "worker:media": "node src/jobs/mediaProcessing.server.js",
         "worker:cleanup": "node src/jobs/mediaCleanup.server.js",
         "auth:create-user": "node src/modules/auth/commands/createUser.js"

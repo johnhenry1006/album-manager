@@ -8,6 +8,7 @@ import { validateMediaListEnvironment } from '#config/mediaList.js';
 import { validateQueueEnvironment } from '#config/queue.js';
 import { validateStorageEnvironment } from '#config/storage.js';
 import { validateUploadEnvironment } from '#config/uploads.js';
+import { loadSemanticProviders } from '#infrastructure/ai/semanticProviders.js';
 import { createDatabase } from '#infrastructure/database/index.js';
 import { createQueueInfrastructure } from '#infrastructure/queue/index.js';
 import { createStorageProvider } from '#infrastructure/storage/index.js';
@@ -25,11 +26,13 @@ export async function startServer() {
     const uploadConfig = validateUploadEnvironment(environment);
     const mediaListConfig = validateMediaListEnvironment(environment);
     const mediaDetailConfig = validateMediaDetailEnvironment(environment);
+    const semanticProviders = await loadSemanticProviders(environment);
     const database = createDatabase(databaseConfig);
     const storage = createStorageProvider(storageConfig);
     const queue = createQueueInfrastructure(queueConfig);
     const app = buildApp({
         config,
+        semanticProviders,
         authConfig,
         database,
         storage,

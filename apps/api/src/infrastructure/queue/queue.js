@@ -1,7 +1,11 @@
 import { Queue } from 'bullmq';
 import Redis from 'ioredis';
 
-export const QUEUE_NAMES = Object.freeze({ MEDIA_PROCESSING: 'media-processing', MEDIA_CLEANUP: 'media-cleanup' });
+export const QUEUE_NAMES = Object.freeze({
+    MEDIA_PROCESSING: 'media-processing',
+    MEDIA_CLEANUP: 'media-cleanup',
+    SEMANTIC_INDEXING: 'semantic-indexing',
+});
 
 export function createQueueInfrastructure(
     config,

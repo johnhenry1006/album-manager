@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { readFile } from 'node:fs/promises';
 
 import pg from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -108,8 +109,8 @@ describe.skipIf(process.env.DATABASE_TESTS !== '1')('authentication migration pr
             const schema = `auth_migration_${randomUUID().replaceAll('-', '')}`;
             await client.query(`CREATE SCHEMA "${schema}"`);
             await client.query(`SET LOCAL search_path TO "${schema}"`);
-            const migrations = await readTestMigrations();
-            for (const sql of migrations.slice(0, -1)) await client.query(sql);
+            const migrations = await readTestMigrations({ before: '20261009180000_authentication' });
+            for (const sql of migrations) await client.query(sql);
             const mediaId = randomUUID();
             const favoriteId = randomUUID();
             const createdAt = new Date('2026-10-01T00:00:00Z');
@@ -122,7 +123,15 @@ describe.skipIf(process.env.DATABASE_TESTS !== '1')('authentication migration pr
                 mediaId,
                 createdAt,
             ]);
-            await client.query(migrations.at(-1));
+            await client.query(
+                await readFile(
+                    new URL(
+                        '../../../../prisma/migrations/20261009180000_authentication/migration.sql',
+                        import.meta.url,
+                    ),
+                    'utf8',
+                ),
+            );
             const { rows } = await client.query('SELECT id, media_id, user_id, created_at FROM favorites');
             expect(rows).toEqual([
                 { id: favoriteId, media_id: mediaId, user_id: LEGACY_OWNER_ID, created_at: createdAt },

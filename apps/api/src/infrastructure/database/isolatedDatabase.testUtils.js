@@ -65,11 +65,11 @@ export function createIsolatedTestDatabase() {
 }
 
 // Keep all PostgreSQL test harnesses aligned with the generated Prisma client.
-export async function readTestMigrations() {
+export async function readTestMigrations({ before } = {}) {
     const root = new URL('../../../prisma/migrations/', import.meta.url);
     const statements = [];
     const directories = (await readdir(root, { withFileTypes: true }))
-        .filter((entry) => entry.isDirectory())
+        .filter((entry) => entry.isDirectory() && (!before || entry.name < before))
         .sort((a, b) => a.name.localeCompare(b.name));
     for (const directory of directories) {
         if ((await readdir(new URL(`${directory.name}/`, root))).includes('migration.sql'))
