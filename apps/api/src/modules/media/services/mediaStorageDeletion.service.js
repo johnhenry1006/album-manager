@@ -1,4 +1,4 @@
-import { validateKey } from '#infrastructure/storage/storageValidation.js';
+import { validateMediaStorageKey } from '#infrastructure/storage/index.js';
 
 import { MediaDomainError } from './media.errors.js';
 
@@ -10,10 +10,10 @@ export function createMediaStorageDeletionService({ storage }) {
     }
     return Object.freeze({
         assertAvailable,
-        async deleteVariants(variants) {
+        async deleteVariants(variants, mediaId) {
             assertAvailable();
             // Validate the complete manifest before the first irreversible operation.
-            const keys = [...new Set(variants.map(({ storageKey }) => validateKey(storageKey)))];
+            const keys = [...new Set(variants.map(({ storageKey }) => validateMediaStorageKey(storageKey, mediaId)))];
             for (const key of keys) await storage.delete({ key });
         },
     });

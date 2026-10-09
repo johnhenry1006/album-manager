@@ -27,6 +27,10 @@ export function validateUploadFile(input, config) {
     const mimeType = typeof input.mimeType === 'string' ? input.mimeType.toLowerCase() : '';
     if (!config.supportedMimeTypes.includes(mimeType) || !Object.hasOwn(MEDIA_FORMATS, mimeType))
         throw invalidUpload('Unsupported MIME type');
+    const extension = filename.split('.').at(-1).toLowerCase();
+    const allowedExtensions = mimeType === 'image/jpeg' ? ['jpg', 'jpeg'] : [MEDIA_FORMATS[mimeType].extension];
+    if (!filename.includes('.') || !allowedExtensions.includes(extension))
+        throw invalidUpload('Filename extension does not match MIME type');
     const value = input.fileSize;
     if (
         (typeof value === 'number' && !Number.isSafeInteger(value)) ||

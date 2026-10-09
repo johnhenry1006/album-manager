@@ -1,3 +1,5 @@
+import { validateQuery } from '#shared/validation/entityInput.js';
+
 import { createUploadController } from '../controllers/upload.controller.js';
 import {
     completionResponse,
@@ -9,13 +11,21 @@ import {
     sessionParams,
     sessionQuery,
 } from '../validators/upload.schema.js';
-import { validateDuplicateResolution } from '../validators/upload.validator.js';
+import { validateDuplicateResolution, validateUploadPage } from '../validators/upload.validator.js';
 
 export default async function uploadRoutes(app, { service }) {
     const controller = createUploadController(service);
     const bodyLimit = 16 * 1024;
+    app.addHook('preValidation', async (request) => {
+        validateQuery(request.query, request.method === 'GET' ? ['limit', 'cursor'] : []);
+        if (request.method === 'GET')
+            validateUploadPage({
+                ...request.query,
+                ...(request.query.limit === undefined ? {} : { limit: Number(request.query.limit) }),
+            });
+    });
     const emptyRequest = async (request) => {
-        request.body ??= {};
+        if (request.body === undefined) request.body = {};
     };
     app.post(
         '/uploads/sessions',

@@ -6,6 +6,7 @@ import { imageOptimizationSettingsRoutes, storageSettingsRoutes } from '#modules
 import { taxonomyRoutes } from '#modules/taxonomy/index.js';
 import { uploadRoutes } from '#modules/uploads/index.js';
 import errorHandlingPlugin from '#shared/middleware/errorHandling.plugin.js';
+import securityPlugin from '#shared/middleware/security.plugin.js';
 
 export function registerPlugins(
     app,
@@ -24,6 +25,7 @@ export function registerPlugins(
     } = {},
 ) {
     app.register(errorHandlingPlugin);
+    app.register(securityPlugin, { policy: config.security });
     app.register(
         async function apiRoutes(api) {
             api.register(healthModule, { version: config.version });

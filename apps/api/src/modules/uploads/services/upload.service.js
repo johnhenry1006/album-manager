@@ -22,6 +22,13 @@ async function refreshSession(repository, id) {
     const status = sessionStatus(await repository.fileStatuses(id));
     await repository.updateSession(id, { status, ...(status === 'COMPLETED' ? { completedAt: new Date() } : {}) });
 }
+function stagingKey(file) {
+    validateUploadId(file.uploadSessionId);
+    validateUploadId(file.id);
+    const key = `uploads/${file.uploadSessionId}/${file.id}/source`;
+    if (file.storageKey && file.storageKey !== key) throw invalidUpload('Invalid upload storage key');
+    return key;
+}
 export function createUploadService({ repository, storage, queue, config, withSessionLock, withFileLock }) {
     const duplicates = createUploadDuplicateService({ storage, queue, withFileLock, refreshSession });
     return Object.freeze({
@@ -60,14 +67,22 @@ export function createUploadService({ repository, storage, queue, config, withSe
                     { filename: file.clientFilename, mimeType: file.mimeType, fileSize: file.fileSize },
                     config,
                 );
-                const key = file.storageKey ?? `uploads/${file.uploadSessionId}/${file.id}/source`;
+                const key = stagingKey(file);
                 const signed = await storage.createPresignedUploadUrl({
                     key,
                     contentType: file.mimeType,
+                    contentLength: Number(file.fileSize),
                     expiresIn: config.urlExpirySeconds,
                 });
                 await scoped.updateFile(file.id, { storageKey: key, status: 'UPLOADING', error: null });
-                return { uploadFileId: file.id, status: 'UPLOADING', ...signed };
+                return {
+                    uploadFileId: file.id,
+                    status: 'UPLOADING',
+                    url: signed.url,
+                    method: signed.method,
+                    headers: signed.headers,
+                    expiresIn: signed.expiresIn,
+                };
             });
         },
         async complete(uploadFileId) {
@@ -84,7 +99,7 @@ export function createUploadService({ repository, storage, queue, config, withSe
                         { filename: file.clientFilename, mimeType: file.mimeType, fileSize: file.fileSize },
                         config,
                     );
-                    const object = await storage.getObjectMetadata({ key: file.storageKey });
+                    const object = await storage.getObjectMetadata({ key: stagingKey(file) });
                     if (!object) throw new UploadError('UPLOAD_OBJECT_MISSING', 'Upload object is missing', 409);
                     if (
                         !Number.isSafeInteger(object.fileSize) ||

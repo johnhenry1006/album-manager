@@ -18,7 +18,10 @@ describe('trash HTTP and domain boundaries', () => {
             transaction: vi.fn(async (run) => run(repository)),
             lockMedia: vi.fn(async () => record),
             update: vi.fn(async (_id, data) => Object.assign(record, data)),
-            variantKeys: async () => [{ storageKey: 'original.jpg' }, { storageKey: 'preview.webp' }],
+            variantKeys: async () => [
+                { storageKey: `media/2026/10/08/${id}/original/source.jpg` },
+                { storageKey: `media/2026/10/08/${id}/preview/preview.webp` },
+            ],
             finalize: vi.fn(async () => {
                 record = null;
             }),
@@ -137,8 +140,28 @@ describe('trash HTTP and domain boundaries', () => {
 it('validates every storage key before deletion and deduplicates recorded keys', async () => {
     const storage = { delete: vi.fn() };
     const service = createMediaStorageDeletionService({ storage });
-    await expect(service.deleteVariants([{ storageKey: 'valid.jpg' }, { storageKey: '../invalid' }])).rejects.toThrow();
+    await expect(
+        service.deleteVariants(
+            [{ storageKey: `media/2026/10/08/${id}/original/valid.jpg` }, { storageKey: '../invalid' }],
+            id,
+        ),
+    ).rejects.toThrow();
     expect(storage.delete).not.toHaveBeenCalled();
-    await service.deleteVariants([{ storageKey: 'valid.jpg' }, { storageKey: 'valid.jpg' }]);
-    expect(storage.delete).toHaveBeenCalledExactlyOnceWith({ key: 'valid.jpg' });
+    await service.deleteVariants(
+        [
+            { storageKey: `media/2026/10/08/${id}/original/valid.jpg` },
+            { storageKey: `media/2026/10/08/${id}/original/valid.jpg` },
+        ],
+        id,
+    );
+    expect(storage.delete).toHaveBeenCalledExactlyOnceWith({ key: `media/2026/10/08/${id}/original/valid.jpg` });
+});
+
+it('validates every purge key belongs to the selected media before any deletion', async () => {
+    const storage = { delete: vi.fn() };
+    const service = createMediaStorageDeletionService({ storage });
+    const own = `media/2026/10/08/${id}/original/source.jpg`;
+    const foreign = 'media/2026/10/08/a0000000-0000-4000-8000-000000000001/original/source.jpg';
+    await expect(service.deleteVariants([{ storageKey: own }, { storageKey: foreign }], id)).rejects.toThrow();
+    expect(storage.delete).not.toHaveBeenCalled();
 });

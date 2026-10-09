@@ -57,8 +57,12 @@ function defaultResponse(url) {
   return respond({ items: [media('one'), media('two')], hasMore: false, nextCursor: null });
 }
 beforeEach(() => {
+  vi.spyOn(window, 'confirm').mockReturnValue(true);
+  vi.spyOn(window, 'confirm').mockReturnValue(true);
   vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockReturnValue(620);
+  vi.spyOn(window, 'confirm').mockReturnValue(true);
   vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(620);
+  vi.spyOn(window, 'confirm').mockReturnValue(true);
   vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockReturnValue(300);
   vi.stubGlobal(
     'ResizeObserver',
@@ -287,4 +291,15 @@ it('keeps loaded media after a cursor failure and retries the same opaque cursor
       .filter(({ url }) => url.searchParams.has('cursor'))
       .map(({ url }) => url.searchParams.get('cursor')),
   ).toEqual(['opaque+/=', 'opaque+/=']);
+});
+
+it('requires confirmation before removing selected album memberships', async () => {
+  const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
+  serve(defaultResponse);
+  setup();
+  fireEvent.click(await screen.findByRole('checkbox', { name: 'Select one.jpg' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Remove selected from album' }));
+  expect(confirm).toHaveBeenCalled();
+  expect(requests.some((request) => request.method === 'DELETE')).toBe(false);
+  expect(screen.getByText('1 selected')).toBeVisible();
 });

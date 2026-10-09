@@ -11,6 +11,17 @@ function endpointUrl(baseUrl, path) {
   ) {
     throw new TypeError('API endpoint must be a path relative to the API base URL.');
   }
+  let pathname;
+  try {
+    pathname = decodeURIComponent(path.split('?')[0].replace(/^\/+/, ''));
+  } catch {
+    throw new TypeError('Invalid API path encoding.');
+  }
+  if (
+    /[\\%]/u.test(pathname) ||
+    pathname.split('/').some((part) => !part || part === '.' || part === '..')
+  )
+    throw new TypeError('Unsafe API endpoint path.');
   return `${baseUrl.replace(/\/+$/u, '')}/${path.replace(/^\/+/, '')}`;
 }
 

@@ -39,8 +39,8 @@ export async function startServer() {
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-    startServer().catch((error) => {
-        console.error(`API startup failed: ${error.message}`);
+    startServer().catch(() => {
+        console.error('API startup failed');
         process.exitCode = 1;
     });
 }

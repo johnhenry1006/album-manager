@@ -5,7 +5,10 @@ export default async function healthRoutes(app, { version }) {
     app.get(
         '/health',
         {
-            schema: { response: { 200: healthResponseSchema } },
+            schema: {
+                querystring: { type: 'object', additionalProperties: false, properties: {} },
+                response: { 200: healthResponseSchema },
+            },
         },
         createHealthController({ version }),
     );

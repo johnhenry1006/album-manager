@@ -10,15 +10,17 @@ const cutoff = new Date('2026-09-09T00:00:00Z');
 const id = 'c0000000-0000-4000-8000-000000000001';
 function setup() {
     let record = { id, deletedAt: cutoff, purgeStartedAt: null };
-    const objects = new Set(['original.jpg', 'preview.webp', 'thumb.webp']);
+    const keys = ['original.jpg', 'preview.webp', 'thumb.webp'].map(
+        (name) => `media/2026/10/08/${id}/original/${name}`,
+    );
+    const objects = new Set(keys);
     const storage = { delete: vi.fn(async ({ key }) => objects.delete(key)) };
     const repository = {
         durableTransactions: true,
         transaction: async (run) => run(repository),
         lockMedia: async () => record,
         update: async (_id, patch) => Object.assign(record, patch),
-        variantKeys: async () =>
-            [...['original.jpg', 'preview.webp', 'thumb.webp']].map((storageKey) => ({ storageKey })),
+        variantKeys: async () => keys.map((storageKey) => ({ storageKey })),
         finalize: vi.fn(async () => {
             expect(objects.size).toBe(0);
             record = null;

@@ -74,8 +74,7 @@ loaded. There is no fallback to previews, upload staging objects, or deleted med
 ```
 
 Use the URL as issued, without modifying its hostname or query. It signs a GET
-for viewing or downloading the original; this API does not force a browser download
-with Content-Disposition. It signs a reference without probing object existence,
+for downloading the original with a signed Content-Disposition attachment override. It signs a reference without probing object existence,
 so an externally removed object may return a storage 404 when the URL is used.
 
 ## Expiration policy

@@ -193,3 +193,18 @@ describe('HTTP client', () => {
     },
   );
 });
+
+it.each([
+  '../secret',
+  'media/../../secret',
+  'media/%2e%2e/secret',
+  'media/%252e%252e/secret',
+  'media/a%2f..%2fb',
+  'media/a//b',
+])('rejects path traversal in API path %s before fetch', async (path) => {
+  const { client, fetchImpl } = clientWithResponse('{}', {
+    headers: { 'Content-Type': 'application/json' },
+  });
+  await expect(client.request(path)).rejects.toThrow(TypeError);
+  expect(fetchImpl).not.toHaveBeenCalled();
+});

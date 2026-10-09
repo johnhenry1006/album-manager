@@ -1,11 +1,13 @@
 import { QueryClientProvider } from '@tanstack/react-query';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes, useNavigate } from 'react-router';
-import { afterEach, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 
 import { createQueryClient } from '@/services/queryClient.js';
 
 import { MediaDetailPage } from './MediaDetailPage.jsx';
+
+beforeEach(() => vi.spyOn(window, 'confirm').mockReturnValue(true));
 
 const clients = [];
 const requests = [];
@@ -76,6 +78,7 @@ afterEach(() => {
   clients.length = 0;
   requests.length = 0;
   vi.unstubAllGlobals();
+  vi.restoreAllMocks();
 });
 
 it('shows the preview, metadata and memberships without requesting originals', async () => {
@@ -310,4 +313,16 @@ it('allows original signing for another media while an earlier original request 
     'href',
     'https://assets.example/other.jpg',
   );
+});
+
+it('requires confirmation before moving media to trash and renders filenames as text', async () => {
+  const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
+  serve(() => respond({ ...detail, originalFilename: '<img src=x onerror=alert(1)>.jpg' }));
+  setup();
+  fireEvent.click(await screen.findByRole('button', { name: 'Move to trash' }));
+  expect(confirm).toHaveBeenCalled();
+  expect(requests.some((request) => request.method === 'DELETE')).toBe(false);
+  expect(screen.getAllByText('<img src=x onerror=alert(1)>.jpg').length).toBeGreaterThan(0);
+  expect(document.querySelector('img[onerror]')).toBeNull();
+  confirm.mockRestore();
 });

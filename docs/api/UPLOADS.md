@@ -33,7 +33,7 @@ persisting final session completion timestamps.
 1. Create a session and register its file metadata before starting completion.
 2. Request each file's presigned upload URL.
 3. PUT bytes to that URL using the exact returned method and headers, including
-   the signed Content-Type. Storage CORS must allow the browser origin and PUT.
+   the signed Content-Type. The exact registered size is also signed; the browser sets Content-Length automatically. Storage CORS must allow the browser origin and PUT.
 4. After a successful PUT, notify the completion endpoint.
 5. Store the returned uploadFileId and mediaId; poll session pages for progress.
 
@@ -81,7 +81,7 @@ No existing bucket lifecycle policy is changed by this API.
 - IDs must be UUIDs. Filenames are normalized and must be safe basenames, without
   paths, control characters, reserved device names, or excessive UTF-8 byte length.
 - MIME types must belong to the configured supported set. Media type, extension,
-  and original format are derived from the accepted MIME type.
+  and original format are derived from the accepted MIME type. The filename extension must match, allowing jpg/jpeg for JPEG.
 - Byte size must be positive and within the configured limit. File counts are
   checked while holding the session lock, including concurrent registrations.
 - Routes accept metadata requests only, with a 16 KiB body limit; image/binary
@@ -146,3 +146,6 @@ PostgreSQL tests exercise actual HTTP composition and media repositories, concur
 completion, rollback/retry, file-count races, and equal-timestamp pagination. Redis
 tests verify actual job acceptance and duplicate suppression. Apply normal migrations
 before using the production API; tests do not migrate application tables.
+
+See [Security boundaries](../architecture/SECURITY.md) for strict request handling,
+API CORS/rate limits, MIME verification and storage deployment requirements.

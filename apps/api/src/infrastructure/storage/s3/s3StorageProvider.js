@@ -138,19 +138,40 @@ export class S3StorageProvider extends StorageProvider {
             throw new StorageError('signing');
         }
     }
-    async createPresignedUploadUrl({ key, contentType, expiresIn }) {
+    async createPresignedUploadUrl({ key, contentType, contentLength, expiresIn }) {
+        if (
+            contentLength !== undefined &&
+            (!Number.isSafeInteger(contentLength) || contentLength < 1 || contentLength > 5 * 1024 ** 3)
+        )
+            throw new TypeError('Invalid storage content length');
         validateContentType(contentType);
         return this.#presign(
-            new PutObjectCommand({ Bucket: this.#bucket, Key: validateKey(key), ContentType: contentType }),
+            new PutObjectCommand({
+                Bucket: this.#bucket,
+                Key: validateKey(key),
+                ContentType: contentType,
+                ContentLength: contentLength,
+            }),
             'PUT',
             { 'content-type': contentType },
             expiresIn,
         );
     }
-    async createPresignedDownloadUrl({ key, expiresIn, method = 'GET' }) {
+    async createPresignedDownloadUrl({ key, expiresIn, method = 'GET', download = false }) {
+        if (typeof download !== 'boolean' || (download && method !== 'GET'))
+            throw new TypeError('Invalid storage download policy');
         if (!['GET', 'HEAD'].includes(method)) throw new TypeError('Invalid storage download method');
         const Command = method === 'GET' ? GetObjectCommand : HeadObjectCommand;
-        return this.#presign(new Command({ Bucket: this.#bucket, Key: validateKey(key) }), method, {}, expiresIn);
+        return this.#presign(
+            new Command({
+                Bucket: this.#bucket,
+                Key: validateKey(key),
+                ...(download ? { ResponseContentDisposition: 'attachment' } : {}),
+            }),
+            method,
+            {},
+            expiresIn,
+        );
     }
     async copyObject({ sourceKey, destinationKey, sourceEtag }) {
         validateKey(sourceKey);

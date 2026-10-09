@@ -49,13 +49,20 @@ export function createMediaProcessingService({
                     return { status: 'DUPLICATE_PENDING', mediaId, duplicateOfMediaId: duplicate.existingMediaId };
                 }
                 const inspected = await imageProcessor.inspect(bytes);
+                const mimeType =
+                    inspected.mimeType ??
+                    Object.entries(MEDIA_FORMATS).find(([, value]) => value.format === inspected.format)?.[0];
+                if (
+                    !mimeType ||
+                    MEDIA_FORMATS[mimeType]?.type !== 'IMAGE' ||
+                    MEDIA_FORMATS[mimeType]?.format !== (original.format === 'jpg' ? 'jpeg' : original.format) ||
+                    (media.mimeType && mimeType !== media.mimeType)
+                )
+                    throw invalid('Decoded image type does not match the registered upload');
                 const metadata = await imageProcessor.extractMetadata(bytes);
                 const settings = await settingsService.getSettings();
                 const { variants } = await imageProcessor.process(bytes, settings);
                 await renditions.persist(media, original, variants);
-                const mimeType =
-                    inspected.mimeType ??
-                    Object.entries(MEDIA_FORMATS).find(([, value]) => value.format === inspected.format)?.[0];
                 await repository.finish(
                     mediaId,
                     uploadFileId,

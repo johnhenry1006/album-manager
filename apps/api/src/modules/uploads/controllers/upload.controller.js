@@ -22,7 +22,12 @@ export function createUploadController(service) {
             return reply.code(result.status === 'PROCESSING' ? 202 : 200).send(result);
         },
         async loadSession(request) {
-            return mapUploadSession(await service.loadSession(request.params.sessionId, request.query));
+            return mapUploadSession(
+                await service.loadSession(request.params.sessionId, {
+                    ...request.query,
+                    ...(request.query.limit === undefined ? {} : { limit: Number(request.query.limit) }),
+                }),
+            );
         },
     };
 }

@@ -37,8 +37,8 @@ Object keys are relative to the configured bucket, without a bucket name or lead
 | `delete`                     | `{ key }`                                               | Resolves without a value; missing-object delete is idempotent on S3                              |
 | `exists`                     | `{ key }`                                               | Boolean; permission/network/bucket errors still throw                                            |
 | `getObjectMetadata`          | `{ key }`                                               | `{ key, fileSize, contentType, etag, lastModified, metadata }`, or `null` for a missing object   |
-| `createPresignedUploadUrl`   | `{ key, contentType, expiresIn? }`                      | `{ url, method: 'PUT', headers, expiresIn }`                                                     |
-| `createPresignedDownloadUrl` | `{ key, expiresIn?, method? }`                          | `{ url, method: 'GET' or 'HEAD', headers, expiresIn }`                                           |
+| `createPresignedUploadUrl`   | `{ key, contentType, contentLength?, expiresIn? }`      | `{ url, method: 'PUT', headers, expiresIn }`                                                     |
+| `createPresignedDownloadUrl` | `{ key, expiresIn?, method?, download? }`               | `{ url, method: 'GET' or 'HEAD', headers, expiresIn }`                                           |
 | `copyObject`                 | `{ sourceKey, destinationKey, sourceEtag? }`            | `{ key, etag }` for the destination                                                              |
 | `getProviderMetadata`        | None                                                    | Safe `{ providerType, endpointHost, bucketName }`; unavailable fields are `null`; no network I/O |
 | `close`                      | None                                                    | Destroys owned clients once; subsequent operations reject                                        |
@@ -58,7 +58,7 @@ race-prone HEAD-before-PUT guard. It does not rename or delete objects when albu
 
 Signing defaults to 900 seconds and accepts 1–604800 seconds. Browser callers use the
 returned method and headers exactly, especially the signed upload `content-type`.
-GET and HEAD require separately signed URLs. URLs grant temporary access; do not log
+GET and HEAD require separately signed URLs. Optional upload `contentLength` binds the exact PUT size; browsers set that header automatically. GET `download: true` signs a fixed Content-Disposition attachment override. URLs grant temporary access; do not log
 them or place them in permanent public metadata. A presigned PUT does not validate
 business state, file contents, quota, or post-upload processing; these belong to the
 future upload workflow. No secret access key is returned. The SigV4 URL contains the
@@ -66,7 +66,7 @@ normal access-key identifier and signature, which differ from the secret signing
 
 Provider failures become a safe `StorageError` without vendor message, cause, stack
 contents, or signed URLs from the original exception. Boundary validation rejects
-invalid keys/types/expiry using fixed TypeError messages. The existing centralized
+invalid keys/types/expiry using fixed TypeError messages. Percent-encoded keys and colons also reject to avoid proxy/path ambiguity. The existing centralized
 HTTP error handler can sanitize these when future endpoints are added. A missing
 object is distinct from a missing bucket or denied permission.
 
@@ -144,3 +144,6 @@ signed HTTP operations but do not emulate a browser's CORS enforcement.
 adapter reads through its internal client and maps request/body failures to a
 sanitized StorageError. The worker never uses vendor SDK calls or signed URLs.
 Original keys are read only; all generated assets have separate derivative keys.
+
+See [Security boundaries](SECURITY.md) for HTTP policy, upload verification,
+canonical purge namespaces and deployment requirements.

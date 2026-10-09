@@ -163,3 +163,18 @@ it('reads source bytes through the provider and sanitizes read failures', async 
         operation: 'read',
     });
 });
+
+it('includes the exact browser file size in the signed PUT without asking JS to set forbidden headers', async () => {
+    const provider = createStorageProvider(config);
+    try {
+        const result = await provider.createPresignedUploadUrl({
+            key: 'media/a.jpg',
+            contentType: 'image/jpeg',
+            contentLength: 100,
+        });
+        expect(new URL(result.url).searchParams.get('X-Amz-SignedHeaders')).toContain('content-length');
+        expect(result.headers).toEqual({ 'content-type': 'image/jpeg' });
+    } finally {
+        provider.close();
+    }
+});

@@ -12,6 +12,6 @@ export function errorHandler(error, request, reply) {
           : statusCode === 404
             ? 'Route not found'
             : 'Request failed';
-    if (isServerError) request.log.error({ err: error }, 'Request failed');
+    if (isServerError) request.log.error({ statusCode, requestId: request.id }, 'Request failed');
     return reply.code(statusCode).send({ statusCode, error: code, message, requestId: request.id });
 }

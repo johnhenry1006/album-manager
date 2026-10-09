@@ -231,6 +231,7 @@ describe('media detail and original URL HTTP contracts', () => {
         expect(storage.createPresignedDownloadUrl).toHaveBeenCalledWith({
             key: `media/${id}/original.jpg`,
             method: 'GET',
+            download: true,
             expiresIn: 120,
         });
     });

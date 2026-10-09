@@ -44,13 +44,20 @@ export function useAlbumDetailActions(albumId, selection, addSelection) {
     isBusy,
     error,
     notice,
-    removeSelected: () =>
-      run(
+    removeSelected: () => {
+      if (
+        lock.current ||
+        !selection.selectedCount ||
+        !window.confirm(`Remove ${selection.selectedCount} selected media from this album?`)
+      )
+        return;
+      return run(
         selection.selectedIds,
         membership.remove.mutateAsync,
         selection.deselect,
         'Remove from album',
-      ),
+      );
+    },
     favoriteSelected: () =>
       run(
         selection.selectedIds,

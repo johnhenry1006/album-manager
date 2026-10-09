@@ -36,6 +36,7 @@ it('returns a real temporary S3 GET signature against the public endpoint withou
         const response = await app.inject(`/api/media/${id}/original-url`);
         expect(response.statusCode).toBe(200);
         const signed = new URL(response.json().url);
+        expect(signed.searchParams.get('response-content-disposition')).toBe('attachment');
         expect(signed.origin).toBe('https://assets.example');
         expect(signed.searchParams.get('X-Amz-Expires')).toBe('120');
         expect(signed.searchParams.get('X-Amz-Signature')).toMatch(/^[a-f0-9]{64}$/);

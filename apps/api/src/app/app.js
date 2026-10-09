@@ -39,8 +39,18 @@ export function buildApp({
     mediaDetailConfig = validateMediaDetailEnvironment({}),
 } = {}) {
     const app = Fastify({
+        bodyLimit: 64 * 1024,
+        requestTimeout: 30000,
+        ajv: { customOptions: { removeAdditional: false, coerceTypes: false, useDefaults: false } },
         logger: logger ?? {
             level: config.logLevel,
+            serializers: {
+                req: (request) => ({
+                    method: request.method,
+                    url: request.url?.split('?')[0],
+                    remoteAddress: request.ip,
+                }),
+            },
             redact: ['req.headers.authorization', 'req.headers.cookie', 'res.headers["set-cookie"]'],
         },
         forceCloseConnections: 'idle',

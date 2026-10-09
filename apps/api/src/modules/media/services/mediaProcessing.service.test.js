@@ -332,6 +332,7 @@ it('uses fresh persisted settings for subsequent worker jobs while preserving or
         .png()
         .toBuffer();
     const first = setup({ settingsService, imageProcessor });
+    first.original.format = 'png';
     first.objects.set(first.original.storageKey, input);
     await first.run();
     expect(first.rows.get('optimized')).toMatchObject({ width: 400, height: 200, quality: 80 });
@@ -344,6 +345,7 @@ it('uses fresh persisted settings for subsequent worker jobs while preserving or
         thumbnailSizes: [40],
     });
     const second = setup({ settingsService, imageProcessor });
+    second.original.format = 'png';
     second.objects.set(second.original.storageKey, input);
     await second.run();
     expect(second.rows.get('optimized')).toMatchObject({ width: 200, height: 100, quality: 94 });
@@ -351,4 +353,34 @@ it('uses fresh persisted settings for subsequent worker jobs while preserving or
     expect(second.rows.has('thumbnail-40')).toBe(true);
     expect(second.objects.get(second.original.storageKey)).toEqual(input);
     expect(second.media.status).toBe('READY');
+});
+
+it('rejects decoded image MIME mismatches before generating or publishing variants', async () => {
+    const context = setup();
+    context.media.mimeType = 'image/jpeg';
+    context.imageProcessor.inspect.mockResolvedValue({
+        width: 100,
+        height: 50,
+        aspectRatio: 2,
+        format: 'png',
+        mimeType: 'image/png',
+    });
+    await expect(context.run()).rejects.toThrow();
+    expect(context.imageProcessor.process).not.toHaveBeenCalled();
+    expect(context.repository.finish).not.toHaveBeenCalled();
+    expect(context.file.status).toBe('FAILED');
+});
+
+it('accepts a real AVIF source while validating its decoded container type', async () => {
+    const input = await sharp({ create: { width: 16, height: 8, channels: 3, background: 'red' } })
+        .avif()
+        .toBuffer();
+    const settingsService = new ImageOptimizationSettingsService({ repository: { findByKey: async () => null } });
+    const context = setup({ imageProcessor: new SharpImageProcessor(), settingsService });
+    context.media.mimeType = 'image/avif';
+    context.original.format = 'avif';
+    context.objects.set(context.original.storageKey, input);
+    await context.run();
+    expect(context.file.status).toBe('READY');
+    expect(context.media.mimeType).toBe('image/avif');
 });

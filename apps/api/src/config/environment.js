@@ -1,5 +1,6 @@
 import { isIP } from 'node:net';
 
+import { validateSecurityEnvironment } from './security.js';
 import { appVersion } from './version.js';
 
 const environments = new Set(['development', 'test', 'production']);
@@ -34,6 +35,7 @@ export function validateEnvironment(environment) {
         invalid('API_HOST');
     }
     return Object.freeze({
+        security: validateSecurityEnvironment(environment),
         nodeEnv,
         host,
         logLevel,

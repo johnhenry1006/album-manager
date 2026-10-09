@@ -55,6 +55,7 @@ describe('upload domain', () => {
         expect(context.storage.createPresignedUploadUrl).toHaveBeenCalledWith({
             key: `uploads/${session.id}/${file.id}/source`,
             contentType: 'image/jpeg',
+            contentLength: 100,
             expiresIn: 900,
         });
     });

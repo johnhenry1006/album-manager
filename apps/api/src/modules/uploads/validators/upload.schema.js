@@ -30,7 +30,7 @@ export const fileBody = {
 export const sessionQuery = {
     type: 'object',
     additionalProperties: false,
-    properties: { limit: { type: 'integer', minimum: 1, maximum: 100, default: 25 }, cursor: id },
+    properties: { limit: { type: 'string', pattern: '^[0-9]{1,3}$' }, cursor: id },
 };
 export const completionResponse = {
     type: 'object',

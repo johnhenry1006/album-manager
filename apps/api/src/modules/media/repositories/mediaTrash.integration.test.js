@@ -8,6 +8,7 @@ import { buildApp } from '../../../app/app.js';
 import * as mediaModule from '../index.js';
 
 const ids = [1, 2, 3, 4].map((n) => `c0000000-0000-4000-8000-${String(n).padStart(12, '0')}`);
+const objectKey = (filename) => `media/2026/10/08/${ids[0]}/original/${filename}`;
 const mediaData = {
     type: 'IMAGE',
     status: 'READY',
@@ -125,7 +126,7 @@ describe.skipIf(process.env.DATABASE_TESTS !== '1')('trash lifecycle with Postgr
                 data: { name: 'Album', slug: 'album', coverMediaId: ids[0], media: { create: { mediaId: ids[0] } } },
             });
             for (const type of types) {
-                const storageKey = `${type}.jpg`;
+                const storageKey = objectKey(`${type}.jpg`);
                 objects.add(storageKey);
                 await client.mediaVariant.create({
                     data: { mediaId: ids[0], type, format: 'jpg', storageKey, fileSize: 10n },
@@ -133,7 +134,7 @@ describe.skipIf(process.env.DATABASE_TESTS !== '1')('trash lifecycle with Postgr
             }
             expect((await request('DELETE', `/api/trash/${ids[0]}/permanent`, { confirm: true })).statusCode).toBe(204);
             expect(objects.size).toBe(0);
-            expect(removed.sort()).toEqual(types.map((type) => `${type}.jpg`).sort());
+            expect(removed.sort()).toEqual(types.map((type) => objectKey(`${type}.jpg`)).sort());
             expect(await client.media.count()).toBe(0);
             expect(await client.mediaVariant.count()).toBe(0);
             expect(await client.favorite.count()).toBe(0);
@@ -147,8 +148,8 @@ describe.skipIf(process.env.DATABASE_TESTS !== '1')('trash lifecycle with Postgr
         await fixture(async ({ client, scoped, storage, objects, request }) => {
             await client.media.create({ data: { id: ids[0], ...mediaData, deletedAt: new Date() } });
             for (const [type, key] of [
-                ['ORIGINAL', 'a.jpg'],
-                ['THUMBNAIL', 'b.jpg'],
+                ['ORIGINAL', objectKey('a.jpg')],
+                ['THUMBNAIL', objectKey('b.jpg')],
             ]) {
                 objects.add(key);
                 await client.mediaVariant.create({
@@ -159,13 +160,13 @@ describe.skipIf(process.env.DATABASE_TESTS !== '1')('trash lifecycle with Postgr
             storage.delete = async ({ key }) => {
                 expect((await client.media.findUnique({ where: { id: ids[0] } })).purgeStartedAt).toBeInstanceOf(Date);
                 expect((await request('POST', `/api/trash/${ids[0]}/restore`)).statusCode).toBe(409);
-                if (key === 'b.jpg') throw new Error('private storage credentials');
+                if (key === objectKey('b.jpg')) throw new Error('private storage credentials');
                 await remove({ key });
             };
             const response = await request('DELETE', `/api/trash/${ids[0]}/permanent`, { confirm: true });
             expect(response.statusCode).toBe(500);
             expect(response.body).not.toContain('private storage credentials');
-            expect(objects.has('a.jpg')).toBe(false);
+            expect(objects.has(objectKey('a.jpg'))).toBe(false);
             expect(await client.mediaVariant.count()).toBe(2);
             storage.delete = remove;
             const restarted = mediaModule.createMediaTrashModule({ client: scoped, storage }).service;
@@ -251,13 +252,13 @@ describe.skipIf(process.env.DATABASE_TESTS !== '1')('trash lifecycle with Postgr
             const writer = variants.withMediaLock(ids[0], async (service) => {
                 locked();
                 await gate;
-                objects.add('late.webp');
+                objects.add(objectKey('late.webp'));
                 await service.create({
                     mediaId: ids[0],
                     type: 'THUMBNAIL',
                     format: 'webp',
                     name: 'late',
-                    storageKey: 'late.webp',
+                    storageKey: objectKey('late.webp'),
                     fileSize: 10n,
                 });
             });

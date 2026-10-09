@@ -27,7 +27,7 @@ export function useMediaDetailActions(mediaId, media, { isRefreshing = false } =
     (media.favorite ? unfavorite : favorite).mutate(mediaId);
   };
   const moveToTrash = () => {
-    if (disabled) return;
+    if (disabled || !window.confirm(`Move ${media.originalFilename} to trash?`)) return;
     trash.mutate(mediaId, {
       onSuccess: () => {
         if (currentId.current === mediaId) navigate('/media', { replace: true });

@@ -121,3 +121,5 @@ See [Code quality foundations](CODE_QUALITY.md) for commands, aliases, and tooli
 
 Do not pre-create business modules, storage implementations, schemas, endpoints,
 authentication, or speculative abstractions during the foundation phase.
+
+See [Security boundaries](SECURITY.md) for the single-user trust model and implemented protections.

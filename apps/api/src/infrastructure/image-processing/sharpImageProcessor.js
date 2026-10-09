@@ -37,7 +37,7 @@ export class SharpImageProcessor extends ImageProcessor {
                     png: 'image/png',
                     webp: 'image/webp',
                     gif: 'image/gif',
-                    heif: 'image/avif',
+                    heif: metadata.compression === 'av1' ? 'image/avif' : 'image/heic',
                     tiff: 'image/tiff',
                     svg: 'image/svg+xml',
                 }[metadata.format] ?? 'application/octet-stream',

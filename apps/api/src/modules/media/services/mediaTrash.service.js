@@ -31,7 +31,7 @@ export function createMediaTrashService({ repository, storageDeletion, storage, 
         });
         if (variants === null) return false;
         // The marker is committed. Storage errors leave rows and keys intact for retry.
-        await storageDeletion.deleteVariants(variants);
+        await storageDeletion.deleteVariants(variants, mediaId);
         await repository.transaction(async (tx) => {
             const record = await tx.lockMedia(mediaId);
             if (!record) return; // Another idempotent purge finished first.

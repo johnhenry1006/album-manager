@@ -46,3 +46,11 @@ describe('storage keys', () => {
         expect(() => generateStorageKey({ ...input, ...invalid })).toThrow(TypeError);
     });
 });
+
+it.each(['media/%2e%2e/secret', 'media/%252e%252e/secret', 'media/a%2fb', 'media/a%5cb', 'media/a://b'])(
+    'rejects ambiguous encoded storage key %s',
+    async (key) => {
+        const { validateKey } = await import('./storageValidation.js');
+        expect(() => validateKey(key)).toThrow(TypeError);
+    },
+);
