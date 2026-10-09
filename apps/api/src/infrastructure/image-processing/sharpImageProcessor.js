@@ -66,7 +66,7 @@ export class SharpImageProcessor extends ImageProcessor {
         const options = validateImageOptimizationOptions(inputOptions, { complete: true });
         const source = sourceBytes(input);
         const specifications = buildVariantSpecifications(options);
-        const encoder = selectWebpConfig(options.mode);
+        const encoder = selectWebpConfig(options.optimizationMode, options);
         try {
             const inspected = await this.#inspect(source);
             const variants = [];
@@ -75,8 +75,8 @@ export class SharpImageProcessor extends ImageProcessor {
                 const { data, info } = await this.#pipeline(source)
                     .autoOrient()
                     .resize({
-                        width: specification.maxSize,
-                        height: specification.maxSize,
+                        width: specification.maxWidth,
+                        height: specification.maxHeight,
                         fit: 'inside',
                         withoutEnlargement: true,
                     })
@@ -84,12 +84,13 @@ export class SharpImageProcessor extends ImageProcessor {
                     .toBuffer({ resolveWithObject: true });
                 variants.push({
                     ...specification,
+                    maxSize: Math.max(specification.maxWidth, specification.maxHeight),
                     data,
                     width: info.width,
                     height: info.height,
                     aspectRatio: info.width / info.height,
                     fileSize: data.length,
-                    format: options.format,
+                    format: options.outputFormat,
                     contentType: 'image/webp',
                     quality: encoder.lossless ? null : encoder.quality,
                     losslessEncoding: encoder.lossless,

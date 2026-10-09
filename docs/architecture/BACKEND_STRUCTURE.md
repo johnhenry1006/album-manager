@@ -59,6 +59,8 @@ an injected provider backed by an S3-compatible adapter; application shutdown re
 its clients. A Redis/BullMQ producer accepts media-processing jobs and follows application readiness
 and shutdown. Cache adapters remain unimplemented. A dedicated BullMQ media worker validates jobs and enters focused media processing services. Image processing
 uses an injected Sharp adapter and validated settings from the focused settings domain.
+The settings module registers GET/PATCH image optimization settings when a database is supplied;
+see [Image optimization settings](../api/IMAGE_OPTIMIZATION_SETTINGS.md).
 See [Image processing](IMAGE_PROCESSING.md) for contracts, defaults, and rendition persistence. See [Media-processing worker](MEDIA_PROCESSING.md) for startup and retry behavior.
 The shared media domain and upload module own their documented business responsibilities.
 See [Database conventions](../database/DATABASE_RULES.md) for client injection and migrations.

@@ -1,6 +1,10 @@
 import { createHash } from 'node:crypto';
 
+import sharp from 'sharp';
 import { describe, expect, it, vi } from 'vitest';
+
+import { SharpImageProcessor } from '#infrastructure/image-processing/index.js';
+import { ImageOptimizationSettingsService } from '#modules/settings/index.js';
 
 import { createMediaProcessingService } from './mediaProcessing.service.js';
 
@@ -10,7 +14,7 @@ const duplicateId = 'a0000000-0000-4000-8000-000000000003';
 const bytes = Buffer.from('original encoded image');
 const checksum = createHash('sha256').update(bytes).digest('hex');
 
-function setup() {
+function setup(overrides = {}) {
     const media = {
         id: mediaId,
         type: 'IMAGE',
@@ -123,6 +127,7 @@ function setup() {
                 },
             }),
     };
+    Object.assign(dependencies, overrides);
     return {
         ...dependencies,
         media,
@@ -310,4 +315,40 @@ it('preserves admission on retry when another upload later explicitly accepts du
     expect(context.media.status).toBe('READY');
     expect(context.file.status).toBe('READY');
     expect(context.duplicateDetectionService.detectDuplicateByChecksum).toHaveBeenCalledTimes(2);
+});
+
+it('uses fresh persisted settings for subsequent worker jobs while preserving originals', async () => {
+    let value = {};
+    const repository = {
+        findByKey: async () => ({ key: 'imageOptimization', value }),
+        upsert: async (_key, updated) => {
+            value = updated;
+        },
+        withSettingsLock: async (_key, run) => run(repository),
+    };
+    const settingsService = new ImageOptimizationSettingsService({ repository });
+    const imageProcessor = new SharpImageProcessor();
+    const input = await sharp({ create: { width: 400, height: 200, channels: 3, background: 'red' } })
+        .png()
+        .toBuffer();
+    const first = setup({ settingsService, imageProcessor });
+    first.objects.set(first.original.storageKey, input);
+    await first.run();
+    expect(first.rows.get('optimized')).toMatchObject({ width: 400, height: 200, quality: 80 });
+    await settingsService.patchSettings({
+        optimizedMaxWidth: 300,
+        optimizedMaxHeight: 100,
+        previewMaxWidth: 80,
+        optimizationMode: 'HIGH_QUALITY',
+        highQuality: 94,
+        thumbnailSizes: [40],
+    });
+    const second = setup({ settingsService, imageProcessor });
+    second.objects.set(second.original.storageKey, input);
+    await second.run();
+    expect(second.rows.get('optimized')).toMatchObject({ width: 200, height: 100, quality: 94 });
+    expect(second.rows.get('preview')).toMatchObject({ width: 80, height: 40, quality: 94 });
+    expect(second.rows.has('thumbnail-40')).toBe(true);
+    expect(second.objects.get(second.original.storageKey)).toEqual(input);
+    expect(second.media.status).toBe('READY');
 });

@@ -3,10 +3,16 @@ import { describe, expect, it } from 'vitest';
 import { buildVariantSpecifications, calculateDimensions, selectWebpConfig } from './imageProcessing.utils.js';
 
 const options = {
-    mode: 'BALANCED',
-    format: 'webp',
-    optimizedMaxSize: 2560,
-    previewMaxSize: 1600,
+    optimizationMode: 'BALANCED',
+    outputFormat: 'webp',
+    optimizedMaxWidth: 2560,
+    optimizedMaxHeight: 2560,
+    previewMaxWidth: 1600,
+    previewMaxHeight: 1600,
+    balancedQuality: 80,
+    highQuality: 90,
+    maximumCompressionQuality: 60,
+    keepOriginal: true,
     thumbnailSizes: [800, 400, 200],
     placeholderEnabled: false,
     placeholderMaxSize: 32,
@@ -52,18 +58,19 @@ describe('mode and rendition selection', () => {
     });
     it('generates all sizes with distinct rendition identities', () => {
         expect(buildVariantSpecifications(options)).toEqual([
-            { type: 'OPTIMIZED', name: 'optimized', maxSize: 2560 },
-            { type: 'PREVIEW', name: 'preview', maxSize: 1600 },
-            { type: 'THUMBNAIL', name: 'thumbnail-800', maxSize: 800 },
-            { type: 'THUMBNAIL', name: 'thumbnail-400', maxSize: 400 },
-            { type: 'THUMBNAIL', name: 'thumbnail-200', maxSize: 200 },
+            { type: 'OPTIMIZED', name: 'optimized', maxWidth: 2560, maxHeight: 2560 },
+            { type: 'PREVIEW', name: 'preview', maxWidth: 1600, maxHeight: 1600 },
+            { type: 'THUMBNAIL', name: 'thumbnail-800', maxWidth: 800, maxHeight: 800 },
+            { type: 'THUMBNAIL', name: 'thumbnail-400', maxWidth: 400, maxHeight: 400 },
+            { type: 'THUMBNAIL', name: 'thumbnail-200', maxWidth: 200, maxHeight: 200 },
         ]);
     });
     it('generates a tiny placeholder only when enabled', () => {
         expect(buildVariantSpecifications({ ...options, placeholderEnabled: true }).at(-1)).toEqual({
             type: 'BLUR_PLACEHOLDER',
             name: 'placeholder',
-            maxSize: 32,
+            maxWidth: 32,
+            maxHeight: 32,
         });
     });
     it('requires complete normalized processing options instead of loading defaults', () => {

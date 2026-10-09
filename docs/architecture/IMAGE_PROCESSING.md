@@ -3,7 +3,7 @@
 `apps/api/src/infrastructure/image-processing/index.js` exports the `ImageProcessor`
 contract, `SharpImageProcessor`, and sanitized `ImageProcessingError`. The adapter
 accepts encoded `Buffer`/`Uint8Array` bytes and returns derivative buffers. It does
-not read settings, environment variables, storage, or persistence. The dedicated media worker consumes this adapter; HTTP settings routes are not wired yet.
+not read settings, environment variables, storage, or persistence. The dedicated media worker consumes this adapter; HTTP settings routes are documented in [Image optimization settings](../api/IMAGE_OPTIMIZATION_SETTINGS.md).
 
 Composition uses the settings module's public interface:
 
@@ -24,7 +24,7 @@ options)` returns `{ source, variants }`. Each variant has `type`, a distinct
 `format`, `contentType`, `quality`, and `losslessEncoding`.
 
 All derivatives normalize EXIF rotation and mirroring, preserve aspect ratio,
-fit within the configured square, and never upscale. Source bytes are copied;
+fit within the configured width/height bounds, and never upscale. Source bytes are copied;
 there is no write-in-place operation. Derivatives omit source metadata. Processing
 is sequential to limit simultaneous native decoding/encoding memory. The default
 input limit is 100 million pixels, configurable through constructor injection.
@@ -61,9 +61,9 @@ See Sharp's [WebP options](https://sharp.pixelplumbing.com/api-output/#webp) and
 ## Settings boundary
 
 `ImageOptimizationSettingsService` exposes `getSettings()` and
-`replaceOverrides(input)`. Its injected repository is the only settings code
+`patchSettings(input)` and `replaceOverrides(input)`. Its injected repository is the only settings code
 that accesses Prisma. The `ApplicationSetting` key is `imageOptimization`; its
-JSON value contains partial overrides. Missing rows and empty overrides return
+JSON value contains validated settings or partial overrides. Missing rows and empty overrides return
 the application defaults. `replaceOverrides` replaces the entire override object;
 an empty object resets defaults. No cache is used: each read produces a fresh,
 immutable, complete snapshot for a caller to use throughout a job.
@@ -75,6 +75,11 @@ eight distinct sizes. Invalid persisted values fail with
 `INVALID_PERSISTED_IMAGE_SETTINGS` (500), without exposing those values or silently
 changing processing behavior. Invalid replacement input fails with
 `INVALID_IMAGE_SETTINGS` (400), before persistence. Repository failures propagate.
+
+The public fields, defaults, bounds, legacy compatibility, and atomic PATCH
+semantics are documented in [Image optimization settings](../api/IMAGE_OPTIMIZATION_SETTINGS.md).
+Lossy quality profiles are configurable through settings; the table above shows defaults.
+`keepOriginal` must always be true. HTTP controllers use the same service as jobs.
 
 The settings domain and adapter share a pure options contract in `shared`.
 The adapter requires every normalized field and supplies no runtime defaults.

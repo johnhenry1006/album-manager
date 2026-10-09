@@ -100,3 +100,30 @@ it('extracts supported EXIF camera data and reports inspected MIME', async () =>
         .toBuffer();
     expect(await processor.extractMetadata(png)).toEqual({});
 });
+
+it.each([
+    ['BALANCED', 'balancedQuality', 71],
+    ['HIGH_QUALITY', 'highQuality', 93],
+    ['MAX_COMPRESSION', 'maximumCompressionQuality', 42],
+])('honors rectangular settings and custom quality for %s', async (optimizationMode, field, quality) => {
+    const input = await sharp({ create: { width: 400, height: 200, channels: 3, background: 'red' } })
+        .png()
+        .toBuffer();
+    const snapshot = Buffer.from(input);
+    const result = await new SharpImageProcessor().process(
+        input,
+        await options({
+            optimizationMode,
+            [field]: quality,
+            optimizedMaxWidth: 300,
+            optimizedMaxHeight: 100,
+            previewMaxWidth: 80,
+            previewMaxHeight: 90,
+            thumbnailSizes: [40],
+        }),
+    );
+    expect(result.variants[0]).toMatchObject({ width: 200, height: 100, quality });
+    expect(result.variants[1]).toMatchObject({ width: 80, height: 40, quality });
+    expect(result.variants[2]).toMatchObject({ width: 40, height: 20, quality });
+    expect(input).toEqual(snapshot);
+});

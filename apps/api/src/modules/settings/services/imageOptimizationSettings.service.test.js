@@ -3,10 +3,16 @@ import { expect, it, vi } from 'vitest';
 import { ImageOptimizationSettingsService } from '../index.js';
 
 const defaults = {
-    mode: 'BALANCED',
-    format: 'webp',
-    optimizedMaxSize: 2560,
-    previewMaxSize: 1600,
+    optimizationMode: 'BALANCED',
+    outputFormat: 'webp',
+    optimizedMaxWidth: 2560,
+    optimizedMaxHeight: 2560,
+    previewMaxWidth: 1600,
+    previewMaxHeight: 1600,
+    balancedQuality: 80,
+    highQuality: 90,
+    maximumCompressionQuality: 60,
+    keepOriginal: true,
     thumbnailSizes: [800, 400, 200],
     placeholderEnabled: false,
     placeholderMaxSize: 32,
@@ -16,6 +22,7 @@ function setup(value, exists = true) {
         findByKey: vi.fn(async () => (exists ? { key: 'imageOptimization', value } : null)),
         upsert: vi.fn(async (key, updated) => ({ key, value: updated })),
     };
+    repository.withSettingsLock = async (_key, run) => run(repository);
     return { service: new ImageOptimizationSettingsService({ repository }), repository };
 }
 it('returns the project defaults when no override exists', async () => {
@@ -31,8 +38,9 @@ it('merges validated persisted overrides into a complete options snapshot', asyn
         }).service.getSettings(),
     ).toEqual({
         ...defaults,
-        mode: 'HIGH_QUALITY',
-        optimizedMaxSize: 2048,
+        optimizationMode: 'HIGH_QUALITY',
+        optimizedMaxWidth: 2048,
+        optimizedMaxHeight: 2048,
         thumbnailSizes: [600, 300],
         placeholderEnabled: true,
     });
@@ -63,8 +71,8 @@ it('does not turn repository failures into application defaults', async () => {
 });
 it('validates later API override replacements before persistence', async () => {
     const { service, repository } = setup({});
-    expect(await service.replaceOverrides({ mode: 'LOSSLESS' })).toEqual({ ...defaults, mode: 'LOSSLESS' });
-    expect(repository.upsert).toHaveBeenCalledWith('imageOptimization', { mode: 'LOSSLESS' });
+    expect(await service.replaceOverrides({ mode: 'LOSSLESS' })).toEqual({ ...defaults, optimizationMode: 'LOSSLESS' });
+    expect(repository.upsert).toHaveBeenCalledWith('imageOptimization', { optimizationMode: 'LOSSLESS' });
     await expect(service.replaceOverrides({ thumbnailSizes: [-1] })).rejects.toMatchObject({ statusCode: 400 });
     expect(repository.upsert).toHaveBeenCalledTimes(1);
 });
@@ -73,5 +81,33 @@ it('fetches fresh overrides for each job without exposing mutable defaults', asy
     const first = await service.getSettings();
     expect(() => first.thumbnailSizes.push(999)).toThrow(TypeError);
     repository.findByKey.mockResolvedValue({ key: 'imageOptimization', value: { mode: 'MAX_COMPRESSION' } });
-    expect(await service.getSettings()).toEqual({ ...defaults, mode: 'MAX_COMPRESSION' });
+    expect(await service.getSettings()).toEqual({ ...defaults, optimizationMode: 'MAX_COMPRESSION' });
+});
+
+it.each([
+    { optimizedMaxWidth: NaN },
+    { optimizedMaxHeight: Infinity },
+    { previewMaxWidth: 0 },
+    { previewMaxHeight: 16384 },
+    { balancedQuality: '80' },
+    { highQuality: -1 },
+    { maximumCompressionQuality: 101 },
+    { keepOriginal: false },
+])('enforces new settings invariants at the service boundary: %j', async (input) => {
+    const { service, repository } = setup({});
+    await expect(service.patchSettings(input)).rejects.toMatchObject({ statusCode: 400 });
+    expect(repository.upsert).not.toHaveBeenCalled();
+});
+it('validates canonical persisted settings and returns immutable snapshots', async () => {
+    const { service, repository } = setup({ optimizedMaxWidth: 1100, balancedQuality: 70 });
+    const first = await service.getSettings();
+    expect(first).toMatchObject({
+        optimizedMaxWidth: 1100,
+        optimizedMaxHeight: 2560,
+        balancedQuality: 70,
+        keepOriginal: true,
+    });
+    expect(() => first.thumbnailSizes.push(99)).toThrow(TypeError);
+    repository.findByKey.mockResolvedValue({ value: { optimizedMaxWidth: 900, highQuality: 95 } });
+    expect(await service.getSettings()).toMatchObject({ optimizedMaxWidth: 900, highQuality: 95 });
 });

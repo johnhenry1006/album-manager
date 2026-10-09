@@ -2,6 +2,7 @@ import { albumRoutes } from '#modules/albums/index.js';
 import { dashboardRoutes } from '#modules/dashboard/index.js';
 import healthModule from '#modules/health/index.js';
 import { mediaDetailRoutes, mediaFavoriteRoutes, mediaRoutes, mediaTrashRoutes } from '#modules/media/index.js';
+import { imageOptimizationSettingsRoutes } from '#modules/settings/index.js';
 import { taxonomyRoutes } from '#modules/taxonomy/index.js';
 import { uploadRoutes } from '#modules/uploads/index.js';
 import errorHandlingPlugin from '#shared/middleware/errorHandling.plugin.js';
@@ -12,6 +13,7 @@ export function registerPlugins(
     {
         albumService,
         dashboardService,
+        imageOptimizationSettingsService,
         taxonomyService,
         uploadService,
         mediaListService,
@@ -24,6 +26,8 @@ export function registerPlugins(
     app.register(
         async function apiRoutes(api) {
             api.register(healthModule, { version: config.version });
+            if (imageOptimizationSettingsService)
+                api.register(imageOptimizationSettingsRoutes, { service: imageOptimizationSettingsService });
             if (dashboardService) api.register(dashboardRoutes, { service: dashboardService });
             if (albumService) api.register(albumRoutes, { service: albumService });
             if (taxonomyService) api.register(taxonomyRoutes, { service: taxonomyService });

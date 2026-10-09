@@ -9,6 +9,7 @@ export function createSettingsModule(client) {
     });
 }
 export { ImageOptimizationSettingsService };
+export { default as imageOptimizationSettingsRoutes } from './routes/imageOptimizationSettings.routes.js';
 export {
     IMAGE_OPTIMIZATION_SETTINGS_KEY,
     ImageOptimizationSettingsError,

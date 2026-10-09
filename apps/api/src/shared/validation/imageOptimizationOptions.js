@@ -14,16 +14,28 @@ export function validateImageOptimizationOptions(input, { complete = false } = {
         throw new TypeError('Invalid image processing options');
     const result = {};
     for (const [field, value] of Object.entries(input)) {
-        if (field === 'mode' && !IMAGE_OPTIMIZATION_MODES.includes(value))
+        if (field === 'optimizationMode' && !IMAGE_OPTIMIZATION_MODES.includes(value))
             throw new TypeError('Invalid optimization mode');
-        if (field === 'format' && value !== 'webp') throw new TypeError('Unsupported image output format');
+        if (field === 'outputFormat' && value !== 'webp') throw new TypeError('Unsupported image output format');
         if (field === 'placeholderEnabled' && typeof value !== 'boolean')
             throw new TypeError('Invalid placeholder flag');
         if (
-            ['optimizedMaxSize', 'previewMaxSize', 'placeholderMaxSize'].includes(field) &&
+            [
+                'optimizedMaxWidth',
+                'optimizedMaxHeight',
+                'previewMaxWidth',
+                'previewMaxHeight',
+                'placeholderMaxSize',
+            ].includes(field) &&
             (!Number.isInteger(value) || value < 1 || value > (field === 'placeholderMaxSize' ? 64 : 16383))
         )
             throw new TypeError('Invalid image target size');
+        if (
+            ['balancedQuality', 'highQuality', 'maximumCompressionQuality'].includes(field) &&
+            (!Number.isInteger(value) || value < 1 || value > 100)
+        )
+            throw new TypeError('Invalid image quality');
+        if (field === 'keepOriginal' && value !== true) throw new TypeError('Original media must be retained');
         if (field === 'thumbnailSizes') {
             if (
                 !Array.isArray(value) ||

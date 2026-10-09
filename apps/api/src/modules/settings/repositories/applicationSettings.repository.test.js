@@ -44,3 +44,32 @@ it('preserves infrastructure errors instead of treating an outage as missing set
     const client = { applicationSetting: { findUnique: vi.fn().mockRejectedValue(error) } };
     await expect(createApplicationSettingsRepository(client).findByKey('imageOptimization')).rejects.toBe(error);
 });
+
+it('locks even an absent setting before reading and writing on the same transaction', async () => {
+    const events = [];
+    const transaction = {
+        $queryRaw: async (sql, key) => {
+            events.push('lock');
+            expect(sql.join('?')).toContain('pg_advisory_xact_lock');
+            expect(key).toBe('imageOptimization');
+        },
+        applicationSetting: {
+            findUnique: async () => {
+                events.push('read');
+                return null;
+            },
+            upsert: async ({ create }) => {
+                events.push('write');
+                return create;
+            },
+        },
+    };
+    const client = { $transaction: async (run) => run(transaction) };
+    const repository = createApplicationSettingsRepository(client);
+    const result = await repository.withSettingsLock('imageOptimization', async (scoped) => {
+        expect(await scoped.findByKey('imageOptimization')).toBeNull();
+        return scoped.upsert('imageOptimization', { balancedQuality: 72 });
+    });
+    expect(result).toEqual({ key: 'imageOptimization', value: { balancedQuality: 72 } });
+    expect(events).toEqual(['lock', 'read', 'write']);
+});
