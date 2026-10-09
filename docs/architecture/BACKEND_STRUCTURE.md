@@ -49,6 +49,10 @@ feature to avoid duplicating their metadata contracts; category hierarchy rules 
 a dedicated service. See [Categories and tags](../api/TAXONOMY.md) for pagination,
 tree output, hierarchy locking and permanent deletion contracts.
 Database infrastructure owns a reusable Prisma client and PostgreSQL connection lifecycle.
+The dashboard module provides cached library counts and storage metadata totals,
+with fresh bounded recent album/media lists when a database is supplied. Its
+summary reader can be replaced by a shared cache or background-maintained summary.
+See [Dashboard summary](../api/DASHBOARD.md) for precision and freshness semantics.
 The server verifies database connectivity before listening and disconnects on close.
 Tests can inject a database owner or build a database-free application. Storage uses
 an injected provider backed by an S3-compatible adapter; application shutdown releases

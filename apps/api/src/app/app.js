@@ -5,6 +5,7 @@ import { validateMediaDetailEnvironment } from '#config/mediaDetail.js';
 import { validateMediaListEnvironment } from '#config/mediaList.js';
 import { validateUploadEnvironment } from '#config/uploads.js';
 import { createAlbumModule } from '#modules/albums/index.js';
+import { createDashboardModule } from '#modules/dashboard/index.js';
 import {
     createMediaDetailModule,
     createMediaFavoriteModule,
@@ -25,6 +26,7 @@ export function buildApp({
     uploadService,
     uploadConfig = validateUploadEnvironment({}),
     albumService,
+    dashboardService,
     taxonomyService,
     mediaListService,
     mediaListConfig = validateMediaListEnvironment({}),
@@ -71,6 +73,8 @@ export function buildApp({
             : undefined);
     const taxonomy =
         taxonomyService ?? (database?.client ? createTaxonomyModule({ client: database.client }).service : undefined);
+    const dashboard =
+        dashboardService ?? (database?.client ? createDashboardModule({ client: database.client }).service : undefined);
     const mediaFavorite =
         mediaFavoriteService ??
         (database?.client ? createMediaFavoriteModule({ client: database.client }).service : undefined);
@@ -80,6 +84,7 @@ export function buildApp({
             ? createMediaTrashModule({ client: database.client, storage, config: mediaListConfig }).service
             : undefined);
     registerPlugins(app, config, {
+        dashboardService: dashboard,
         taxonomyService: taxonomy,
         albumService: albums,
         uploadService: uploads,
